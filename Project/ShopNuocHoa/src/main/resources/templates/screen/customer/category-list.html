@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{screen/customer/header :: html-head}"></head>
+<meta charset="UTF-8">
+<title>Danh sách Nhà sản xuất</title>
+<style>
+    table {
+        border-collapse: collapse;
+        width: 80%;
+        margin: 30px auto;
+        background-color: white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    th, td {
+        border: 1px solid #ccc;
+        padding: 12px;
+        text-align: left;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+    .btn {
+        text-decoration: none;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: inline-block;
+    }
+    .btn:hover {
+        opacity: 0.9;
+    }
+    .action-buttons {
+        display: flex;
+        gap: 5px;
+    }
+</style>
+</head>
+<div th:replace="~{screen/customer/header:: main-header}"></div>
+<body >
+<div>
+    <h2 style="text-align:center;">Danh sách nhà sản xuất</h2>
+<!--    <div style="text-align:center;">-->
+<!--        <a th:href="@{/api/categories/form(action='add')}" class="btn">-->
+<!--            + Thêm phòng ban mới-->
+<!--        </a>-->
+<!--    </div>-->
+
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tên Nhà sản xuất</th>
+            <th>Thao tác</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="ca : ${categories}">
+            <td th:text="${ca.id}">1</td>
+            <td th:text="${ca.name}">Tên nhà sản xuất</td>
+            <td>
+                <div class="action-buttons">
+<!--                    <a class="btn"-->
+<!--                       th:href="@{/api/categories/form(action='edit', id=${ca.id})}">-->
+<!--                        ✏️ Sửa-->
+<!--                    </a>-->
+
+<!--                    <button class="btn"-->
+<!--                            style="background-color: #e74c3c;"-->
+<!--                            th:onclick="'if(confirm(\'Bạn có chắc muốn xóa phòng ban này?\')) window.location.href=\'' + @{/api/categories/list(action='delete', id=${ca.id})} + '\''">-->
+<!--                        🗑️ Xóa-->
+<!--                    </button>-->
+
+
+                    <!--                    <a class="btn"-->
+                    <!--                       style="background-color: #6a442b;color: white"-->
+                    <!--                       th:href="@{/api/employees/list(action='list', departmentId=${dept.id})}">-->
+                    <!--                        Employees-->
+                    <!--                    </a>-->
+                </div>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+<div th:replace="~{screen/customer/footer :: main-footer}"></div>
+</html>

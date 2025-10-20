@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{screen/customer/header :: html-head}"></head>
+
+<body class="d-flex flex-column min-vh-100 bg-light">
+
+<div th:replace="~{screen/customer/header :: main-header}"></div>
+
+<main class="container my-5">
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <h2 class="mb-4">Giỏ hàng của bạn</h2>
+
+    <div th:if="${cart == null || cart.items.isEmpty()}" class="text-center">
+        <div class="alert alert-info" role="alert">
+            Giỏ hàng của bạn đang trống.
+        </div>
+        <a th:href="@{/api/products/list}" class="btn btn-primary mt-3">
+            <i class="bi bi-arrow-left"></i> Tiếp tục mua sắm
+        </a>
+    </div>
+
+    <div th:unless="${cart == null || cart.items.isEmpty()}">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+            <tr>
+                <th>Sản phẩm</th>
+                <th class="text-end">Đơn giá</th>
+                <th class="text-center" style="width: 15%;">Số lượng</th>
+                <th class="text-end">Thành tiền</th>
+                <th class="text-center">Thao tác</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${cart.items}">
+                <td th:text="${item.product.name}">Tên sản phẩm</td>
+                <td class="text-end" th:text="${#numbers.formatDecimal(item.product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'">100,000 ₫</td>
+                <td class="text-center">
+                    <form th:action="@{/api/cart}" method="post" class="d-flex justify-content-center">
+                        <input type="hidden" name="action" value="update">
+                        <input type="hidden" name="productId" th:value="${item.product.id}">
+                        <input type="number" name="quantity" th:value="${item.quantity}" class="form-control text-center" style="width: 80px;" min="1">
+                        <button type="submit" class="btn btn-sm btn-outline-primary ms-2" title="Cập nhật">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </button>
+                    </form>
+                </td>
+                <td class="text-end" th:text="${#numbers.formatDecimal(item.getSubTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'">200,000 ₫</td>
+                <td class="text-center">
+                    <form th:action="@{/api/cart}" method="post">
+                        <input type="hidden" name="action" value="remove">
+                        <input type="hidden" name="productId" th:value="${item.product.id}">
+                        <button type="submit" class="btn btn-sm btn-danger" title="Xóa sản phẩm">
+                            <i class="bi bi-trash3-fill"></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+            <tr class="table-light">
+                <td colspan="3" class="text-end fw-bold fs-5">Tổng cộng:</td>
+
+                <td class="text-end fw-bold fs-5 text-danger"
+                    th:text="${#numbers.formatDecimal(cart.getTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'">
+                </td>
+
+                <td></td>
+            </tr>
+        </table>
+        <div class="d-flex justify-content-end mb-3">
+            <form th:action="@{/api/checkout/confirm}" method="post"
+                  class="row g-3 justify-content-center align-items-center mb-4 p-3 bg-light rounded shadow-sm">
+                <div class="col-auto align-self-end">
+                    <button type="submit" class="btn btn-primary">Thanh Toán</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</main>
+
+<div th:replace="~{screen/customer/footer :: main-footer}"></div>
+
+</body>
+</html>

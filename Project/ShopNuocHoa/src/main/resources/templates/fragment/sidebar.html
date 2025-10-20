@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<head>
+    <!-- Fragment chứa CSS riêng cho sidebar -->
+    <th:block th:fragment="sidebar-styles">
+        <style>
+            .sidebar {
+                height: 100vh;
+                background-color: #343a40;
+                color: white;
+                display: flex;
+                flex-direction: column;
+                padding: 20px 10px;
+            }
+            .sidebar .sidebar-brand {
+                color: white;
+                text-decoration: none;
+                font-size: 1.4rem;
+                font-weight: 600;
+                display: block;
+                text-align: center;
+                margin-bottom: 25px;
+            }
+            .sidebar .user-info {
+                text-align: center;
+                font-size: 0.95rem;
+                margin-bottom: 20px;
+                color: #adb5bd;
+            }
+            .sidebar .user-info span {
+                color: #fff;
+                font-weight: 500;
+            }
+            .sidebar .nav-link,
+            .sidebar .logout-button {
+                color: #adb5bd;
+                text-decoration: none;
+                display: block;
+                padding: 10px 18px;
+                border-radius: 6px;
+                margin-bottom: 5px;
+                transition: all 0.2s ease-in-out;
+                font-size: 0.95rem;
+            }
+            .sidebar .nav-link i,
+            .sidebar .logout-button i {
+                margin-right: 10px;
+            }
+            .sidebar .nav-link:hover,
+            .sidebar .nav-link.active,
+            .sidebar .logout-button:hover {
+                background-color: #495057;
+                color: white;
+            }
+            .sidebar .nav {
+                flex-grow: 1;
+            }
+            .sidebar .logout-button {
+                background: none;
+                border: none;
+                width: 100%;
+                text-align: left;
+            }
+        </style>
+    </th:block>
+</head>
+<body>
+
+<!-- Fragment chính của sidebar -->
+<div th:fragment="main-sidebar" class="col-md-3 col-lg-2 sidebar">
+
+    <!-- Brand -->
+    <a href="#" class="sidebar-brand">👑 Quản Trị Viên</a>
+
+    <!-- Thông tin người dùng -->
+    <div class="user-info" sec:authorize="isAuthenticated()">
+        Xin chào, <span sec:authentication="name"></span>
+    </div>
+
+    <!-- Menu điều hướng -->
+    <nav class="nav flex-column">
+        <a th:href="@{/api/dashboard}" class="nav-link" th:classappend="${active == 'dashboard'} ? 'active'">
+            <i class="bi bi-speedometer2"></i> Tổng quan
+        </a>
+        <a href="#" class="nav-link"><i class="bi bi-person-fill-gear"></i> Quản lý tài khoản</a>
+        <a href="#" class="nav-link"><i class="bi bi-chat-left-text-fill"></i> Quản lý bình luận</a>
+        <a th:href="@{/api/customers/list}" class="nav-link"><i class="bi bi-people-fill"></i> Quản lý khách hàng</a>
+        <a th:href="@{/api/orders/list}" class="nav-link"><i class="bi bi-receipt-cutoff"></i> Quản lý đơn hàng</a>
+        <a th:href="@{/api/products/list}" class="nav-link"><i class="bi bi-box-seam-fill"></i> Quản lý sản phẩm</a>
+        <a th:href="@{/api/categories/list}" class="nav-link"><i class="bi bi-tags-fill"></i> Quản lý loại sản phẩm</a>
+        <a href="#" class="nav-link"><i class="bi bi-bar-chart-line-fill"></i> Thống kê doanh thu</a>
+    </nav>
+
+    <!-- Nút đăng xuất -->
+    <form th:action="@{/api/logout}" method="post" class="mt-auto">
+        <button type="submit" class="logout-button nav-link">
+            <i class="bi bi-box-arrow-right"></i> Đăng xuất
+        </button>
+    </form>
+</div>
+
+</body>
+</html>

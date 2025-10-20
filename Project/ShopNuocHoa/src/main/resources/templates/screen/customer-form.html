@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{header :: html-head}"></head>
+
+<body class="d-flex flex-column min-vh-100 bg-light">
+<div th:replace="~{header :: main-header}"></div>
+
+<main class="container d-flex justify-content-center align-items-center flex-grow-1">
+  <div class="card shadow-sm" style="width: 25rem;">
+    <div class="card-body p-4">
+      <h2 class="card-title text-center mb-4"
+          th:text="${action == 'update'} ? 'Thêm mới Khách hàng' : 'Cập nhật Khách hàng'">
+        Thêm mới Khách hàng
+      </h2>
+
+      <form th:object="${customer}"
+            th:action="@{/api/customers/form(action=${action})}"
+            method="post">
+
+        <input type="hidden" th:if="${action == 'edit'}" th:field="*{id}" />
+
+        <input type="hidden" th:if="${action == 'edit'}" th:field="*{customerSince}" />
+
+
+        <div class="mb-3">
+          <label for="name" class="form-label">Tên khách hàng:</label>
+          <input type="text" id="name" th:field="*{name}" class="form-control" placeholder="Nhập tên khách hàng" required>
+        </div>
+
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+          <a th:href="@{/api/customers/list}" class="btn btn-secondary">
+            ← Quay lại
+          </a>
+          <button type="submit" class="btn btn-primary"
+                  th:text="${action == 'add'} ? 'Thêm mới' : 'Cập nhật'">
+            Thêm mới
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</main>
+
+<div th:replace="~{footer :: main-footer}"></div>
+</body>
+</html>

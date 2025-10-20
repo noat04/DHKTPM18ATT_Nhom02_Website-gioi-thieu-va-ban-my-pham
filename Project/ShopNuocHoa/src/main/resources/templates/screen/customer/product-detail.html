@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{screen/customer/header :: html-head}"></head>
+
+<body class="d-flex flex-column min-vh-100 bg-light">
+
+<div th:replace="~{screen/customer/header:: main-header}"></div>
+
+<main class="container my-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/static}">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/api/products/list}">Sản phẩm</a></li>
+            <li class="breadcrumb-item active" aria-current="page" th:text="${product.name}">Chi tiết sản phẩm</li>
+        </ol>
+    </nav>
+
+    <div th:if="${product == null}" class="alert alert-warning text-center">
+        <h2>Không tìm thấy sản phẩm!</h2>
+        <p>Sản phẩm bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.</p>
+        <a th:href="@{/api/products/list}" class="btn btn-primary mt-2">Quay lại danh sách</a>
+    </div>
+
+    <div th:if="${product != null}" class="card shadow-sm">
+        <div class="row g-0">
+            <div class="col-md-5">
+                <img src="https://via.placeholder.com/500x500" class="img-fluid rounded-start" alt="Product Image">
+            </div>
+
+            <div class="col-md-7">
+                <div class="card-body p-4">
+                    <h1 class="card-title" th:text="${product.name}">Tên sản phẩm</h1>
+
+                    <h5 class="card-subtitle mb-3 text-muted" th:text="${product.category.name}">Nhà sản xuất</h5>
+
+                    <p class="card-text fs-2 fw-bold text-danger my-3">
+                        <span th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                    </p>
+
+                    <p class="card-text">
+                        <strong>Tình trạng:</strong>
+                        <span th:if="${product.inStock}" class="badge bg-success">Còn hàng</span>
+                        <span th:unless="${product.inStock}" class="badge bg-danger">Hết hàng</span>
+                    </p>
+
+                    <hr>
+
+                    <p class="card-text">Đây là phần mô tả ngắn cho sản phẩm. Bạn có thể thêm một thuộc tính 'description' vào Entity Product để hiển thị ở đây.</p>
+
+                    <form th:action="@{/api/cart}" method="post" class="mt-4">
+                        <input type="hidden" name="action" value="add">
+                        <input type="hidden" name="productId" th:value="${product.id}">
+
+                        <div class="d-flex align-items-center">
+                            <div th:if="${product.inStock}">
+                                <label for="quantity" class="me-2">Số lượng:</label>
+                                <input type="number" id="quantity" name="quantity" value="1" min="1" class="form-control d-inline-block" style="width: 80px;">
+                                <button type="submit" class="btn btn-primary btn-lg ms-3">
+                                    <i class="bi bi-cart-plus"></i> Thêm vào giỏ hàng
+                                </button>
+                            </div>
+                            <div th:unless="${product.inStock}">
+                                <button type="button" class="btn btn-secondary btn-lg" disabled>Đã hết hàng</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mt-5">
+        <div class="card-header">
+            <h3>Sản phẩm tương tự</h3>
+        </div>
+        <div class="card-body">
+            <div th:replace="~{fragment/product-with-category :: product-list}"></div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mt-5">
+        <div class="card-header">
+            <h3>Bình luận sản phẩm</h3>
+        </div>
+        <div class="card-body">
+            <form th:action="@{/api/comments/add}" method="post" class="mb-4">
+                <input type="hidden" name="productId" th:value="${product.id}">
+                <label for="text"></label><input type="text" id="text" name="text" class="form-control d-inline-block" style="width: 500px; border: 1px black" placeholder="Nhập nội dung bình luận">
+                <button type="submit" class="btn btn-primary btn-lg ms-3">
+                    send
+                </button>
+            </form>
+
+            <div th:replace="~{fragment/comment-list-for-detail :: comment-list}"></div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{screen/customer/footer :: main-footer}"></div>
+<div th:replace="~{screen/customer/footer :: page-scripts}"></div>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{screen/customer/header :: html-head}"></head>
+
+<body class="d-flex flex-column min-vh-100 bg-light">
+<div th:replace="~{screen/customer/header :: main-header}"></div>
+
+<main class="container my-5 text-center">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+            <div th:if="${successMessage}" class="alert alert-success p-5 shadow-sm">
+                <i class="bi bi-check-circle-fill" style="font-size: 4rem; color: #198754;"></i>
+                <h2 class="alert-heading mt-3">Đặt hàng thành công!</h2>
+                <p class="fs-5" th:text="${successMessage}">Mã đơn hàng của bạn là #123.</p>
+                <hr>
+                <p class="mb-0">Cảm ơn bạn đã mua sắm. Chúng tôi sẽ xử lý đơn hàng của bạn trong thời gian sớm nhất.</p>
+            </div>
+
+            <div class="mt-4">
+                <a th:href="@{/api/home}" class="btn btn-primary btn-lg me-2">
+                    <i class="bi bi-house-door-fill"></i> Về Trang chủ
+                </a>
+                <a th:href="@{/api/orders/list}" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-receipt"></i> Xem lịch sử đơn hàng
+                </a>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{screen/customer/footer :: main-footer}"></div>
+</body>
+</html>
