@@ -163,5 +163,22 @@ public class ProductController {
 
         return "screen/customer/product-detail";
     }
+    /**
+     * Tìm kiếm sản phẩm theo tên (không phân biệt hoa thường)
+     * @param keyword từ khóa cần tìm
+     */
+    @GetMapping("/search")
+    public String searchProducts(@RequestParam("keyword") String keyword, Model model) {
+        List<Product> productList = productService.findProductByNameContainingIgnoreCase(keyword);
+
+        model.addAttribute("productPage", productList);
+        model.addAttribute("keyword", keyword);
+
+        List<Category> categories = categoryService.getAll();
+        model.addAttribute("categories", categories);
+
+        return "screen/customer/product-list";
+    }
+
 
 }

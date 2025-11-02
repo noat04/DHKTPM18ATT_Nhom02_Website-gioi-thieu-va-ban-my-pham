@@ -20,4 +20,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     // Tìm các sản phẩm theo categoryId và Id không phải là productId được cung cấp
     List<Product> findByCategoryIdAndIdNot(Integer categoryId, Integer productId);
+
+
+    List<Product> findProductByNameContainingIgnoreCase(String keyword);
 }

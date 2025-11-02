@@ -70,4 +70,13 @@ public class ProductService {
         return allSimilar.stream().toList();
     }
 
+    /**
+     * Tìm sản phẩm theo tên bằng keyword
+     * @param keyword
+     * @return danh sách sản phẩm chứa keyword
+     */
+    public List<Product> findProductByNameContainingIgnoreCase(String keyword) {
+        return productRepository.findProductByNameContainingIgnoreCase(keyword);
+    }
+
 }
