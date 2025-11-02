@@ -1,83 +1,196 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{screen/customer/header :: html-head}"></head>
-<body>
-<div th:replace="~{screen/customer/header:: main-header}"></div>
-<main class="container my-5">
-    <h2 class="text-center mb-4">Danh sách sản phẩm</h2>
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách sản phẩm</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <form th:action="@{/api/products/list}" method="get" class="row g-3 justify-content-center align-items-center mb-4 p-3 bg-light rounded shadow-sm">
-        <div class="col-auto">
-            <label for="categoryId" class="form-label">Nhà sản xuất:</label>
+    <style>
+        body {
+            background: #f5f5f5;
+            font-family: "Inter", sans-serif;
+        }
+
+        .page-container {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        /* Responsive grid */
+        @media (max-width: 992px) {
+            .page-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Sidebar filter */
+        .filter-box {
+            background: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+        }
+
+        .filter-box h5 {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .filter-box label {
+            font-size: 14px;
+            color: #444;
+            font-weight: 500;
+        }
+
+        .filter-box .form-select,
+        .filter-box input {
+            margin-bottom: 10px;
+        }
+
+        /* Product grid */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+        }
+
+        .product-card {
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: transform 0.25s, box-shadow 0.25s;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #eee;
+        }
+
+        .product-info {
+            padding: 10px 12px;
+        }
+
+        .product-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #222;
+            height: 38px;
+            overflow: hidden;
+            line-height: 1.3;
+        }
+
+        .product-price {
+            color: #ee4d2d;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .product-category {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .buy-btn {
+            background-color: #ee4d2d;
+            border: none;
+            color: white;
+            font-size: 14px;
+            width: 100%;
+            border-radius: 6px;
+            padding: 6px;
+            transition: all 0.2s;
+        }
+
+        .buy-btn:hover {
+            background-color: #d84315;
+        }
+
+        /* Mobile filter toggle */
+        .filter-toggle {
+            display: none;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 992px) {
+            .filter-box {
+                display: none;
+            }
+
+            .filter-toggle {
+                display: block;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container page-container">
+
+    <!-- Sidebar Filter -->
+    <div class="filter-box" id="filterBox">
+        <h5>Bộ lọc sản phẩm</h5>
+        <form th:action="@{/api/products/list}" method="get">
+            <label for="categoryId" class="form-label">Danh mục</label>
             <select name="categoryId" id="categoryId" class="form-select">
                 <option value="">-- Tất cả --</option>
                 <th:block th:each="cat : ${categories}">
                     <option th:value="${cat.id}" th:text="${cat.name}" th:selected="${cat.id == categoryId}"></option>
                 </th:block>
             </select>
-        </div>
-        <div class="col-auto">
-            <label for="price" class="form-label">Giá lớn hơn:</label>
+
+            <label for="price" class="form-label mt-2">Giá lớn hơn</label>
             <input type="number" name="price" id="price" class="form-control" placeholder="VD: 500000" th:value="${price}">
+
+            <button type="submit" class="btn btn-primary w-100 mt-3">Lọc</button>
+        </form>
+    </div>
+
+    <!-- Product list -->
+    <div>
+        <button class="btn btn-outline-secondary filter-toggle w-100 mb-3" onclick="toggleFilter()">🔍 Bộ lọc</button>
+
+        <h3 class="fw-bold mb-4 text-center">🛍️ Danh sách sản phẩm</h3>
+
+        <div class="product-grid">
+            <div class="product-card" th:each="product : ${productPage}">
+
+                <div class="product-info">
+                    <div class="product-name" th:text="${product.name}"></div>
+                    <div class="product-price" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+                    <div class="product-category" th:text="'Danh mục: ' + ${product.category.name}"></div>
+
+                    <form th:action="@{/api/cart}" method="post" class="mt-2">
+                        <input type="hidden" name="action" value="add">
+                        <input type="hidden" name="productId" th:value="${product.id}">
+                        <button type="submit" class="buy-btn">Thêm vào giỏ</button>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div class="col-auto align-self-end">
-            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
-        </div>
-    </form>
+    </div>
 
-<!--    <div class="d-flex justify-content-end mb-3">-->
-<!--        <a th:href="@{/api/products/form(action='add')}" class="btn btn-success">-->
-<!--            <i class="bi bi-plus-circle-fill"></i> Thêm mới sản phẩm-->
-<!--        </a>-->
-<!--    </div>-->
+</div>
 
-    <table class="table table-bordered table-hover">
-        <thead class="table-dark">
-        <tr>
-            <th>ID</th><th>Tên</th><th>Giá</th><th>NSX</th><th>Tồn kho</th><th>Mua sắm</th><th>Hành động</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="product : ${productPage.content}">
-            <td th:text="${product.id}"></td>
-            <td th:text="${product.name}"></td>
-            <td th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
-            <td th:text="${product.category.name}"></td>
-            <td>
-                <span th:if="${product.inStock}" class="badge bg-success">Còn hàng</span>
-                <span th:unless="${product.inStock}" class="badge bg-danger">Hết hàng</span>
-            </td>
-            <td>
-                <form th:action="@{/api/cart}" method="post" th:if="${product.inStock}">
-                    <input type="hidden" name="action" value="add"><input type="hidden" name="productId" th:value="${product.id}">
-                    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-cart-plus" ></i></button>
-                </form>
-            </td>
-            <td>
-                <a th:href="@{/api/products/detail/{id}(id=${product.id})}" class="btn btn-info btn-sm" title="Xem chi tiết">
-                    <i class="bi bi-eye-fill"></i>
-                </a>
-<!--                <a th:href="@{/api/products/form(action='edit', id=${product.id})}" class="btn btn-warning btn-sm">Sửa</a>-->
-<!--                <a th:href="@{/api/products/list(action='delete', id=${product.id})}" class="btn btn-danger btn-sm" onclick="return confirm('Bạn chắc chắn muốn xóa?')">Xóa️</a>-->
-            </td>
-        </tr>
-        </tbody>
-    </table>
+<script>
+    function toggleFilter() {
+        const box = document.getElementById("filterBox");
+        box.style.display = (box.style.display === "block") ? "none" : "block";
+    }
+</script>
 
-    <nav aria-label="Page navigation" th:if="${productPage.totalPages > 1}">
-        <ul class="pagination justify-content-center">
-            <li class="page-item" th:classappend="${productPage.first ? 'disabled' : ''}">
-                <a class="page-link" th:href="@{/api/products/list(page=${productPage.number - 1}, categoryId=${categoryId}, price=${price})}">Trang trước</a>
-            </li>
-            <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, productPage.totalPages - 1)}" th:classappend="${pageNumber == productPage.number ? 'active' : ''}">
-                <a class="page-link" th:href="@{/api/products/list(page=${pageNumber}, categoryId=${categoryId}, price=${price})}" th:text="${pageNumber + 1}"></a>
-            </li>
-            <li class="page-item" th:classappend="${productPage.last ? 'disabled' : ''}">
-                <a class="page-link" th:href="@{/api/products/list(page=${productPage.number + 1}, categoryId=${categoryId}, price=${price})}">Trang sau</a>
-            </li>
-        </ul>
-    </nav>
-</main>
-<div th:replace="~{screen/customer/footer :: main-footer}"></div>
 </body>
 </html>
