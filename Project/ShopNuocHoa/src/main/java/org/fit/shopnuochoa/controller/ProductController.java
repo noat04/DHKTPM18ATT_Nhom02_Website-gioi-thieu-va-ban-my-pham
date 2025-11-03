@@ -1,5 +1,10 @@
 package org.fit.shopnuochoa.controller;
 
+import jakarta.servlet.http.HttpServletResponse;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.fit.shopnuochoa.component.SecurityUtils;
 import org.fit.shopnuochoa.model.Category;
 import org.fit.shopnuochoa.model.Comment;
@@ -16,6 +21,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 
@@ -155,6 +161,47 @@ public class ProductController {
         }
 
         return "screen/customer/product-detail";
+    }
+    @GetMapping("/export")
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public void exportToExcel(HttpServletResponse response) throws IOException {
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        String headerKey = "Content-Disposition";
+        String headerValue = "attachment; filename=products.xlsx";
+        response.setHeader(headerKey, headerValue);
+
+        List<Product> productList = productService.getAll();
+
+        // Tạo workbook
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Products");
+
+        // Header row
+        Row headerRow = sheet.createRow(0);
+        headerRow.createCell(0).setCellValue("ID");
+        headerRow.createCell(1).setCellValue("Tên sản phẩm");
+        headerRow.createCell(2).setCellValue("Giá");
+        headerRow.createCell(3).setCellValue("Nhà sản xuất");
+        headerRow.createCell(4).setCellValue("Tồn kho");
+
+        // Fill data
+        int rowCount = 1;
+        for (Product product : productList) {
+            Row row = sheet.createRow(rowCount++);
+            row.createCell(0).setCellValue(product.getId());
+            row.createCell(1).setCellValue(product.getName());
+            row.createCell(2).setCellValue(product.getPrice());
+            row.createCell(3).setCellValue(product.getCategory().getName());
+            row.createCell(4).setCellValue(Boolean.TRUE.equals(product.getInStock()) ? "Còn hàng" : "Hết hàng");
+        }
+
+        // Auto-size columns
+        for (int i = 0; i < 5; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        workbook.write(response.getOutputStream());
+        workbook.close();
     }
 
 

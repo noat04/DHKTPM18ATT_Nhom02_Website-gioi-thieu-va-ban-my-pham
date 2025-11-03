@@ -20,7 +20,7 @@ public class ProductService {
         this.categoryRepository = categoryRepository;
     }
 
-//    public List<Product> getAll() {return productRepository.findAll();}
+    public List<Product> getAll() {return productRepository.findAll();}
     public Page<Product> getAll(Pageable pageable) {
         return productRepository.findAll(pageable);
     }
