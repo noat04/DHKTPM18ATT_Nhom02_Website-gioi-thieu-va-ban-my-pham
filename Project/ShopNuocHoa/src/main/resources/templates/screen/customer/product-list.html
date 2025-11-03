@@ -232,23 +232,36 @@
             </div>
             <!-- Phân trang -->
             <div class="mt-4 d-flex justify-content-center">
-                <nav th:if="${productPage.totalPages > 1}">
-                    <ul class="pagination">
-                        <!-- Nút previous -->
-                        <li class="page-item" th:classappend="${productPage.first} ? 'disabled'">
-                            <a class="page-link" th:href="@{/api/products/list(page=${productPage.number-1}, size=${productPage.size}, categoryId=${categoryId}, price=${price})}">«</a>
-                        </li>
+<!--                <nav th:if="${productPage.totalPages > 1}">-->
+<!--                    <ul class="pagination">-->
+<!--                        &lt;!&ndash; Nút previous &ndash;&gt;-->
+<!--                        <li class="page-item" th:classappend="${productPage.first} ? 'disabled'">-->
+<!--                            <a class="page-link" th:href="@{/api/products/list(page=${productPage.number-1}, size=${productPage.size}, categoryId=${categoryId}, price=${price})}">«</a>-->
+<!--                        </li>-->
 
-                        <!-- Các số trang -->
-                        <li class="page-item" th:each="i : ${#numbers.sequence(0, productPage.totalPages-1)}"
-                            th:classappend="${i == productPage.number} ? 'active'">
-                            <a class="page-link" th:href="@{/api/products/list(page=${i}, size=${productPage.size}, categoryId=${categoryId}, price=${price})}"
-                               th:text="${i+1}">1</a>
-                        </li>
+<!--                        &lt;!&ndash; Các số trang &ndash;&gt;-->
+<!--                        <li class="page-item" th:each="i : ${#numbers.sequence(0, productPage.totalPages-1)}"-->
+<!--                            th:classappend="${i == productPage.number} ? 'active'">-->
+<!--                            <a class="page-link" th:href="@{/api/products/list(page=${i}, size=${productPage.size}, categoryId=${categoryId}, price=${price})}"-->
+<!--                               th:text="${i+1}">1</a>-->
+<!--                        </li>-->
 
-                        <!-- Nút next -->
-                        <li class="page-item" th:classappend="${productPage.last} ? 'disabled'">
-                            <a class="page-link" th:href="@{/api/products/list(page=${productPage.number+1}, size=${productPage.size}, categoryId=${categoryId}, price=${price})}">»</a>
+<!--                        &lt;!&ndash; Nút next &ndash;&gt;-->
+<!--                        <li class="page-item" th:classappend="${productPage.last} ? 'disabled'">-->
+<!--                            <a class="page-link" th:href="@{/api/products/list(page=${productPage.number+1}, size=${productPage.size}, categoryId=${categoryId}, price=${price})}">»</a>-->
+<!--                        </li>-->
+<!--                    </ul>-->
+<!--                </nav>-->
+                <nav aria-label="Page navigation" th:if="${productPage != null and productPage.totalPages > 1}" class="mt-5">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item" th:classappend="${productPage.first ? 'disabled' : ''}">
+                            <a class="page-link" th:href="@{/api/products/list(page=${productPage.number - 1}, categoryId=${categoryId}, price=${price})}">Trang trước</a>
+                        </li>
+                        <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, productPage.totalPages - 1)}" th:classappend="${pageNumber == productPage.number ? 'active' : ''}">
+                            <a class="page-link" th:href="@{/api/products/list(page=${pageNumber}, categoryId=${categoryId}, price=${price})}" th:text="${pageNumber + 1}"></a>
+                        </li>
+                        <li class="page-item" th:classappend="${productPage.last ? 'disabled' : ''}">
+                            <a class="page-link" th:href="@{/api/products/list(page=${productPage.number + 1}, categoryId=${categoryId}, price=${price})}">Trang sau</a>
                         </li>
                     </ul>
                 </nav>
