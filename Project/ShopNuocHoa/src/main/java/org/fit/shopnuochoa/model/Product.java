@@ -27,7 +27,6 @@ public class Product {
     //BigDecimal là một đối tượng được thiết kế để xử lý các phép toán số học với độ chính xác cao (thường dùng cho tiền tệ), vì vậy bạn phải sử dụng các phương thức của chính nó để tính toán.
 
     private Boolean inStock;
-
     // Quan hệ N-1: nhiều Product thuộc 1 Category
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)

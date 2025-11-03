@@ -20,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
@@ -203,6 +204,33 @@ public class ProductController {
         workbook.write(response.getOutputStream());
         workbook.close();
     }
+    @PostMapping("/import")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String importProducts(@RequestParam("file") MultipartFile file) throws IOException {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("Please select a file to upload.");
+        }
+        productService.importFromExcel(file);
+        return "redirect:/api/products/list";
+    }
+    @GetMapping("/template")
+    @PreAuthorize("hasRole('ADMIN')")
+    public void downloadTemplate(HttpServletResponse response) throws IOException {
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=product_template.xlsx");
+
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Products");
+        Row header = sheet.createRow(0);
+        header.createCell(0).setCellValue("Name");
+        header.createCell(1).setCellValue("Price");
+        header.createCell(2).setCellValue("Category");
+        header.createCell(3).setCellValue("InStock");
+
+        workbook.write(response.getOutputStream());
+        workbook.close();
+    }
+
 
 
 
