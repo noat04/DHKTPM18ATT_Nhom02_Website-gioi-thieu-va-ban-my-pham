@@ -22,5 +22,13 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     List<Product> findByCategoryIdAndIdNot(Integer categoryId, Integer productId);
 
 
-    List<Product> findProductByNameContainingIgnoreCase(String keyword);
+    @Query("SELECT p FROM Product p WHERE "
+            + "(:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) "
+            + "AND (:categoryId IS NULL OR p.category.id = :categoryId) "
+            + "AND (:price IS NULL OR p.price >= :price)")
+    Page<Product> searchProducts(@Param("keyword") String keyword,
+                                 @Param("categoryId") Integer categoryId,
+                                 @Param("price") Double price,
+                                 Pageable pageable);
+
 }

@@ -41,6 +41,7 @@ public class ProductController {
             @RequestParam(value = "action", required = false) String action,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size,
+            @RequestParam(value = "keyword", required = false) String keyword,
             Model model,
             Authentication authentication) {
 
@@ -57,15 +58,7 @@ public class ProductController {
                 productPage = productService.getAll(pageable);
                 break;
             case "list":
-                if (categoryId != null && salary != null && salary > 0) {
-                    productPage = productService.getProductsByCategoryWithPriceGreaterThan(categoryId, salary, pageable);
-                } else if (categoryId != null) {
-                    productPage = productService.getByCategory(categoryId, pageable);
-                } else if (salary != null && salary > 0) {
-                    productPage = productService.getByPrice(salary, pageable);
-                } else {
-                    productPage = productService.getAll(pageable);
-                }
+                productPage = productService.searchProducts(keyword, categoryId, salary, pageable);
                 break;
             case "delete":
                 // ✅ Chỉ admin mới được xóa
@@ -85,7 +78,7 @@ public class ProductController {
         model.addAttribute("categoryId", categoryId);
         model.addAttribute("price", salary);
         model.addAttribute("productPage", productPage);
-
+        model.addAttribute("keyword", keyword);
         // ✅ Kiểm tra trạng thái đăng nhập
         if (authentication == null || !authentication.isAuthenticated()
                 || authentication.getPrincipal().equals("anonymousUser")) {
@@ -163,22 +156,7 @@ public class ProductController {
 
         return "screen/customer/product-detail";
     }
-    /**
-     * Tìm kiếm sản phẩm theo tên (không phân biệt hoa thường)
-     * @param keyword từ khóa cần tìm
-     */
-    @GetMapping("/search")
-    public String searchProducts(@RequestParam("keyword") String keyword, Model model) {
-        List<Product> productList = productService.findProductByNameContainingIgnoreCase(keyword);
 
-        model.addAttribute("productPage", productList);
-        model.addAttribute("keyword", keyword);
-
-        List<Category> categories = categoryService.getAll();
-        model.addAttribute("categories", categories);
-
-        return "screen/customer/product-list";
-    }
 
 
 }

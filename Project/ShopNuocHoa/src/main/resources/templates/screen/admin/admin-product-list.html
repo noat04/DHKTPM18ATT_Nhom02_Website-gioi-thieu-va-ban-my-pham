@@ -10,27 +10,57 @@
     <div th:replace="~{fragment/sidebar :: main-sidebar}"></div>
     <!-- MAIN CONTENT -->
     <div class="col-md-9 col-lg-10 content">
-      <main class="container my-5">
+      <main class="container my-1">
         <h2 class="text-center mb-4">Danh sách sản phẩm</h2>
 
-        <form th:action="@{/api/products/list}" method="get" class="row g-3 justify-content-center align-items-center mb-4 p-3 bg-light rounded shadow-sm">
-          <div class="col-auto">
-            <label for="categoryId" class="form-label">Nhà sản xuất:</label>
-            <select name="categoryId" id="categoryId" class="form-select">
-              <option value="">-- Tất cả --</option>
-              <th:block th:each="cat : ${categories}">
-                <option th:value="${cat.id}" th:text="${cat.name}" th:selected="${cat.id == categoryId}"></option>
-              </th:block>
-            </select>
+        <!-- Thanh tìm kiếm và bộ lọc -->
+        <div class="row mb-4 justify-content-center">
+          <div class="col-lg-12">
+            <form th:action="@{/api/products/list}" method="get" class="row g-2 align-items-end p-3 bg-light rounded shadow-sm">
+
+              <!-- Search theo tên sản phẩm -->
+              <div class="col-md-4">
+                <label for="keyword" class="form-label fw-semibold">Tìm sản phẩm</label>
+                <input type="text" name="keyword" id="keyword" class="form-control"
+                       placeholder="Nhập tên sản phẩm..." th:value="${keyword}">
+              </div>
+
+              <!-- Lọc theo danh mục -->
+              <div class="col-md-2">
+                <label for="categoryId" class="form-label fw-semibold">Nhà sản xuất</label>
+                <select name="categoryId" id="categoryId" class="form-select">
+                  <option value="">-- Tất cả --</option>
+                  <th:block th:each="cat : ${categories}">
+                    <option th:value="${cat.id}" th:text="${cat.name}" th:selected="${cat.id == categoryId}"></option>
+                  </th:block>
+                </select>
+              </div>
+
+              <!-- Lọc theo giá -->
+              <div class="col-md-2">
+                <label for="price" class="form-label fw-semibold">Giá lớn hơn</label>
+                <input type="number" name="price" id="price" class="form-control"
+                       placeholder="VD: 500000" th:value="${price}">
+              </div>
+
+              <!-- Button tìm kiếm -->
+              <div class="col-md-2 d-grid">
+                <button type="submit" class="btn btn-primary fw-bold">
+                  <i class="bi bi-search"></i> Tìm kiếm
+                </button>
+              </div>
+
+              <!-- Button refresh -->
+              <div class="col-md-2 d-grid">
+                <a th:href="@{/api/products/list}" class="btn btn-secondary fw-bold">
+                  <i class="bi bi-arrow-clockwise"></i> Làm mới
+                </a>
+              </div>
+
+            </form>
           </div>
-          <div class="col-auto">
-            <label for="price" class="form-label">Giá lớn hơn:</label>
-            <input type="number" name="price" id="price" class="form-control" placeholder="VD: 500000" th:value="${price}">
-          </div>
-          <div class="col-auto align-self-end">
-            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
-          </div>
-        </form>
+        </div>
+
 
         <div class="d-flex justify-content-end mb-3">
           <a th:href="@{/api/products/form(action='add')}" class="btn btn-success">
@@ -74,16 +104,26 @@
         <nav aria-label="Page navigation" th:if="${productPage.totalPages > 1}">
           <ul class="pagination justify-content-center">
             <li class="page-item" th:classappend="${productPage.first ? 'disabled' : ''}">
-              <a class="page-link" th:href="@{/api/products/list(page=${productPage.number - 1}, categoryId=${categoryId}, price=${price})}">Trang trước</a>
+              <a class="page-link"
+                 th:href="@{/api/products/list(page=${productPage.number - 1}, keyword=${keyword}, categoryId=${categoryId}, price=${price})}">
+                «
+              </a>
             </li>
-            <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, productPage.totalPages - 1)}" th:classappend="${pageNumber == productPage.number ? 'active' : ''}">
-              <a class="page-link" th:href="@{/api/products/list(page=${pageNumber}, categoryId=${categoryId}, price=${price})}" th:text="${pageNumber + 1}"></a>
+            <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, productPage.totalPages - 1)}"
+                th:classappend="${pageNumber == productPage.number ? 'active' : ''}">
+              <a class="page-link"
+                 th:href="@{/api/products/list(page=${pageNumber}, keyword=${keyword}, categoryId=${categoryId}, price=${price})}"
+                 th:text="${pageNumber + 1}"></a>
             </li>
             <li class="page-item" th:classappend="${productPage.last ? 'disabled' : ''}">
-              <a class="page-link" th:href="@{/api/products/list(page=${productPage.number + 1}, categoryId=${categoryId}, price=${price})}">Trang sau</a>
+              <a class="page-link"
+                 th:href="@{/api/products/list(page=${productPage.number + 1}, keyword=${keyword}, categoryId=${categoryId}, price=${price})}">
+                »
+              </a>
             </li>
           </ul>
         </nav>
+
       </main>
     </div>
   </div>

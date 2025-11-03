@@ -170,7 +170,7 @@
     <!-- Thanh tìm kiếm -->
     <div class="row mt-4 mb-3">
         <div class="col-lg-8 mx-auto">
-            <form th:action="@{/api/products/search}" method="get" class="search-box input-group">
+            <form th:action="@{/api/products/list}" method="get" class="search-box input-group">
                 <input type="text" class="form-control ps-3" name="keyword"
                        placeholder="🔍 Tìm sản phẩm bạn yêu thích..." th:value="${keyword}">
                 <button class="btn text-white fw-semibold" type="submit">Tìm kiếm</button>

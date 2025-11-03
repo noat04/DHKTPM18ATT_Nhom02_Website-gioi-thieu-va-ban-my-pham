@@ -75,8 +75,9 @@ public class ProductService {
      * @param keyword
      * @return danh sách sản phẩm chứa keyword
      */
-    public List<Product> findProductByNameContainingIgnoreCase(String keyword) {
-        return productRepository.findProductByNameContainingIgnoreCase(keyword);
+    public Page<Product> searchProducts(String keyword, Integer categoryId, Double price, Pageable pageable){
+        return productRepository.searchProducts(keyword, categoryId, price, pageable);
     }
+
 
 }
