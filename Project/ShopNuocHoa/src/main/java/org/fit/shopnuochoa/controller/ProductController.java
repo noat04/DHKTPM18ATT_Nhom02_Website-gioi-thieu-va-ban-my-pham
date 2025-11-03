@@ -40,7 +40,7 @@ public class ProductController {
             @RequestParam(value = "id", required = false) Integer id,
             @RequestParam(value = "action", required = false) String action,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "4") int size,
+            @RequestParam(defaultValue = "12") int size,
             Model model,
             Authentication authentication) {
 

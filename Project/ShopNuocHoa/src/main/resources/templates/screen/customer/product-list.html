@@ -209,24 +209,28 @@
             <h3 class="fw-bold mb-4 text-center text-uppercase text-dark">🛍️ Danh sách sản phẩm</h3>
 
             <div class="product-grid">
-                <div class="product-card" th:each="product : ${productPage}">
-                    <div>
-                        <div class="product-name" th:text="${product.name}"></div>
-                        <div class="product-category"
-                             th:text="'Danh mục: ' + ${product.category.name}"></div>
-                    </div>
+                <a th:href="@{/api/products/detail/{id}(id=${product.id})}" class="text-decoration-none text-dark"  th:each="product : ${productPage}">
+                    <div class="product-card">
+                        <div>
+                            <div class="product-name" th:text="${product.name}"></div>
+                            <div class="product-category"
+                                 th:text="'Danh mục: ' + ${product.category.name}"></div>
+                        </div>
 
-                    <div>
-                        <div class="product-price"
-                             th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+                        <div>
+                            <div class="product-price"
+                                 th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
 
-                        <form th:action="@{/api/cart}" method="post" class="mt-2">
-                            <input type="hidden" name="action" value="add">
-                            <input type="hidden" name="productId" th:value="${product.id}">
-                            <button type="submit" class="buy-btn w-100">Thêm vào giỏ</button>
-                        </form>
+                            <form th:action="@{/api/cart}" method="post" class="mt-2">
+                                <input type="hidden" name="action" value="add">
+                                <input type="hidden" name="productId" th:value="${product.id}">
+                                <button type="submit" class="buy-btn w-100">Thêm vào giỏ</button>
+                            </form>
+                        </div>
                     </div>
-                </div>
+                </a>
+
+
             </div>
 
             <!-- Nút quay lại -->
@@ -244,6 +248,7 @@
         const box = document.getElementById("filterBox");
         box.style.display = (box.style.display === "block") ? "none" : "block";
     }
+
 </script>
 
 </body>
