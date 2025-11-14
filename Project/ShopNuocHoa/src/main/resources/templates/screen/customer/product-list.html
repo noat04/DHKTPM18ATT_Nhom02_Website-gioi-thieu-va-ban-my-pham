@@ -209,12 +209,19 @@
             <h3 class="fw-bold mb-4 text-center text-uppercase text-dark">🛍️ Danh sách sản phẩm</h3>
 
             <div class="product-grid">
-                <a th:href="@{/api/products/detail/{id}(id=${product.id})}" class="text-decoration-none text-dark"  th:each="product : ${productPage}">
+                <a th:href="@{/api/products/detail/{id}(id=${product.id})}" class="text-decoration-none text-dark" th:each="product : ${productPage}">
                     <div class="product-card">
+                        <!-- Hình ảnh giữ chỗ -->
+                        <div class="product-image mb-2">
+                            <img src=https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ9XTM0DSMbH3yic8KUfHLapNVE2ZVpm4hSyw&s
+                                 alt="Hình sản phẩm"
+                                 style="width: 100%; height: 160px; object-fit: cover; border-radius: 12px;">
+                        </div>
+
                         <div>
                             <div class="product-name" th:text="${product.name}"></div>
                             <div class="product-category"
-                                 th:text="'Danh mục: ' + ${product.category.name}"></div>
+                                 th:text="${product.category.name}"></div>
                         </div>
 
                         <div>
@@ -230,6 +237,7 @@
                     </div>
                 </a>
             </div>
+
             <!-- Phân trang -->
             <div class="mt-4 d-flex justify-content-center">
                 <nav th:if="${productPage.totalPages > 1}">
