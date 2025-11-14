@@ -82,7 +82,7 @@
         <a th:href="@{/api/dashboard}" class="nav-link" th:classappend="${active == 'dashboard'} ? 'active'">
             <i class="bi bi-speedometer2"></i> Tổng quan
         </a>
-        <a href="#" class="nav-link"><i class="bi bi-person-fill-gear"></i> Quản lý tài khoản</a>
+        <a th:href="@{/api/admin/users}" class="nav-link"><i class="bi bi-person-fill-gear"></i> Quản lý tài khoản</a>
         <a href="#" class="nav-link"><i class="bi bi-chat-left-text-fill"></i> Quản lý bình luận</a>
         <a th:href="@{/api/customers/list}" class="nav-link"><i class="bi bi-people-fill"></i> Quản lý khách hàng</a>
         <a th:href="@{/api/orders/list}" class="nav-link"><i class="bi bi-receipt-cutoff"></i> Quản lý đơn hàng</a>

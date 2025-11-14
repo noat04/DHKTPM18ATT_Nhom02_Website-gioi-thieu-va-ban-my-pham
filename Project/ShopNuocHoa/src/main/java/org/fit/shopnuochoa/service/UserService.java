@@ -3,6 +3,8 @@ package org.fit.shopnuochoa.service;
 import org.fit.shopnuochoa.model.Role;
 import org.fit.shopnuochoa.model.Users;
 import org.fit.shopnuochoa.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -38,19 +40,24 @@ public class UserService {
     }
     public Optional<Users> updateUser(int id, Users updatedUsers) {
         return userRepository.findById(id).map(user -> {
-            // Chỉ băm và cập nhật mật khẩu nếu có mật khẩu mới được cung cấp
+
+            // ✅ Cập nhật các thông tin cơ bản
+            user.setFull_name(updatedUsers.getFull_name());
+            user.setEmail(updatedUsers.getEmail());
+            user.setRole(updatedUsers.getRole());
+            user.setActive(updatedUsers.isActive());
+
+            // ✅ Nếu có mật khẩu mới thì mã hóa và cập nhật
             if (updatedUsers.getPassword() != null && !updatedUsers.getPassword().isEmpty()) {
                 String hashedPassword = passwordEncoder.encode(updatedUsers.getPassword());
                 user.setPassword(hashedPassword);
             }
 
-            user.setUsername(updatedUsers.getUsername());
-            user.setPassword(updatedUsers.getPassword());
-            user.setEmail(updatedUsers.getEmail());
-            user.setFull_name(updatedUsers.getFull_name());
+            // ❌ Không ghi đè username vì field này readonly
             return userRepository.save(user);
         });
     }
+
     public Users registerNewUser(Users user) {
         // 1. Kiểm tra username đã tồn tại chưa
         if (userRepository.findByUsername(user.getUsername()) != null) {
@@ -74,5 +81,16 @@ public class UserService {
     public boolean checkPassword(String rawPassword, String encodedPassword) {
         return passwordEncoder.matches(rawPassword, encodedPassword);
     }
-
+    public boolean deleteUserById(int id) {
+        return userRepository.findById(id).map(user -> {
+            // Nếu user có liên kết tới Customer và Customer có Orders -> không xóa
+            if (user.getCustomer() != null &&
+                    user.getCustomer().getOrders() != null &&
+                    !user.getCustomer().getOrders().isEmpty()) {
+                throw new IllegalStateException("Không thể xóa tài khoản đã từng đặt hàng.");
+            }
+            userRepository.delete(user);
+            return true;
+        }).orElse(false);
+    }
 }
