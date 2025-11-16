@@ -82,8 +82,22 @@ public class OrderController {
             ordersPage = orderService.findByCustomer(customer.getId(), pageable);
         }
 
+        // Lấy danh sách các đơn hàng ở trang hiện tại
+        List<Orders> ordersOnPage = ordersPage.getContent();
+
+        // Tạo Map<Integer, List<OrderLine>> mà HTML cần
+        // (Giả sử bạn có hàm 'findAllByOrderId' trong OrderLineService)
+        Map<Integer, List<OrderLine>> orderLinesMap = ordersOnPage.stream()
+                .collect(Collectors.toMap(
+                        Orders::getId, // Key = Order ID
+                        order -> orderLineService.findAllByOrderId(order.getId()) // Value = List OrderLines
+                ));
+
+        // Thêm Map này vào model
+        model.addAttribute("orderLinesByOrder", orderLinesMap);
         // Truyền danh sách đơn hàng sang view
         model.addAttribute("orders", ordersPage.getContent());
+        model.addAttribute("ordersPage", ordersPage);
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", ordersPage.getTotalPages());
         model.addAttribute("keyword", keyword);

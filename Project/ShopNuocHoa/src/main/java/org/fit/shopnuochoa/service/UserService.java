@@ -1,10 +1,8 @@
 package org.fit.shopnuochoa.service;
 
-import org.fit.shopnuochoa.model.Role;
+import org.fit.shopnuochoa.Enum.Role;
 import org.fit.shopnuochoa.model.Users;
 import org.fit.shopnuochoa.repository.UserRepository;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 

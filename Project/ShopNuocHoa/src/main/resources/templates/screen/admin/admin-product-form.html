@@ -33,7 +33,9 @@
             margin-top: 15px;
         }
 
-        input, select {
+        input[type="text"],
+        input[type="number"],
+        select {
             width: 100%;
             padding: 12px 15px;
             margin-top: 5px;
@@ -66,17 +68,23 @@
             color: #fff;
             border: none;
         }
+
+        /* Căn chỉnh cho checkbox và radio */
         .form-check {
             display: flex;
             align-items: center;
             margin-top: 10px;
+            padding-left: 0; /* Tắt padding mặc định để căn chỉnh thủ công */
         }
         .form-check-input {
             margin-top: 0;
-            margin-right: 8px;
+            margin-left: 0;
+            margin-right: 10px;
+            width: 1.15em; /* Kích thước checkbox/radio */
+            height: 1.15em;
         }
         .form-check-label {
-            margin: 0 0 0 0;
+            margin: 0;
         }
 
         .btn-submit:hover {
@@ -116,9 +124,8 @@
 <body>
 <div class="container-fluid">
     <div class="row">
-        <!-- SIDEBAR -->
         <div th:replace="~{fragment/sidebar :: main-sidebar}"></div>
-        <!-- MAIN CONTENT -->
+
         <div class="card">
             <h2 th:text="${action == 'add'} ? 'Thêm sản phẩm mới' : 'Cập nhật sản phẩm'">Thêm sản phẩm mới</h2>
 
@@ -130,7 +137,7 @@
                 <input type="text" th:field="*{name}" placeholder="Nhập tên sản phẩm" required>
 
                 <label>Giá:</label>
-                <input type="number" th:field="*{price}" placeholder="Nhập giá" required>
+                <input type="number" th:field="*{price}" placeholder="Nhập giá" required step="1000">
 
                 <label>Nhà sản xuất:</label>
                 <select name="categoryId" required>
@@ -143,20 +150,48 @@
                     </th:block>
                 </select>
 
-                <label>Tình trạng tồn kho:</label>
+                <label>Dung tích:</label>
+                <select th:field="*{volume}" required>
+                    <option value="">-- Chọn dung tích --</option>
+                    <option value="ML_10">10ml</option>
+                    <option value="ML_30">30ml</option>
+                    <option value="ML_50">50ml</option>
+                    <option value="ML_75">75ml</option>
+                    <option value="ML_100">100ml</option>
+                    <option value="ML_150">150ml</option>
+                    <option value="ML_200">200ml</option>
+                </select>
+
+                <label>Giới tính:</label>
                 <div class="d-flex gap-3 align-items-center">
-                    <div class="form-check d-flex align-items-center">
-                        <input class="form-check-input" type="radio" th:field="*{inStock}" id="inStockTrue" value="true">
-                        <label class="form-check-label ms-2" for="inStockTrue">Còn hàng</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" th:field="*{gender}" id="genderNam" value="NAM" required>
+                        <label class="form-check-label" for="genderNam">Nam</label>
                     </div>
-                    <div class="form-check d-flex align-items-center">
-                        <input class="form-check-input" type="radio" th:field="*{inStock}" id="inStockFalse" value="false">
-                        <label class="form-check-label ms-2" for="inStockFalse">Hết hàng</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" th:field="*{gender}" id="genderNu" value="NU" required>
+                        <label class="form-check-label" for="genderNu">Nữ</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" th:field="*{gender}" id="genderUnisex" value="UNISEX" required>
+                        <label class="form-check-label" for="genderUnisex">Unisex</label>
                     </div>
                 </div>
 
+                <label>Số lượng:</label>
+                <input type="number" th:field="*{quantity}" placeholder="Nhập số lượng tồn kho" required min="0">
 
-                <div class="form-buttons">
+                <label>Đường dẫn ảnh:</label>
+                <input type="text" th:field="*{imageUrl}" placeholder="https://example.com/image.png">
+
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" th:field="*{hotTrend}" id="hotTrendCheck">
+                    <label class="form-check-label" for="hotTrendCheck">
+                        Đánh dấu là sản phẩm nổi bật (Hot Trend)
+                    </label>
+                </div>
+
+                <div class="form-buttons mt-4">
                     <button type="submit" class="btn btn-submit"
                             th:text="${action == 'add'} ? 'Thêm mới' : 'Cập nhật'">
                         Thêm mới

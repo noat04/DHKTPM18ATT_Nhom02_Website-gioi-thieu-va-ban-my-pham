@@ -5,18 +5,21 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.fit.shopnuochoa.Enum.Gender;
+import org.fit.shopnuochoa.Enum.Volume;
 import org.fit.shopnuochoa.component.SecurityUtils;
 import org.fit.shopnuochoa.model.Category;
 import org.fit.shopnuochoa.model.Comment;
 import org.fit.shopnuochoa.model.Product;
-import org.fit.shopnuochoa.service.CategoryService;
-import org.fit.shopnuochoa.service.CommentService;
-import org.fit.shopnuochoa.service.ProductService;
+import org.fit.shopnuochoa.model.Users;
+import org.fit.shopnuochoa.service.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -29,81 +32,261 @@ import java.util.List;
 @Controller
 @RequestMapping("/api/products")
 public class ProductController {
+    
     private SecurityUtils securityUtils;
     private ProductService productService;
     private CategoryService categoryService;
     private CommentService commentService;
-    public ProductController(ProductService productService, CategoryService categoryService,CommentService commentService,SecurityUtils securityUtils) {
+    private WishlistService wishlistService;
+    private UserService userService;
+
+    public ProductController(ProductService productService,
+                             CategoryService categoryService,
+                             CommentService commentService,
+                             SecurityUtils securityUtils,
+                             WishlistService wishlistService,
+                             UserService userService) {
         this.productService = productService;
         this.categoryService = categoryService;
         this.commentService = commentService;
         this.securityUtils = securityUtils;
+        this.wishlistService = wishlistService;
+        this.userService=userService;
     }
+
     // ✅ Đúng
+//    @GetMapping("/list")
+//    public String showProductList(
+//            @RequestParam(value = "categoryId", required = false) Integer categoryId,
+//            @RequestParam(value = "price", required = false) Double salary,
+//            @RequestParam(value = "id", required = false) Integer id,
+//            @RequestParam(value = "action", required = false) String action,
+//            @RequestParam(value = "sort", required = false, defaultValue = "newest") String sort,
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "6") int size,
+//            Model model,
+//            Authentication authentication) {
+//
+//        List<Category> categories = categoryService.getAll();
+//
+//        // ✅ Sắp xếp theo lựa chọn
+//        Sort sortOption = switch (sort) {
+//            case "priceDesc" -> Sort.by("price").descending();
+//            case "priceAsc" -> Sort.by("price").ascending();
+//            case "bestseller" -> Sort.by("ratingCount").descending(); // giả sử ratingCount là lượt bán/đánh giá
+//            default -> Sort.by("id").descending(); // "newest"
+//        };
+//        Pageable pageable = PageRequest.of(page, size, sortOption);
+//        Page<Product> productPage;
+//
+//        if (action == null) action = "list";
+//
+//        switch (action) {
+//            case "list":
+//                if (categoryId != null && salary != null && salary > 0) {
+//                    productPage = productService.getProductsByCategoryWithPriceGreaterThan(categoryId, salary, pageable);
+//                } else if (categoryId != null) {
+//                    productPage = productService.getByCategory(categoryId, pageable);
+//                } else if (salary != null && salary > 0) {
+//                    productPage = productService.getByPrice(salary, pageable);
+//                } else {
+//                    productPage = productService.getAll(pageable);
+//                }
+//                break;
+//            case "delete":
+//                if (authentication != null && authentication.getAuthorities().stream()
+//                        .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"))) {
+//                    productService.deleteProduct(id);
+//                }
+//                productPage = productService.getAll(pageable);
+//                break;
+//            default:
+//                productPage = productService.getAll(pageable);
+//                break;
+//        }
+//
+//        model.addAttribute("categories", categories);
+//        model.addAttribute("categoryId", categoryId);
+//        model.addAttribute("price", salary);
+//        model.addAttribute("productPage", productPage);
+//        model.addAttribute("sort", sort);
+//
+//        if (authentication == null || !authentication.isAuthenticated()
+//                || authentication.getPrincipal().equals("anonymousUser")) {
+//            return "screen/customer/product-list";
+//        }
+//
+//        boolean isAdmin = authentication.getAuthorities().stream()
+//                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+//        return isAdmin ? "screen/admin/admin-product-list" : "screen/customer/product-list";
+//    }
     @GetMapping("/list")
     public String showProductList(
-            @RequestParam(value = "categoryId", required = false) Integer categoryId,
-            @RequestParam(value = "price", required = false) Double salary,
-            @RequestParam(value = "id", required = false) Integer id,
-            @RequestParam(value = "action", required = false) String action,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size,
+            // Tất cả các tham số từ Form
             @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "categoryId", required = false) Integer categoryId,
+            @RequestParam(value = "price", required = false) Double price,
+            @RequestParam(value = "maxPrice", required = false) Double maxPrice,
+            @RequestParam(value = "country", required = false) List<String> countries, // Sửa 'origin' -> 'country'
+            @RequestParam(value = "gender", required = false) Gender gender,
+            @RequestParam(value = "volume", required = false) Volume volume,
+            @RequestParam(value = "rating", required = false) Double rating,
+            // Tham số sắp xếp và phân trang
+            @RequestParam(value = "sort", required = false, defaultValue = "newest") String sort,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size,
             Model model,
             Authentication authentication) {
 
-        // ✅ Lấy danh sách loại sản phẩm
+        // 1. Lấy danh sách Categories (Giữ nguyên)
         List<Category> categories = categoryService.getAll();
-
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Product> productPage = null;
-
-        if (action == null) action = "list";
-
-        switch (action) {
-            case "add":
-                productPage = productService.getAll(pageable);
-                break;
-            case "list":
-                productPage = productService.searchProducts(keyword, categoryId, salary, pageable);
-                break;
-            case "delete":
-                // ✅ Chỉ admin mới được xóa
-                if (authentication != null && authentication.getAuthorities().stream()
-                        .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"))) {
-                    productService.deleteProduct(id);
-                }
-                productPage = productService.getAll(pageable);
-                break;
-            default:
-                System.out.println("Unknown action: " + action);
-                break;
-        }
-
-        // ✅ Gửi dữ liệu sang view
+        List<String> countryName = categoryService.findDistinctCountries();
+        model.addAttribute("listCountryName", countryName);
         model.addAttribute("categories", categories);
-        model.addAttribute("categoryId", categoryId);
-        model.addAttribute("price", salary);
+
+        // 2. Tạo Sort (Giữ nguyên)
+        Sort sortOption = switch (sort) {
+            case "priceDesc" -> Sort.by("price").descending();
+            case "priceAsc" -> Sort.by("price").ascending();
+            case "bestseller" -> Sort.by("ratingCount").descending();
+            default -> Sort.by("id").descending(); // "newest"
+        };
+        Pageable pageable = PageRequest.of(page, size, sortOption);
+
+        // 3. GỌI HÀM TÌM KIẾM TỔNG HỢP (ĐÃ CẬP NHẬT)
+        Page<Product> productPage = productService.searchProducts(
+                keyword, categoryId, price, maxPrice, countries, volume, gender, rating, pageable
+        );
+
         model.addAttribute("productPage", productPage);
+
+        // 4. Đưa tất cả tham số filter trở lại Model (để form "nhớ" lựa chọn)
         model.addAttribute("keyword", keyword);
-        // ✅ Kiểm tra trạng thái đăng nhập
+        model.addAttribute("categoryId", categoryId);
+        model.addAttribute("price", price);
+        model.addAttribute("maxPrice", maxPrice);
+        model.addAttribute("gender", gender);
+        model.addAttribute("volume", volume);
+        model.addAttribute("rating", rating);
+        model.addAttribute("country", countries);
+        model.addAttribute("sort", sort); // Giữ lại sort
+
+
+        // 5. Kiểm tra quyền Admin (Giữ nguyên)
         if (authentication == null || !authentication.isAuthenticated()
                 || authentication.getPrincipal().equals("anonymousUser")) {
-            // Người chưa đăng nhập (khách)
             return "screen/customer/product-list";
         }
-
-        // ✅ Nếu đã đăng nhập, kiểm tra role
         boolean isAdmin = authentication.getAuthorities().stream()
                 .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
-        if (isAdmin) {
-            return "screen/admin/admin-product-list";
-        } else {
-            return "screen/customer/product-list";
-        }
+        return isAdmin ? "screen/admin/admin-product-list" : "screen/customer/product-list";
     }
 
+//    @GetMapping("/list/fragment") // LỖI 1: Sửa lại đường dẫn
+//    public String getProductFragment(
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "6") int size,
+//            @RequestParam(defaultValue = "newest") String sort,
+//            @RequestParam(value = "categoryId", required = false) Integer categoryId,
+//            @RequestParam(value = "price", required = false) Double price, // Đổi tên 'salary' thành 'price'
+//            @RequestParam(value = "action", required = false) String action,
+//            Model model) {
+//
+//        // LỖI 2: TẠO ĐỐI TƯỢNG SORT
+//        Sort sortCriteria;
+//        switch (sort) {
+//            case "priceAsc":
+//                sortCriteria = Sort.by("price").ascending(); // Giả sử tên cột là 'price'
+//                break;
+//            case "priceDesc":
+//                sortCriteria = Sort.by("price").descending();
+//                break;
+//            case "bestseller":
+//                // (Bạn cần có một cột như 'soldCount' hoặc 'viewCount' để sắp xếp)
+//                sortCriteria = Sort.by("ratingCount").descending();
+//                break;
+////            case "newest":
+//            default:
+//                // (Bạn cần có một cột như 'createdAt' hoặc 'id')
+//                sortCriteria = Sort.by("id").descending();
+//                break;
+//        }
+//
+//        // Đưa 'sortCriteria' vào PageRequest
+//        Pageable pageable = PageRequest.of(page, size, sortCriteria);
+//        Page<Product> productPage;
+//
+//        if (action == null) action = "list";
+//
+//        // (Tôi giữ nguyên logic lọc của bạn)
+//        switch (action) {
+//            case "list":
+//                if (categoryId != null && price != null && price > 0) {
+//                    productPage = productService.getProductsByCategoryWithPriceGreaterThan(categoryId, price, pageable);
+//                } else if (categoryId != null) {
+//                    productPage = productService.getByCategory(categoryId, pageable);
+//                } else if (price != null && price > 0) {
+//                    productPage = productService.getByPrice(price, pageable);
+//                } else {
+//                    productPage = productService.getAll(pageable);
+//                }
+//                break;
+//            default:
+//                productPage = productService.getAll(pageable);
+//                break;
+//        }
+//
+//        model.addAttribute("productPage", productPage);
+//        return "fragment/product-ajax :: ajaxUpdate";
+//    }
 
+    /**
+     * [CẬP NHẬT]
+     * Logic hiển thị fragment AJAX
+     * Đã được tinh gọn để đồng bộ 100% với showProductList
+     */
+    @GetMapping("/list/fragment")
+    public String getProductFragment(
+            // Tất cả các tham số từ Form (do JavaScript gửi lên)
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "categoryId", required = false) Integer categoryId,
+            @RequestParam(value = "price", required = false) Double price,
+            @RequestParam(value = "maxPrice", required = false) Double maxPrice,
+            @RequestParam(value = "gender", required = false) Gender gender,
+            @RequestParam(value = "volume", required = false) Volume volume,
+            @RequestParam(value = "rating", required = false) Double rating,
+            @RequestParam(value = "country", required = false) List<String> countries,
+            // Tham số sắp xếp và phân trang
+            @RequestParam(value = "sort", required = false, defaultValue = "newest") String sort,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size,
+            Model model) {
+
+        // 1. Tạo Sort (Giữ nguyên)
+        Sort sortOption = switch (sort) {
+            case "priceDesc" -> Sort.by("price").descending();
+            case "priceAsc" -> Sort.by("price").ascending();
+            case "bestseller" -> Sort.by("ratingCount").descending();
+            default -> Sort.by("id").descending(); // "newest"
+        };
+        Pageable pageable = PageRequest.of(page, size, sortOption);
+
+        // 2. GỌI HÀM TÌM KIẾM TỔNG HỢP (ĐÃ CẬP NHẬT)
+        Page<Product> productPage = productService.searchProducts(
+                keyword, categoryId, price, maxPrice, countries, volume, gender, rating, pageable
+        );
+        model.addAttribute("productPage", productPage);
+
+        // 3. Đưa tham số filter trở lại (cho fragment nếu cần)
+        model.addAttribute("categoryId", categoryId);
+        model.addAttribute("price", price);
+        model.addAttribute("country", countries); // Thêm dòng này
+
+        // 4. Trả về fragment (Giữ nguyên)
+        // (Hãy chắc chắn bạn có file /fragment/product-ajax.html
+        // và nó chứa một fragment tên là 'ajaxUpdate')
+        return "fragment/product-ajax :: ajaxUpdate";
+    }
 
     // ✅ Đúng
     @GetMapping("/form")
@@ -138,26 +321,56 @@ public class ProductController {
         return "redirect:/api/products/list";
     }
 
+    // Trong file: ProductController.java
+
+// (Hãy chắc chắn bạn đã inject các service này trong Constructor)
+// private final UserService userService;
+// private final WishlistService wishlistService;
+
     @GetMapping("/detail/{id}")
-    @PreAuthorize("hasAnyRole('CUSTOMER')")
     public String showDetail(@PathVariable("id") Integer id,
                              @RequestParam(defaultValue = "0") int page,
                              @RequestParam(defaultValue = "5") int size,
+                             Authentication authentication, // <-- Sửa: Dùng Authentication (linh hoạt hơn)
                              Model model) {
+
         Product product = productService.getById(id);
+        Double rating = productService.findAverageRatingByProductId(id);
         model.addAttribute("product", product);
 
+        // === [THÊM MỚI] Lấy ID của khách hàng đang đăng nhập ===
+        Integer loggedInCustomerId = null;
+        if (authentication != null && authentication.isAuthenticated()) {
+            String username = authentication.getName();
+            Users loggedInUser = userService.getUserByUsername(username);
+            if (loggedInUser != null && loggedInUser.getCustomer() != null) {
+                loggedInCustomerId = loggedInUser.getCustomer().getId();
+            }
+        }
+        // Thêm vào Model để HTML có thể sử dụng
+        model.addAttribute("loggedInCustomerId", loggedInCustomerId);
+        // === [KẾT THÚC THÊM MỚI] ===
+
+
         if (product != null) {
-            // Lấy danh sách bình luận (với phân trang riêng)
+            // ✅ Phân trang cho bình luận (Giữ nguyên)
             Pageable commentPageable = PageRequest.of(page, size);
             Page<Comment> commentPage = commentService.getByProductId(id, commentPageable);
             model.addAttribute("commentPage", commentPage);
             model.addAttribute("productId", id);
+            model.addAttribute("rating", rating);
 
-            // ✅ Lấy danh sách sản phẩm tương tự (không phân trang)
+            // ✅ [SỬA LỖI] Cập nhật logic Wishlist (dùng customerId)
+            if (loggedInCustomerId != null) {
+                boolean isFavorite = wishlistService.existsInWishlist(loggedInCustomerId, id);
+                product.setFavorite(isFavorite);
+            } else {
+                product.setFavorite(false); // Đảm bảo là false nếu chưa đăng nhập
+            }
+
+            // ✅ Lấy sản phẩm tương tự (Giữ nguyên)
             List<Product> similarProducts = productService.findSimilarProducts(
-                    product.getCategory().getId(),
-                    id);
+                    product.getCategory().getId(), id);
             model.addAttribute("similarProducts", similarProducts);
         }
 
@@ -193,7 +406,7 @@ public class ProductController {
             row.createCell(1).setCellValue(product.getName());
             row.createCell(2).setCellValue(product.getPrice());
             row.createCell(3).setCellValue(product.getCategory().getName());
-            row.createCell(4).setCellValue(Boolean.TRUE.equals(product.getInStock()) ? "Còn hàng" : "Hết hàng");
+//            row.createCell(4).setCellValue(Boolean.TRUE.equals(product.getInStock()) ? "Còn hàng" : "Hết hàng");
         }
 
         // Auto-size columns
@@ -204,6 +417,7 @@ public class ProductController {
         workbook.write(response.getOutputStream());
         workbook.close();
     }
+
     @PostMapping("/import")
     @PreAuthorize("hasRole('ADMIN')")
     public String importProducts(@RequestParam("file") MultipartFile file) throws IOException {
@@ -213,6 +427,7 @@ public class ProductController {
         productService.importFromExcel(file);
         return "redirect:/api/products/list";
     }
+
     @GetMapping("/template")
     @PreAuthorize("hasRole('ADMIN')")
     public void downloadTemplate(HttpServletResponse response) throws IOException {

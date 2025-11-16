@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="ajaxUpdate">
+
+    <div id="productListContainer">
+        <div th:replace="~{fragment/product-grid :: productGrid(products=${productPage.content})}"></div>
+    </div>
+
+    <nav aria-label="Page navigation" th:if="${productPage != null and productPage.totalPages > 1}" class="mt-5">
+        <ul class="pagination justify-content-center">
+
+            <li class="page-item" th:classappend="${productPage.first ? 'disabled' : ''}">
+                <a class="page-link" href="#"
+                   th:attr="data-page=${productPage.number - 1}">Trang trước</a>
+            </li>
+
+            <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, productPage.totalPages - 1)}"
+                th:classappend="${pageNumber == productPage.number ? 'active' : ''}">
+                <a class="page-link" href="#"
+                   th:attr="data-page=${pageNumber}"
+                   th:text="${pageNumber + 1}"></a>
+            </li>
+
+            <li class="page-item" th:classappend="${productPage.last ? 'disabled' : ''}">
+                <a class="page-link" href="#"
+                   th:attr="data-page=${productPage.number + 1}">Trang sau</a>
+            </li>
+        </ul>
+    </nav>
+
+</div>
+
+</body>
+</html>

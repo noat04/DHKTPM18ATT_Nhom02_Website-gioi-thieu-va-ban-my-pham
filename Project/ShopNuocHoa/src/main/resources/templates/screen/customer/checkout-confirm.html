@@ -64,16 +64,32 @@
                 </div>
 
                 <div class="d-flex justify-content-between mt-4">
-                    <!-- Nút quay lại trỏ về trang giỏ hàng -->
+
                     <a th:href="@{/api/cart}" class="btn btn-secondary btn-lg">
                         <i class="bi bi-arrow-left"></i> Chỉnh sửa giỏ hàng
                     </a>
-                    <!-- Form xác nhận gửi đi POST /finalize -->
-                    <form th:action="@{/api/checkout/finalize}" method="post">
-                        <button type="submit" class="btn btn-success btn-lg">
-                            <i class="bi bi-check2-circle"></i> Xác nhận đặt hàng
+
+                    <div class="d-flex gap-2">
+
+                        <form th:action="@{/api/checkout/finalize}" method="post">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-truck"></i> Xác nhận (COD)
+                            </button>
+                        </form>
+
+                        <a th:href="@{/api/vnpayment/create-payment(amount=${cart.total})}" class="btn btn-primary btn-lg">
+                            Thanh toán VNPay
+                        </a>
+
+                        <button type="button" class="btn btn-danger btn-lg" id="momo-payment-button"
+                                th:data-amount="${cart.total}">
+                            Thanh toán MoMo
                         </button>
-                    </form>
+
+                        <a th:href="@{/api/zalopay/create-payment(amount=${cart.total})}" class="btn btn-info btn-lg text-white">
+                            Thanh toán ZaloPay
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -87,5 +103,65 @@
 </main>
 
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+
+        const momoButton = document.getElementById("momo-payment-button");
+
+        if (momoButton) {
+            momoButton.addEventListener("click", function() {
+
+                const amount = this.dataset.amount;
+                momoButton.disabled = true; // Vô hiệu hóa nút
+                momoButton.innerHTML = "Đang xử lý...";
+
+                // Lấy CSRF token (nếu có)
+                const csrfTokenEl = document.querySelector('form[method="post"] input[name="_csrf"]');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (csrfTokenEl) {
+                    headers['X-CSRF-TOKEN'] = csrfTokenEl.value;
+                }
+
+                // 1. Gọi API /api/momo (POST) để lấy payUrl
+                fetch('/api/momo', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        amount: amount
+                    })
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Lỗi khi tạo yêu cầu thanh toán MoMo.');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // 2. Kiểm tra response từ MoMo
+                        if (data.payUrl) {
+                            // 3. Chuyển hướng người dùng đến payUrl
+                            window.location.href = data.payUrl;
+                        } else {
+                            alert('Lỗi: ' + data.message);
+                            momoButton.disabled = false;
+                            momoButton.innerHTML = "Thanh toán MoMo";
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Lỗi Fetch:", error);
+                        alert("Không thể kết nối đến MoMo. Vui lòng thử lại.");
+                        momoButton.disabled = false;
+                        momoButton.innerHTML = "Thanh toán MoMo";
+                    });
+            });
+        }
+    });
+</script>
+
+</body>
+</html>
 </body>
 </html>

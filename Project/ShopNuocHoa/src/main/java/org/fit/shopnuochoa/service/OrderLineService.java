@@ -30,7 +30,13 @@ public class OrderLineService {
     public Optional<OrderLine> findById(OrderLineId id) {
         return orderLineRepository.findById(id);
     }
-
+    /**
+     * Lấy tất cả chi tiết đơn hàng cho một Order ID cụ thể.
+     * Đây là hàm mà OrderController sẽ gọi để tạo Map.
+     */
+    public List<OrderLine> findAllByOrderId(Integer orderId) {
+        return orderLineRepository.findByOrderId(orderId);
+    }
     /**
      * Tạo một chi tiết đơn hàng mới.
      * @param orderLineDetails Đối tượng chứa thông tin số lượng, giá mua
