@@ -2,38 +2,42 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head th:replace="~{screen/customer/header:: html-head}">
-    <style>
-        /* CSS tùy chỉnh cho trang chủ */
-        .hero-banner {
-            /* Thay bằng ảnh banner của bạn */
-            background: url('https://kenperfume.com/wp-content/uploads/2025/10/20251004-151334.jpg.webp') no-repeat center center;
-            background-size: cover;
-            height: 400px; /* Điều chỉnh chiều cao banner */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-        .brand-logo-card { /* Style từ brand-list.html */
-            background-color: #fff; border: 1px solid #e9ecef; border-radius: 8px;
-            padding: 20px; display: flex; align-items: center; justify-content: center;
-            height: 120px; transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .brand-logo-card:hover { transform: translateY(-5px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .brand-logo-card img { max-width: 100%; max-height: 80%; object-fit: contain; }
-        .product-card .card-title a { font-size: 0.95rem; }
-        .product-card .card-text { font-size: 1.1rem; }
-        .section-title { margin-bottom: 30px; }
-
-        /* CSS Animation HOT */
-        .hot-fire { /* ... Dán CSS animation HOT vào đây ... */ }
-        @keyframes fireUp { /* ... */ }
-        @keyframes pulseHot { /* ... */ }
-        .card { position: relative; overflow: hidden; }
-
-    </style>
-
+<!--    <style>-->
+<!--        .brand-logo-card {-->
+<!--            display: flex;-->
+<!--            align-items: center;-->
+<!--            justify-content: center;-->
+<!--            height: 150px;-->
+<!--            background-color: #fff;-->
+<!--            border: 1px solid #e9ecef;-->
+<!--            border-radius: 8px;-->
+<!--            padding: 20px;-->
+<!--            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;-->
+<!--            text-decoration: none;-->
+<!--        }-->
+<!--        .brand-logo-card:hover {-->
+<!--            transform: translateY(-5px);-->
+<!--            box-shadow: 0 4px 15px rgba(0,0,0,0.1);-->
+<!--        }-->
+<!--        .brand-logo-card img {-->
+<!--            max-width: 100%;-->
+<!--            max-height: 100%;-->
+<!--            object-fit: contain;-->
+<!--        }-->
+<!--        .product-card {-->
+<!--            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;-->
+<!--        }-->
+<!--        .product-card:hover {-->
+<!--            transform: translateY(-5px);-->
+<!--            box-shadow: 0 4px 15px rgba(0,0,0,0.1);-->
+<!--        }-->
+<!--        .hot-fire {-->
+<!--            position: absolute; top: 10px; right: 10px;-->
+<!--            background: #FF5722; color: white;-->
+<!--            padding: 3px 8px; font-size: 0.8rem;-->
+<!--            border-radius: 5px; font-weight: bold; z-index: 10;-->
+<!--        }-->
+<!--    </style>-->
 </head>
 
 <body class="d-flex flex-column min-vh-100 bg-light">
@@ -47,12 +51,11 @@
         <section class="mb-5">
             <h2 class="text-center section-title fw-bold">Thương Hiệu Nổi Bật</h2>
             <div class="row row-cols-3 row-cols-md-4 row-cols-lg-6 g-3">
-                <div class="col" th:each="category : ${featuredCategories}"> <a th:href="@{/api/products/list(categoryId=${category.id})}" class="text-decoration-none">
-                    <div class="brand-logo-card">
-                        <img th:src="${category.imageUrl ?: 'https://via.placeholder.com/150x80?text=' + category.name}"
+                <div class="col" th:each="category : ${featuredCategories}">
+                    <a th:href="@{/api/products/list(categoryId=${category.id})}" class="brand-logo-card">
+                        <img th:src="${category.imgURL != null ? category.imgURL : 'https://via.placeholder.com/150x80?text=' + category.name}"
                              th:alt="${category.name}">
-                    </div>
-                </a>
+                    </a>
                 </div>
             </div>
         </section>
@@ -60,22 +63,27 @@
         <section class="mb-5">
             <h2 class="text-center section-title fw-bold">Sản Phẩm Mới Nhất</h2>
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-                <div class="col" th:each="product : ${newProducts}"> <div class="card h-100 shadow-sm border-0 product-card">
-                    <div th:if="${product.inStock}" class="hot-fire">NEW ✨</div> <a th:href="@{/api/products/detail/{id}(id=${product.id})}">
-                    <img src="https://via.placeholder.com/300x200?text=Product+Image" class="card-img-top" th:alt="${product.name}">
-                </a>
-                    <div class="card-body d-flex flex-column">
-                        <h5 class="card-title">
-                            <a th:href="@{/api/products/detail/{id}(id=${product.id})}" class="text-dark text-decoration-none stretched-link" th:text="${product.name}"></a>
-                        </h5>
-                        <p class="card-text text-danger fw-bold mt-auto mb-2" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></p>
-                        <form th:action="@{/api/cart}" method="post" th:if="${product.inStock}">
-                            <input type="hidden" name="action" value="add"><input type="hidden" name="productId" th:value="${product.id}">
-                            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-cart-plus"></i> Thêm vào giỏ</button>
-                        </form>
-                        <div th:unless="${product.inStock}" class="mt-2"><span class="badge bg-secondary w-100 p-2">Hết hàng</span></div>
+                <div class="col" th:each="product : ${newProducts}">
+                    <div class="card h-100 shadow-sm border-0 product-card">
+                        <div th:if="${product.hotTrend}" class="hot-fire">NEW ✨</div>
+                        <a th:href="@{/api/products/detail/{id}(id=${product.id})}">
+
+                            <img th:src="${product.imageUrl != null ? product.imageUrl : 'https://via.placeholder.com/300x200?text=No+Image'}"
+                                 class="card-img-top" th:alt="${product.name}">
+                        </a>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">
+                                <a th:href="@{/api/products/detail/{id}(id=${product.id})}" class="text-dark text-decoration-none stretched-link" th:text="${product.name}"></a>
+                            </h5>
+                            <p class="card-text text-danger fw-bold mt-auto mb-2" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></p>
+
+                            <form th:action="@{/api/cart}" method="post" th:if="${product.isInStock()}">
+                                <input type="hidden" name="action" value="add"><input type="hidden" name="productId" th:value="${product.id}">
+                                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-cart-plus"></i> Thêm vào giỏ</button>
+                            </form>
+                            <div th:unless="${product.isInStock()}" class="mt-2"><span class="badge bg-secondary w-100 p-2">Hết hàng</span></div>
+                        </div>
                     </div>
-                </div>
                 </div>
             </div>
         </section>
@@ -83,27 +91,33 @@
         <section>
             <h2 class="text-center section-title fw-bold">Sản Phẩm Bán Chạy</h2>
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-                <div class="col" th:each="product : ${bestSellingProducts}"> <div class="card h-100 shadow-sm border-0 product-card">
-                    <div th:if="${product.inStock}" class="hot-fire">HOT 🔥</div> <a th:href="@{/api/products/detail/{id}(id=${product.id})}">
-                    <img src="https://via.placeholder.com/300x200?text=Product+Image" class="card-img-top" th:alt="${product.name}">
-                </a>
-                    <div class="card-body d-flex flex-column">
-                        <h5 class="card-title">
-                            <a th:href="@{/api/products/detail/{id}(id=${product.id})}" class="text-dark text-decoration-none stretched-link" th:text="${product.name}"></a>
-                        </h5>
-                        <p class="card-text text-danger fw-bold mt-auto mb-2" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></p>
-                        <form th:action="@{/api/cart}" method="post" th:if="${product.inStock}">
-                            <input type="hidden" name="action" value="add"><input type="hidden" name="productId" th:value="${product.id}">
-                            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-cart-plus"></i> Thêm vào giỏ</button>
-                        </form>
-                        <div th:unless="${product.inStock}" class="mt-2"><span class="badge bg-secondary w-100 p-2">Hết hàng</span></div>
+                <div class="col" th:each="product : ${bestSellingProducts}">
+                    <div class="card h-100 shadow-sm border-0 product-card">
+                        <div th:if="${product.hotTrend}" class="hot-fire">HOT 🔥</div>
+                        <a th:href="@{/api/products/detail/{id}(id=${product.id})}">
+
+                            <img th:src="${product.imageUrl != null ? product.imageUrl : 'https://via.placeholder.com/300x200?text=No+Image'}"
+                                 class="card-img-top" th:alt="${product.name}">
+                        </a>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">
+                                <a th:href="@{/api/products/detail/{id}(id=${product.id})}" class="text-dark text-decoration-none stretched-link" th:text="${product.name}"></a>
+                            </h5>
+                            <p class="card-text text-danger fw-bold mt-auto mb-2" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></p>
+
+                            <form th:action="@{/api/cart}" method="post" th:if="${product.isInStock()}">
+                                <input type="hidden" name="action" value="add"><input type="hidden" name="productId" th:value="${product.id}">
+                                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-cart-plus"></i> Thêm vào giỏ</button>
+                            </form>
+                            <div th:unless="${product.isInStock()}" class="mt-2"><span class="badge bg-secondary w-100 p-2">Hết hàng</span></div>
+                        </div>
                     </div>
-                </div>
                 </div>
             </div>
         </section>
 
-    </div> </main>
+    </div>
+</main>
 
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
 </body>

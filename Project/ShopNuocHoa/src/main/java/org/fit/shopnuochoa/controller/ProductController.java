@@ -54,72 +54,6 @@ public class ProductController {
         this.userService=userService;
     }
 
-    // ✅ Đúng
-//    @GetMapping("/list")
-//    public String showProductList(
-//            @RequestParam(value = "categoryId", required = false) Integer categoryId,
-//            @RequestParam(value = "price", required = false) Double salary,
-//            @RequestParam(value = "id", required = false) Integer id,
-//            @RequestParam(value = "action", required = false) String action,
-//            @RequestParam(value = "sort", required = false, defaultValue = "newest") String sort,
-//            @RequestParam(defaultValue = "0") int page,
-//            @RequestParam(defaultValue = "6") int size,
-//            Model model,
-//            Authentication authentication) {
-//
-//        List<Category> categories = categoryService.getAll();
-//
-//        // ✅ Sắp xếp theo lựa chọn
-//        Sort sortOption = switch (sort) {
-//            case "priceDesc" -> Sort.by("price").descending();
-//            case "priceAsc" -> Sort.by("price").ascending();
-//            case "bestseller" -> Sort.by("ratingCount").descending(); // giả sử ratingCount là lượt bán/đánh giá
-//            default -> Sort.by("id").descending(); // "newest"
-//        };
-//        Pageable pageable = PageRequest.of(page, size, sortOption);
-//        Page<Product> productPage;
-//
-//        if (action == null) action = "list";
-//
-//        switch (action) {
-//            case "list":
-//                if (categoryId != null && salary != null && salary > 0) {
-//                    productPage = productService.getProductsByCategoryWithPriceGreaterThan(categoryId, salary, pageable);
-//                } else if (categoryId != null) {
-//                    productPage = productService.getByCategory(categoryId, pageable);
-//                } else if (salary != null && salary > 0) {
-//                    productPage = productService.getByPrice(salary, pageable);
-//                } else {
-//                    productPage = productService.getAll(pageable);
-//                }
-//                break;
-//            case "delete":
-//                if (authentication != null && authentication.getAuthorities().stream()
-//                        .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"))) {
-//                    productService.deleteProduct(id);
-//                }
-//                productPage = productService.getAll(pageable);
-//                break;
-//            default:
-//                productPage = productService.getAll(pageable);
-//                break;
-//        }
-//
-//        model.addAttribute("categories", categories);
-//        model.addAttribute("categoryId", categoryId);
-//        model.addAttribute("price", salary);
-//        model.addAttribute("productPage", productPage);
-//        model.addAttribute("sort", sort);
-//
-//        if (authentication == null || !authentication.isAuthenticated()
-//                || authentication.getPrincipal().equals("anonymousUser")) {
-//            return "screen/customer/product-list";
-//        }
-//
-//        boolean isAdmin = authentication.getAuthorities().stream()
-//                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
-//        return isAdmin ? "screen/admin/admin-product-list" : "screen/customer/product-list";
-//    }
     @GetMapping("/list")
     public String showProductList(
             // Tất cả các tham số từ Form
@@ -181,64 +115,6 @@ public class ProductController {
                 .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
         return isAdmin ? "screen/admin/admin-product-list" : "screen/customer/product-list";
     }
-
-//    @GetMapping("/list/fragment") // LỖI 1: Sửa lại đường dẫn
-//    public String getProductFragment(
-//            @RequestParam(defaultValue = "0") int page,
-//            @RequestParam(defaultValue = "6") int size,
-//            @RequestParam(defaultValue = "newest") String sort,
-//            @RequestParam(value = "categoryId", required = false) Integer categoryId,
-//            @RequestParam(value = "price", required = false) Double price, // Đổi tên 'salary' thành 'price'
-//            @RequestParam(value = "action", required = false) String action,
-//            Model model) {
-//
-//        // LỖI 2: TẠO ĐỐI TƯỢNG SORT
-//        Sort sortCriteria;
-//        switch (sort) {
-//            case "priceAsc":
-//                sortCriteria = Sort.by("price").ascending(); // Giả sử tên cột là 'price'
-//                break;
-//            case "priceDesc":
-//                sortCriteria = Sort.by("price").descending();
-//                break;
-//            case "bestseller":
-//                // (Bạn cần có một cột như 'soldCount' hoặc 'viewCount' để sắp xếp)
-//                sortCriteria = Sort.by("ratingCount").descending();
-//                break;
-////            case "newest":
-//            default:
-//                // (Bạn cần có một cột như 'createdAt' hoặc 'id')
-//                sortCriteria = Sort.by("id").descending();
-//                break;
-//        }
-//
-//        // Đưa 'sortCriteria' vào PageRequest
-//        Pageable pageable = PageRequest.of(page, size, sortCriteria);
-//        Page<Product> productPage;
-//
-//        if (action == null) action = "list";
-//
-//        // (Tôi giữ nguyên logic lọc của bạn)
-//        switch (action) {
-//            case "list":
-//                if (categoryId != null && price != null && price > 0) {
-//                    productPage = productService.getProductsByCategoryWithPriceGreaterThan(categoryId, price, pageable);
-//                } else if (categoryId != null) {
-//                    productPage = productService.getByCategory(categoryId, pageable);
-//                } else if (price != null && price > 0) {
-//                    productPage = productService.getByPrice(price, pageable);
-//                } else {
-//                    productPage = productService.getAll(pageable);
-//                }
-//                break;
-//            default:
-//                productPage = productService.getAll(pageable);
-//                break;
-//        }
-//
-//        model.addAttribute("productPage", productPage);
-//        return "fragment/product-ajax :: ajaxUpdate";
-//    }
 
     /**
      * [CẬP NHẬT]

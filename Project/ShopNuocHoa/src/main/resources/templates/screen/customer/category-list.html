@@ -1,36 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{screen/customer/header :: html-head}">
-    <style>
-        /* CSS tùy chỉnh cho trang thương hiệu */
-        .brand-intro {
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 8px;
-            margin-bottom: 40px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .brand-logo-card {
-            background-color: #fff;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 150px; /* Chiều cao cố định cho card logo */
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        }
-        .brand-logo-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .brand-logo-card img {
-            max-width: 100%;
-            max-height: 80%; /* Giới hạn chiều cao logo */
-            object-fit: contain; /* Đảm bảo logo không bị méo */
-        }
-    </style>
 </head>
 
 <body class="d-flex flex-column min-vh-100 bg-light">
@@ -48,19 +18,15 @@
     <h2 class="text-center mb-4 fw-bold">Thương hiệu nổi bật</h2>
 
     <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-4">
+
         <div class="col" th:each="category : ${categories}">
-            <!--            th:href="@{/api/products/list(categoryId=${category.id})}-->
-            <a href="#" class="text-decoration-none">
-                <div class="brand-logo-card">
-                    <!--                    <img th:src="${category.imageUrl ?: 'https://via.placeholder.com/150x80?text=' + category.name}"-->
-                    <!--                         th:alt="${category.name}">-->
-                    <img  src="https://via.placeholder.com/300x200?text=Product+Image"
-                          th:alt="${category.name}">
-                </div>
+            <a th:href="@{/api/products/list(categoryId=${category.id})}" class="brand-card">
+                <img th:src="${category.imgURL ?: 'https://via.placeholder.com/150x80?text=' + category.name}"
+                     th:alt="${category.name}">
             </a>
         </div>
-
-    </div> </main>
+    </div>
+</main>
 
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
 </body>
