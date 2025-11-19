@@ -41,6 +41,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/api/consultant/**") // Tắt CSRF cho API consultant chat
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/register",
@@ -48,6 +51,7 @@ public class SecurityConfig {
                                 "/api/products/**",
                                 "/api/products/detail/**",
                                 "/api/categories/**",
+                                "/api/consultant/**",
                                 "/api/images/**",
                                 "/css/**",
                                 "/js/**",
