@@ -6,10 +6,21 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --text-dark: #1f2937;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --shadow-md: 0 4px 14px rgba(0,0,0,0.05);
+        }
+
         body {
-            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            background: #f8fafc;
             font-family: "Inter", sans-serif;
-            color: #333;
+            color: var(--text-dark);
         }
 
         .page-container {
@@ -30,7 +41,7 @@
             background: white;
             border-radius: 16px;
             padding: 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--shadow-md);
             position: sticky;
             top: 20px;
             height: fit-content;
@@ -40,16 +51,15 @@
             font-size: 18px;
             font-weight: 700;
             margin-bottom: 12px;
-            color: #2c3e50;
+            color: var(--text-dark);
         }
 
         .filter-box label {
             font-size: 14px;
             font-weight: 500;
-            color: #555;
+            color: var(--text-muted);
         }
 
-        /* Ô tìm kiếm */
         .search-box {
             background: white;
             border-radius: 40px;
@@ -66,24 +76,19 @@
             border-radius: 40px;
         }
 
-        .search-box input.form-control:focus {
-            border: none !important;
-            outline: none !important;
-            box-shadow: none !important;
-        }
-
         .search-box .btn {
             border-radius: 40px;
             padding: 8px 24px;
-            background: linear-gradient(90deg, #ee4d2d, #ff7b54);
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
             border: none;
+            color: white;
+            font-weight: 600;
         }
 
         .search-box .btn:hover {
-            background: linear-gradient(90deg, #d84315, #ff6f3d);
+            background: linear-gradient(90deg, var(--primary-hover), #1e40af);
         }
 
-        /* Lưới sản phẩm */
         .product-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -93,7 +98,7 @@
         .product-card {
             background: white;
             border-radius: 16px;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--shadow-md);
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
@@ -105,13 +110,13 @@
 
         .product-card:hover {
             transform: translateY(-6px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
         }
 
         .product-name {
             font-size: 16px;
             font-weight: 600;
-            color: #1a1a1a;
+            color: var(--text-dark);
             line-height: 1.4;
             height: 44px;
             overflow: hidden;
@@ -120,19 +125,21 @@
 
         .product-category {
             font-size: 13px;
-            color: #888;
+            color: var(--text-muted);
             margin-bottom: 6px;
         }
 
         .product-price {
             font-size: 18px;
             font-weight: 700;
-            color: #ee4d2d;
+            background: linear-gradient(135deg, #f97316, #dc2626);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .buy-btn {
             margin-top: 10px;
-            background: linear-gradient(90deg, #ee4d2d, #ff7b54);
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
             border: none;
             color: white;
             font-size: 14px;
@@ -144,7 +151,29 @@
 
         .buy-btn:hover {
             transform: scale(1.03);
-            background: linear-gradient(90deg, #d84315, #ff6f3d);
+            background: linear-gradient(90deg, var(--primary-hover), #1e40af);
+        }
+
+        /* Stock badge */
+        .stock-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            margin-top: 6px;
+        }
+
+        .stock-badge.in-stock {
+            background: linear-gradient(135deg, var(--success-color), #059669);
+            color: white;
+        }
+
+        .stock-badge.out-of-stock {
+            background: linear-gradient(135deg, var(--danger-color), #dc2626);
+            color: white;
         }
 
         .filter-toggle {
@@ -153,18 +182,17 @@
         }
 
         @media (max-width: 992px) {
-            .filter-box {
-                display: none;
-            }
-
-            .filter-toggle {
-                display: block;
-            }
+            .filter-box { display: none; }
+            .filter-toggle { display: block; }
         }
     </style>
 </head>
 
 <body>
+
+<!-- HEADER -->
+<div th:replace="~{screen/customer/header:: main-header}"></div>
+
 <div class="container">
 
     <!-- Thanh tìm kiếm -->
@@ -173,7 +201,7 @@
             <form th:action="@{/api/products/list}" method="get" class="search-box input-group">
                 <input type="text" class="form-control ps-3" name="keyword"
                        placeholder="🔍 Tìm sản phẩm bạn yêu thích..." th:value="${keyword}">
-                <button class="btn text-white fw-semibold" type="submit">Tìm kiếm</button>
+                <button class="btn" type="submit">Tìm kiếm</button>
             </form>
         </div>
     </div>
@@ -197,7 +225,8 @@
                 <input type="number" name="price" id="price" class="form-control"
                        placeholder="VD: 500000" th:value="${price}">
 
-                <button type="submit" class="btn btn-primary w-100 mt-3 rounded-pill">Lọc</button>
+                <button type="submit" class="btn w-100 mt-3 rounded-pill"
+                        style="background: var(--primary-color); color:white;">Lọc</button>
             </form>
         </div>
 
@@ -211,17 +240,17 @@
             <div class="product-grid">
                 <a th:href="@{/api/products/detail/{id}(id=${product.id})}" class="text-decoration-none text-dark" th:each="product : ${productPage}">
                     <div class="product-card">
-                        <!-- Hình ảnh giữ chỗ -->
                         <div class="product-image mb-2">
-                            <img src=https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ9XTM0DSMbH3yic8KUfHLapNVE2ZVpm4hSyw&s
+                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ9XTM0DSMbH3yic8KUfHLapNVE2ZVpm4hSyw&s"
                                  alt="Hình sản phẩm"
                                  style="width: 100%; height: 160px; object-fit: cover; border-radius: 12px;">
                         </div>
 
                         <div>
                             <div class="product-name" th:text="${product.name}"></div>
-                            <div class="product-category"
-                                 th:text="${product.category.name}"></div>
+                            <div class="product-category" th:text="${product.category.name}"></div>
+                            <span th:if="${product.inStock}" class="stock-badge in-stock">Còn hàng</span>
+                            <span th:unless="${product.inStock}" class="stock-badge out-of-stock">Hết hàng</span>
                         </div>
 
                         <div>
@@ -242,42 +271,33 @@
             <div class="mt-4 d-flex justify-content-center">
                 <nav th:if="${productPage.totalPages > 1}">
                     <ul class="pagination">
-                        <!-- Nút previous -->
                         <li class="page-item" th:classappend="${productPage.first} ? 'disabled'">
                             <a class="page-link" th:href="@{/api/products/list(page=${productPage.number-1}, size=${productPage.size}, categoryId=${categoryId}, price=${price})}">«</a>
                         </li>
-
-                        <!-- Các số trang -->
                         <li class="page-item" th:each="i : ${#numbers.sequence(0, productPage.totalPages-1)}"
                             th:classappend="${i == productPage.number} ? 'active'">
                             <a class="page-link" th:href="@{/api/products/list(page=${i}, size=${productPage.size}, categoryId=${categoryId}, price=${price})}"
                                th:text="${i+1}">1</a>
                         </li>
-
-                        <!-- Nút next -->
                         <li class="page-item" th:classappend="${productPage.last} ? 'disabled'">
                             <a class="page-link" th:href="@{/api/products/list(page=${productPage.number+1}, size=${productPage.size}, categoryId=${categoryId}, price=${price})}">»</a>
                         </li>
                     </ul>
                 </nav>
             </div>
-
-            <!-- Nút quay lại -->
-            <div th:if="${keyword}" class="text-center mt-4">
-                <a href="/api/products/list" class="btn btn-outline-secondary rounded-pill px-4">
-                    ⬅️ Quay lại danh sách
-                </a>
-            </div>
         </div>
     </div>
 </div>
+
+<!-- FOOTER -->
+<div th:replace="~{screen/customer/footer :: main-footer}"></div>
+<div th:replace="~{screen/customer/footer :: page-scripts}"></div>
 
 <script>
     function toggleFilter() {
         const box = document.getElementById("filterBox");
         box.style.display = (box.style.display === "block") ? "none" : "block";
     }
-
 </script>
 
 </body>
