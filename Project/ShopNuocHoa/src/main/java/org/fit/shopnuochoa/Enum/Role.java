@@ -1,4 +1,4 @@
-package org.fit.shopnuochoa.model;
+package org.fit.shopnuochoa.Enum;
 
 public enum Role {
     ADMIN,CUSTOMER

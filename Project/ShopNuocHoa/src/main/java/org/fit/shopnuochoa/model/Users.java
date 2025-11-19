@@ -2,6 +2,7 @@ package org.fit.shopnuochoa.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.fit.shopnuochoa.Enum.Role;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;

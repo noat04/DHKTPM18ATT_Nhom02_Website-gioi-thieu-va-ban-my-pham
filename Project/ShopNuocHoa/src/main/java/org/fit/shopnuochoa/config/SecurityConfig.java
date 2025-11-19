@@ -1,7 +1,8 @@
-package org.fit.shopnuochoa;
+package org.fit.shopnuochoa.config;
 
 import org.fit.shopnuochoa.component.CustomSuccessHandler;
 import org.fit.shopnuochoa.service.CustomUserDetailsService;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -41,18 +42,26 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                                .requestMatchers(
-                                        "/api/register",
-                                        "/api/login",
-                                        "/api/products/**",
-                                        "/api/categories/**",
-                                        "/api/images/**",
-                                        "/css/**",
-                                        "/js/**",
-                                        "/images/**"
-                                ).permitAll() // 👈 các trang công khai
-                                .requestMatchers("/api/cart/**", "/api/customers/**", "/api/orders/**").authenticated() // 👈 các trang cần login
-                                .anyRequest().permitAll()
+                        .requestMatchers(
+                                "/api/register",
+                                "/api/login",
+                                "/api/products/**",
+                                "/api/products/detail/**",
+                                "/api/categories/**",
+                                "/api/images/**",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**"
+                        ).permitAll() // 👈 các trang công khai
+                        .requestMatchers(
+                                "/api/cart/**",
+                                "/api/customers/**",
+                                "/api/orders/**",
+                                "/api/comments/add",
+                                "/api/comments/edit", // <-- [THÊM MỚI]
+                                "/api/comments/delete/**", // <-- [THÊM MỚI]
+                                "/api/wishlist/toggle").authenticated() // 👈 các trang cần login
+                        .anyRequest().permitAll()
 
                 )
                 .formLogin(form -> form
@@ -73,3 +82,4 @@ public class SecurityConfig {
         return http.build();
     }
 }
+

@@ -21,6 +21,15 @@ public class Category {
     @Column(nullable = false, unique = true)
     private String name;
 
+    @Column(name = "country", length = 100)
+    private String country;
+
+    /**
+     * Ánh xạ tới cột 'imgURL' (VARCHAR(512))
+     */
+    @Column(name = "imgURL", length = 512)
+    private String imgURL;
+
     // Quan hệ 1-N: 1 Category có nhiều Product
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude

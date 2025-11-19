@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.support.SessionStatus;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Optional;
+
 @Controller
 @RequestMapping("/api")
 @SessionAttributes("loggedInUser")
@@ -97,4 +99,66 @@ public class UserController {
         return "screen/account-setting";
     }
 
+    // ==========================
+// 🔹 QUẢN LÝ TÀI KHOẢN (ADMIN)
+// ==========================
+    @GetMapping("/admin/users")
+    public String listAllUsers(Model model) {
+        model.addAttribute("users", userService.getAll());
+        return "screen/admin/admin-user-list";
+    }
+
+    // Xem chi tiết tài khoản (không hiển thị mật khẩu)
+    @GetMapping("/admin/users/{id}")
+    public String viewUserDetails(@PathVariable int id, Model model, RedirectAttributes redirectAttributes) {
+        Users user = userService.getUserById(id);
+        if (user == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy người dùng.");
+            return "redirect:/api/admin/users";
+        }
+        model.addAttribute("user", user);
+        return "screen/admin/admin-user-detail";
+    }
+
+    // Xóa tài khoản (chỉ khi chưa từng đặt hàng)
+    @PostMapping("/admin/users/delete/{id}")
+    public String deleteUser(@PathVariable int id, RedirectAttributes ra) {
+        try {
+            boolean deleted = userService.deleteUserById(id);
+            if (deleted) {
+                ra.addFlashAttribute("successMessage", "Xóa tài khoản thành công.");
+            } else {
+                ra.addFlashAttribute("errorMessage", "Tài khoản không tồn tại.");
+            }
+        } catch (IllegalStateException ex) {
+            ra.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/api/admin/users";
+    }
+
+    // Hiển thị form chỉnh sửa người dùng
+    @GetMapping("/admin/users/update/{id}")
+    public String showEditForm(@PathVariable int id, Model model, RedirectAttributes redirectAttributes) {
+        Users user = userService.getUserById(id);
+        if (user == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy người dùng!");
+            return "redirect:/api/admin/users";
+        }
+        model.addAttribute("user", user);
+        return "screen/admin/admin-user-edit"; // View đúng
+    }
+
+    // Cập nhật thông tin người dùng
+    @PostMapping("/admin/users/update/{id}")
+    public String updateUser(@PathVariable int id,
+                             @ModelAttribute("user") Users updatedUser,
+                             RedirectAttributes redirectAttributes) {
+        Optional<Users> updated = userService.updateUser(id, updatedUser);
+        if (updated.isPresent()) {
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật tài khoản thành công!");
+        } else {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không thể cập nhật tài khoản!");
+        }
+        return "redirect:/api/admin/users";
+    }
 }

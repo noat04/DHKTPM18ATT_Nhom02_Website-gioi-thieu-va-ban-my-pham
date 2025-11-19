@@ -1,92 +1,33 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{screen/customer/header :: html-head}"></head>
-<meta charset="UTF-8">
-<title>Danh sách Nhà sản xuất</title>
-<style>
-    table {
-        border-collapse: collapse;
-        width: 80%;
-        margin: 30px auto;
-        background-color: white;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    th, td {
-        border: 1px solid #ccc;
-        padding: 12px;
-        text-align: left;
-    }
-    th {
-        background-color: #f2f2f2;
-    }
-    .btn {
-        text-decoration: none;
-        background-color: #3498db;
-        color: white;
-        border: none;
-        padding: 8px 15px;
-        border-radius: 6px;
-        cursor: pointer;
-        display: inline-block;
-    }
-    .btn:hover {
-        opacity: 0.9;
-    }
-    .action-buttons {
-        display: flex;
-        gap: 5px;
-    }
-</style>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{screen/customer/header :: html-head}">
 </head>
-<div th:replace="~{screen/customer/header:: main-header}"></div>
-<body >
-<div>
-    <h2 style="text-align:center;">Danh sách nhà sản xuất</h2>
-<!--    <div style="text-align:center;">-->
-<!--        <a th:href="@{/api/categories/form(action='add')}" class="btn">-->
-<!--            + Thêm phòng ban mới-->
-<!--        </a>-->
-<!--    </div>-->
 
+<body class="d-flex flex-column min-vh-100 bg-light">
+<div th:replace="~{screen/customer/header :: main-header}"></div>
 
-    <table>
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Tên Nhà sản xuất</th>
-            <th>Thao tác</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="ca : ${categories}">
-            <td th:text="${ca.id}">1</td>
-            <td th:text="${ca.name}">Tên nhà sản xuất</td>
-            <td>
-                <div class="action-buttons">
-<!--                    <a class="btn"-->
-<!--                       th:href="@{/api/categories/form(action='edit', id=${ca.id})}">-->
-<!--                        ✏️ Sửa-->
-<!--                    </a>-->
+<main class="container my-5">
 
-<!--                    <button class="btn"-->
-<!--                            style="background-color: #e74c3c;"-->
-<!--                            th:onclick="'if(confirm(\'Bạn có chắc muốn xóa phòng ban này?\')) window.location.href=\'' + @{/api/categories/list(action='delete', id=${ca.id})} + '\''">-->
-<!--                        🗑️ Xóa-->
-<!--                    </button>-->
+    <div class="brand-intro text-center">
+        <h1 class="display-5 fw-bold mb-3">Thương Hiệu</h1>
+        <p class="lead text-muted">
+            Ngày nay, công nghệ phát triển, mùi hương là một phần không thể thiếu giúp các chị em phụ nữ trở nên tự tin hơn. Nước hoa chính hãng là người bạn mang lại sự tự tin, phong cách và cá tính cho người sử dụng. Vậy bạn đã tìm thấy cho mình mùi hương nào phù hợp chưa? Cùng <span class="text-primary fw-bold">Ken Perfume</span> tìm hiểu và lựa chọn cho mình một <span class="text-primary fw-bold">thương hiệu nước hoa</span> bạn yêu thích nhất nhé!
+        </p>
+    </div>
 
+    <h2 class="text-center mb-4 fw-bold">Thương hiệu nổi bật</h2>
 
-                    <!--                    <a class="btn"-->
-                    <!--                       style="background-color: #6a442b;color: white"-->
-                    <!--                       th:href="@{/api/employees/list(action='list', departmentId=${dept.id})}">-->
-                    <!--                        Employees-->
-                    <!--                    </a>-->
-                </div>
-            </td>
-        </tr>
-        </tbody>
-    </table>
-</div>
+    <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-4">
 
-</body>
+        <div class="col" th:each="category : ${categories}">
+            <a th:href="@{/api/products/list(categoryId=${category.id})}" class="brand-card">
+                <img th:src="${category.imgURL ?: 'https://via.placeholder.com/150x80?text=' + category.name}"
+                     th:alt="${category.name}">
+            </a>
+        </div>
+    </div>
+</main>
+
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
+</body>
 </html>

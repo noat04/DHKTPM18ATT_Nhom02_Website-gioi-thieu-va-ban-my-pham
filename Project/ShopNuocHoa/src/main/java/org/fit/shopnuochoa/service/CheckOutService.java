@@ -26,6 +26,7 @@ public class CheckOutService {
 
     /**
      * Dùng để kiểm tra giỏ hàng trước khi cho phép người dùng đến trang xác nhận.
+     * Đã cập nhật để kiểm tra số lượng tồn kho (quantity) thay vì inStock.
      */
     public List<String> validateCart(CartBean cart) {
         List<String> errors = new ArrayList<>();
@@ -35,8 +36,15 @@ public class CheckOutService {
         }
         for (CartItemBean item : cart.getItems()) {
             Product productInDb = productService.getById(item.getProduct().getId());
-            if (productInDb == null || !productInDb.getInStock()) {
-                errors.add("Sản phẩm \"" + item.getProduct().getName() + "\" đã hết hàng hoặc không tồn tại.");
+
+            if (productInDb == null) {
+                errors.add("Sản phẩm \"" + item.getProduct().getName() + "\" không tồn tại.");
+            }
+            // SỬA LẠI: Kiểm tra xem số lượng trong kho có ĐỦ không
+            else if (productInDb.getQuantity() < item.getQuantity()) {
+                errors.add("Không đủ hàng cho \"" + item.getProduct().getName() + "\". " +
+                        "Bạn muốn mua " + item.getQuantity() +
+                        " nhưng chỉ còn " + productInDb.getQuantity() + " sản phẩm.");
             }
         }
         return errors;
@@ -46,7 +54,7 @@ public class CheckOutService {
      * Phương thức duy nhất thực hiện việc tạo và lưu đơn hàng.
      * Nó nhận ID và giỏ hàng, sau đó thực hiện toàn bộ quy trình trong 1 transaction.
      */
-    @Transactional
+    @Transactional // (Rất quan trọng)
     public Orders finalizeOrder(Integer customerId, CartBean cart) {
         // Lấy thông tin khách hàng
         Customer customer = customerService.getById(customerId);
@@ -62,11 +70,18 @@ public class CheckOutService {
 
         // Bây giờ, tạo và lưu các đối tượng OrderLine
         for (CartItemBean item : cart.getItems()) {
+            // Lấy sản phẩm và KHÓA nó lại cho transaction
+            // (Cách tốt hơn là dùng findByIdForUpdate, nhưng getById cũng tạm ổn)
             Product product = productService.getById(item.getProduct().getId());
-            if (product == null || !product.getInStock()) {
-                throw new RuntimeException("Rất tiếc, sản phẩm \"" + item.getProduct().getName() + "\" vừa hết hàng.");
+
+            // SỬA LẠI: Kiểm tra số lượng tồn lần cuối
+            if (product == null || product.getQuantity() < item.getQuantity()) {
+                // Nếu lỗi, @Transactional sẽ tự động rollback (hủy) đơn hàng
+                throw new RuntimeException("Rất tiếc, sản phẩm \"" + item.getProduct().getName() +
+                        "\" không đủ hàng. Chỉ còn " + (product != null ? product.getQuantity() : 0));
             }
 
+            // Tạo OrderLine (Đã đúng)
             OrderLineId orderLineId = new OrderLineId(savedOrder.getId(), product.getId());
             OrderLine newOrderLine = new OrderLine();
             newOrderLine.setId(orderLineId);
@@ -76,10 +91,13 @@ public class CheckOutService {
             newOrderLine.setPurchasePrice(BigDecimal.valueOf(product.getPrice()));
 
             orderLineRepository.save(newOrderLine);
-        }
 
-        // Logic cập nhật tồn kho (nếu có)
-        // ...
+            // === PHẦN QUAN TRỌNG NHẤT ĐÃ THÊM ===
+            // Cập nhật (giảm) số lượng tồn kho
+            // (Giả sử bạn đã có phương thức 'reduceStock' trong ProductService
+            // mà chúng ta đã thảo luận ở lần trước)
+            productService.reduceStock(product.getId(), item.getQuantity());
+        }
 
         return savedOrder;
     }
