@@ -1,5 +1,6 @@
 package org.fit.shopnuochoa.controller.PaymentController;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession; // <-- Import
 import org.fit.shopnuochoa.service.PaymentService.VnpayService;
 import org.springframework.stereotype.Controller;
@@ -25,7 +26,8 @@ public class VnpayController {
     @GetMapping("/create-payment")
     public RedirectView createPayment(
             @RequestParam("amount") String amount,
-            HttpSession session // <-- Thêm session
+            HttpSession session, // <-- Thêm session
+            HttpServletRequest request // <-- Thêm tham số này
     ) {
 
         // Kiểm tra xem giỏ hàng và customerId có trong session không
@@ -38,7 +40,8 @@ public class VnpayController {
         paymentRequest.setAmount(amount);
 
         try {
-            String paymentUrl = vnpayService.createPayment(paymentRequest);
+            String paymentUrl = vnpayService.createPayment(paymentRequest, request);
+//            String paymentUrl = vnpayService.createPayment(paymentRequest);
             return new RedirectView(paymentUrl);
 
         } catch (UnsupportedEncodingException e) {

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
 <head th:replace="~{screen/customer/header :: html-head}"></head>
 
 <body class="d-flex flex-column min-vh-100 bg-light">
@@ -106,41 +106,62 @@
 
     <div class="card shadow-sm mt-5">
         <div class="card-header">
-            <h3>Sản phẩm tương tự</h3>
+            <h3 class="fw-bold">Cùng thương hiệu</h3>
         </div>
         <div class="card-body">
-            <div th:replace="~{fragment/product-with-category :: product-list}"></div>
+            <div th:replace="~{fragment/product-list-carousel :: product-list(similarProducts=${similarProducts}, carouselId='similarProductsCarousel')}"></div>
         </div>
     </div>
 
-    <div class="card shadow-sm mt-5">
-        <div class="card-header">
-            <h3>Bình luận sản phẩm</h3>
+    <div class="card shadow-sm mt-5 border-0" style="border-radius: 15px;">
+        <div class="card-header bg-white border-0 pt-4 pb-0">
+            <h3 class="fw-bold"><i class="bi bi-chat-quote-fill me-2"></i>Đánh giá sản phẩm</h3>
         </div>
-        <div class="card-body">
-            <form th:action="@{/api/comments/add}" method="post" class="mb-4">
-                <input type="hidden" name="productId" th:value="${product.id}">
 
-                <div class="mb-3">
-                    <label class="form-label">Đánh giá:</label>
-                    <select name="rating" class="form-select w-auto d-inline-block">
-                        <option value="5">⭐⭐⭐⭐⭐</option>
-                        <option value="4">⭐⭐⭐⭐</option>
-                        <option value="3">⭐⭐⭐</option>
-                        <option value="2">⭐⭐</option>
-                        <option value="1">⭐</option>
-                    </select>
-                </div>
+        <div class="card-body p-4">
 
-                <div class="mb-3">
-                    <textarea name="text" class="form-control" rows="3" placeholder="Nhập bình luận..."></textarea>
-                </div>
+            <div sec:authorize="isAuthenticated()">
+                <form th:action="@{/api/comments/add}" method="post" class="mb-4 p-4 bg-light rounded-3">
+                    <input type="hidden" name="productId" th:value="${product.id}">
 
-                <button type="submit" class="btn btn-primary">Gửi bình luận</button>
-            </form>
+                    <div class="mb-3 text-center">
+                        <label class="form-label fw-bold d-block mb-2">Bạn cảm thấy sản phẩm thế nào?</label>
+                        <div class="rating-input d-flex flex-row-reverse justify-content-center gap-2">
+                            <input type="radio" id="star5" name="rating" value="5" required/><label for="star5" title="Tuyệt vời">★</label>
+                            <input type="radio" id="star4" name="rating" value="4" /><label for="star4" title="Tốt">★</label>
+                            <input type="radio" id="star3" name="rating" value="3" /><label for="star3" title="Bình thường">★</label>
+                            <input type="radio" id="star2" name="rating" value="2" /><label for="star2" title="Tệ">★</label>
+                            <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="Rất tệ">★</label>
+                        </div>
+                    </div>
 
+                    <div class="mb-3">
+                        <label for="commentText" class="form-label fw-bold">Chia sẻ cảm nhận của bạn:</label>
+                        <textarea name="text" id="commentText" class="form-control border-0 shadow-sm" rows="4"
+                                  placeholder="Hãy chia sẻ những điều bạn thích về sản phẩm này nhé..."
+                                  style="resize: none;" required></textarea>
+                    </div>
 
-            <div th:replace="~{fragment/comment-list-for-detail :: comment-list}"></div>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary px-4 rounded-pill fw-bold shadow-sm">
+                            <i class="bi bi-send-fill me-2"></i>Gửi Đánh Giá
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div sec:authorize="!isAuthenticated()" class="text-center py-5 bg-light rounded-3">
+                <i class="bi bi-person-lock fs-1 text-secondary mb-3 d-block"></i>
+                <h5 class="fw-bold text-dark">Bạn cần đăng nhập để đánh giá</h5>
+                <p class="text-muted mb-4">Vui lòng đăng nhập để chia sẻ trải nghiệm của bạn với cộng đồng.</p>
+                <a th:href="@{/api/login}" class="btn btn-outline-primary px-4 rounded-pill">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập ngay
+                </a>
+            </div>
+
+            <div class="mt-4">
+                <div th:replace="~{fragment/comment-list-for-detail :: comment-list}"></div>
+            </div>
         </div>
     </div>
 </main>
@@ -150,44 +171,70 @@
 <script>
     document.addEventListener("DOMContentLoaded", function () {
 
-        // Lắng nghe sự kiện click trên toàn bộ tài liệu
-        document.addEventListener("click", function(e) {
+        // --- XỬ LÝ CLICK (Sửa, Hủy, Xóa) ---
+        document.body.addEventListener("click", function(e) {
 
-            // 1. Xử lý khi nhấn nút "Sửa"
-            if (e.target.classList.contains('btn-edit-comment')) {
+            // 1. Nút SỬA (btn-edit-comment)
+            // Dùng .closest() để đảm bảo click vào icon bên trong nút vẫn nhận
+            const editBtn = e.target.closest('.btn-edit-comment');
+            if (editBtn) {
                 e.preventDefault();
-                const commentId = e.target.dataset.commentId;
+                const commentId = editBtn.dataset.commentId;
 
-                // [CẬP NHẬT] Ẩn các nút Sửa/Xóa
-                document.getElementById(`comment-actions-${commentId}`).style.display = 'none';
-                // "Xổ" form ra
-                document.getElementById(`comment-edit-form-${commentId}`).style.display = 'block';
+                console.log("Sửa comment:", commentId);
+
+                // Ẩn nhóm nút Sửa/Xóa
+                const actionsDiv = document.getElementById(`comment-actions-${commentId}`);
+                if (actionsDiv) actionsDiv.style.display = 'none';
+
+                // Hiện form Sửa
+                const editForm = document.getElementById(`comment-edit-form-${commentId}`);
+                if (editForm) editForm.style.display = 'block';
+
+                // Focus vào ô textarea để tiện nhập liệu
+                const textarea = editForm.querySelector('textarea');
+                if(textarea) textarea.focus();
+                return;
             }
 
-            // 2. Xử lý khi nhấn nút "Hủy"
-            if (e.target.classList.contains('btn-cancel-edit')) {
+            // 2. Nút HỦY (btn-cancel-edit)
+            const cancelBtn = e.target.closest('.btn-cancel-edit');
+            if (cancelBtn) {
                 e.preventDefault();
-                const commentId = e.target.dataset.commentId;
+                const commentId = cancelBtn.dataset.commentId;
 
-                // Ẩn form đi
-                document.getElementById(`comment-edit-form-${commentId}`).style.display = 'none';
-                // [CẬP NHẬT] Hiện lại các nút Sửa/Xóa
-                document.getElementById(`comment-actions-${commentId}`).style.display = 'block';
+                console.log("Hủy sửa comment:", commentId);
+
+                // Ẩn form Sửa
+                const editForm = document.getElementById(`comment-edit-form-${commentId}`);
+                if (editForm) editForm.style.display = 'none';
+
+                // Hiện lại nhóm nút Sửa/Xóa
+                const actionsDiv = document.getElementById(`comment-actions-${commentId}`);
+                if (actionsDiv) actionsDiv.style.display = 'block';
+                return;
             }
         });
 
-        // Lắng nghe sự kiện submit trên toàn bộ tài liệu
-        document.addEventListener("submit", function(e) {
+        // --- XỬ LÝ SUBMIT FORM (Lưu) ---
+        document.body.addEventListener("submit", function(e) {
 
-            // 3. Xử lý khi nhấn nút "Lưu" (Submit form)
+            // Chỉ xử lý form có class 'form-edit-comment'
             if (e.target.classList.contains('form-edit-comment')) {
-                e.preventDefault();
+                e.preventDefault(); // Ngăn submit mặc định
 
                 const form = e.target;
                 const formData = new FormData(form);
                 const commentId = formData.get('commentId');
                 const newText = formData.get('text');
 
+                // Hiệu ứng loading (tùy chọn)
+                const saveBtn = form.querySelector('.btn-save-comment');
+                const originalBtnText = saveBtn.innerHTML;
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang lưu...';
+
+                // Lấy CSRF Token
                 const csrfTokenEl = document.querySelector('form[method="post"] input[name="_csrf"]');
                 const headers = {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -196,7 +243,7 @@
                     headers['X-CSRF-TOKEN'] = csrfTokenEl.value;
                 }
 
-                // Gọi API /api/comments/edit
+                // Gọi API AJAX
                 fetch('/api/comments/edit', {
                     method: 'POST',
                     headers: headers,
@@ -207,32 +254,31 @@
                 })
                     .then(response => {
                         if (!response.ok) {
-                            return response.text().then(text => {
-                                throw new Error(text || 'Lỗi ' + response.status);
-                            });
+                            return response.text().then(text => { throw new Error(text || response.status); });
                         }
                         return response.json();
                     })
                     .then(updatedComment => {
-                        // Cập nhật lại text
+                        // Cập nhật giao diện
                         const textElement = document.getElementById(`comment-text-${commentId}`);
-                        if (textElement) {
-                            textElement.textContent = updatedComment.text;
-                        }
+                        if (textElement) textElement.textContent = updatedComment.text;
 
-                        // Ẩn form đi
+                        // Ẩn form, hiện nút
                         document.getElementById(`comment-edit-form-${commentId}`).style.display = 'none';
-                        // [CẬP NHẬT] Hiện lại các nút Sửa/Xóa
                         document.getElementById(`comment-actions-${commentId}`).style.display = 'block';
                     })
                     .catch(error => {
-                        console.error("Lỗi khi sửa bình luận:", error);
-                        alert("Lỗi: " + error.message);
-                        // [CẬP NHẬT] Nếu lỗi, cũng hiện lại nút (có thể tùy chọn)
-                        document.getElementById(`comment-actions-${commentId}`).style.display = 'block';
+                        console.error("Lỗi:", error);
+                        alert("Không thể lưu bình luận: " + error.message);
+                    })
+                    .finally(() => {
+                        // Trả lại trạng thái nút
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = originalBtnText;
                     });
             }
         });
+
     });
 </script>
 </body>

@@ -3,74 +3,92 @@
 <body>
 
 <div th:fragment="comment-list">
-    <hr>
-    <h4 class="mb-3">Các bình luận đã có:</h4>
 
-    <div th:if="${commentPage == null or commentPage.empty}">
-        <p class="text-muted">Chưa có bình luận nào cho sản phẩm này.</p>
+    <div class="d-flex align-items-center mb-4">
+        <h4 class="fw-bold mb-0">Đánh giá từ khách hàng</h4>
+        <span class="badge bg-light text-dark ms-2 border"
+              th:text="${commentPage != null ? commentPage.totalElements + ' bình luận' : '0 bình luận'}"></span>
     </div>
 
-    <div th:if="${commentPage != null and !commentPage.empty}">
-        <div th:each="comment, iterStat : ${commentPage.content}">
-            <div class="d-flex mb-3">
-                <div class="flex-shrink-0">
-                    <i class="bi bi-person-circle" style="font-size: 2.5rem; color: #6c757d;"></i>
+    <div th:if="${commentPage == null}" class="text-center py-5 text-muted bg-white rounded shadow-sm">
+        <i class="bi bi-chat-square-text fs-1 d-block mb-2"></i>
+        <p>Chưa có đánh giá nào. Hãy là người đầu tiên!</p>
+    </div>
+
+    <div th:if="${commentPage != null}">
+        <div th:each="comment : ${commentPage.content}" class="comment-card">
+
+            <div class="d-flex">
+                <div class="avatar-initials me-3">
+                    <span th:text="${comment.customer != null ? #strings.substring(comment.customer.name, 0, 1) : '?'}">A</span>
                 </div>
-                <div class="ms-3 w-100">
 
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class_="fw-bold mb-1" th:text="${comment.customer != null ? comment.customer.name : 'Người dùng ẩn danh'}"></h6>
-                        <small class="text-muted" th:if="${comment.createdAt != null}" th:text="${#temporals.format(comment.createdAt, 'dd-MM-yyyy HH:mm')}"></small>
-                    </div>
-                    <div class="mb-1" th:if="${comment.rating > 0}">
-                        <span th:each="i : ${#numbers.sequence(1, 5)}" th:classappend="${i <= comment.rating} ? 'text-warning' : 'text-muted'" class="fs-5" style="letter-spacing: -3px;">★</span>
-                    </div>
+                <div class="flex-grow-1">
+                    <div class="comment-header">
+                        <div>
+                            <div class="comment-author"
+                                 th:text="${comment.customer != null ? comment.customer.name : 'Người dùng ẩn danh'}"></div>
 
-                    <p th:id="'comment-text-' + ${comment.id}" th:text="${comment.text}">Nội dung bình luận ở đây.</p>
-
-                    <div class="comment-actions mt-2"
-                         th:id="'comment-actions-' + ${comment.id}"
-                         th:if="${loggedInCustomerId != null and comment.customer != null and loggedInCustomerId == comment.customer.id}">
-
-                        <button type="button" class="btn btn-sm btn-outline-secondary me-2 btn-edit-comment"
-                                th:data-comment-id="${comment.id}">Sửa</button>
-
-                        <form th:action="@{/api/comments/delete/{id}(id=${comment.id})}" method="post" class="d-inline"
-                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa bình luận này không?');">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
-                        </form>
-                    </div>
-
-                    <div th:id="'comment-edit-form-' + ${comment.id}" class="mt-3" style="display: none;">
-                        <form class="form-edit-comment">
-                            <input type="hidden" name="commentId" th:value="${comment.id}">
-                            <textarea name="text" class="form-control" rows="3" th:text="${comment.text}"></textarea>
-                            <div class="mt-2">
-                                <button type="submit" class="btn btn-sm btn-primary btn-save-comment">Lưu</button>
-                                <button type="button" class="btn btn-sm btn-light btn-cancel-edit"
-                                        th:data-comment-id="${comment.id}">Hủy</button>
+                            <div class="comment-date">
+                                <i class="bi bi-clock me-1"></i>
+                                <span th:if="${comment.createdAt != null}"
+                                      th:text="${#temporals.format(comment.createdAt, 'dd-MM-yyyy HH:mm')}"></span>
                             </div>
-                        </form>
+                        </div>
+
+                        <div class="comment-actions-hover"
+                             th:id="'comment-actions-' + ${comment.id}"
+                             th:if="${loggedInCustomerId != null and comment.customer != null and loggedInCustomerId == comment.customer.id}">
+
+                            <button type="button" class="btn btn-sm btn-outline-secondary me-2 btn-edit-comment"
+                                    th:data-comment-id="${comment.id}">
+                                <i class="bi bi-pencil-square fs-5"></i>
+                            </button>
+
+                            <a th:href="@{/api/comments/list(action='delete', id=${comment.id})}"
+                               class="btn btn-sm btn-outline-danger btn-delete-comment"
+                               onclick="return confirm('Bạn có chắc chắn muốn xóa không?');">
+                                <i class="bi bi-trash3 fs-5"></i>
+                            </a>
+
+                        </div>
+                    </div>
+
+                    <div class="comment-rating" th:if="${comment.rating > 0}">
+                        <span th:each="i : ${#numbers.sequence(1, 5)}"
+                              class="bi"
+                              th:classappend="${i <= comment.rating} ? 'bi-star-fill text-warning' : 'bi-star text-muted'"
+                              style="font-size: 0.9rem;"></span>
+                    </div>
+
+                    <div>
+                        <div class="comment-text"
+                             th:id="'comment-text-' + ${comment.id}"
+                             th:text="${comment.text}"></div>
+
+                        <div th:id="'comment-edit-form-' + ${comment.id}" class="mt-3" style="display: none;">
+                            <form class="form-edit-comment card p-3 bg-light border-0">
+                                <input type="hidden" name="commentId" th:value="${comment.id}">
+                                <div class="mb-2">
+                                    <textarea name="text" class="form-control border-0 shadow-none" rows="3"
+                                              style="resize: none;"
+                                              th:text="${comment.text}"></textarea>
+                                </div>
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-sm btn-light text-secondary btn-cancel-edit"
+                                            th:data-comment-id="${comment.id}">Hủy bỏ</button>
+                                    <button type="submit" class="btn btn-sm btn-primary px-3 btn-save-comment">Cập nhật</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
-            <hr th:if="${!iterStat.last}">
         </div>
     </div>
 
-<!--    <nav aria-label="Comment page navigation" th:if="${commentPage.totalPages > 1}">-->
-<!--        <ul class="pagination pagination-sm justify-content-center">-->
-<!--            <li class="page-item" th:classappend="${commentPage.first ? 'disabled' : ''}">-->
-<!--                <a class="page-link" th:href="@{/api/products/detail/{id}(id=${productId}, page=${commentPage.number - 1})}">Trước</a>-->
-<!--            </li>-->
-<!--            <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, commentPage.totalPages - 1)}" th:classappend="${pageNumber == commentPage.number ? 'active' : ''}">-->
-<!--                <a class="page-link" th:href="@{/api/products/detail/{id}(id=${productId}, page=${pageNumber})}" th:text="${pageNumber + 1}"></a>-->
-<!--            </li>-->
-<!--            <li class="page-item" th:classappend="${commentPage.last ? 'disabled' : ''}">-->
-<!--                <a class="page-link" th:href="@{/api/products/detail/{id}(id=${productId}, page=${commentPage.number + 1})}">Sau</a>-->
-<!--            </li>-->
-<!--        </ul>-->
-<!--    </nav>-->
+    <nav aria-label="Comment page navigation" th:if="${commentPage.totalPages > 1}" class="mt-4">
+    </nav>
 </div>
 
 </body>

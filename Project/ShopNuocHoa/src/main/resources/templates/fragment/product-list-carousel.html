@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="product-list(similarProducts, carouselId)">
+
+    <div th:if="${similarProducts != null and !similarProducts.isEmpty()}">
+
+        <div th:id="${carouselId}" class="carousel slide carousel-dark" data-bs-ride="carousel">
+            <div class="carousel-inner">
+
+                <th:block th:each="product, iterStat : ${similarProducts}">
+                    <div th:if="${iterStat.index % 4 == 0}"
+                         class="carousel-item"
+                         th:classappend="${iterStat.first ? 'active' : ''}">
+
+                        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                            <div class="col" th:each="i : ${#numbers.sequence(0, 3)}"
+                                 th:if="${iterStat.index + i < similarProducts.size()}">
+
+                                <div th:replace="~{fragment/product-card-fragment :: card(product=${similarProducts.get(iterStat.index + i)})}"></div>
+                            </div>
+                        </div>
+                    </div>
+                </th:block>
+            </div>
+
+            <button class="carousel-control-prev" type="button"
+                    th:attr="data-bs-target='#' + ${carouselId}" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button"
+                    th:attr="data-bs-target='#' + ${carouselId}" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
+    </div>
+
+    <div th:if="${similarProducts == null or similarProducts.isEmpty()}"
+         class="text-center py-5 bg-white rounded shadow-sm">
+        <div class="mb-3">
+            <i class="bi bi-box-seam" style="font-size: 3rem; color: #e9ecef;"></i>
+        </div>
+        <h5 class="text-muted fw-normal">Hiện chưa có sản phẩm tương tự nào.</h5>
+        <p class="text-secondary small">Vui lòng quay lại sau hoặc xem các danh mục khác.</p>
+    </div>
+</div>
+
+</body>
+</html>

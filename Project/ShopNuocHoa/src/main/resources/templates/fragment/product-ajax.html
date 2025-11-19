@@ -5,7 +5,15 @@
 <div th:fragment="ajaxUpdate">
 
     <div id="productListContainer">
-        <div th:replace="~{fragment/product-grid :: productGrid(products=${productPage.content})}"></div>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-3 g-4">
+            <div class="col" th:each="product : ${productPage.content}">
+                <div th:replace="~{fragment/product-card-fragment :: card(product=${product})}"></div>
+            </div>
+        </div>
+
+        <div th:if="${productPage.content.isEmpty()}" class="text-center alert alert-warning mt-4">
+            <p>Không tìm thấy sản phẩm nào phù hợp.</p>
+        </div>
     </div>
 
     <nav aria-label="Page navigation" th:if="${productPage != null and productPage.totalPages > 1}" class="mt-5">

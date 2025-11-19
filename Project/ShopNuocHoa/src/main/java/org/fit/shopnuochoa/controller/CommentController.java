@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Optional;
+
 @Controller
 @RequestMapping("/api/comments")
 public class CommentController {
@@ -40,19 +42,33 @@ public class CommentController {
                                   @RequestParam(value = "action", required = false) String action,
                                   @RequestParam(value = "id", required = false) Integer id,
                                   Model model) {
-        // Xử lý xóa
+
+        // [CẬP NHẬT] Xử lý xóa và chuyển hướng về trang sản phẩm
         if ("delete".equals(action) && id != null) {
-            commentService.deleteComment(id);
+            // 1. Gọi hàm xóa (hàm này trả về Optional<Comment> đã xóa)
+            Optional<Comment> deletedCommentOpt = commentService.deleteComment(id);
+
+            // 2. Nếu xóa thành công, lấy Product ID và chuyển hướng
+            if (deletedCommentOpt.isPresent()) {
+                Integer productId = deletedCommentOpt.get().getProduct().getId();
+                return "redirect:/api/products/detail/" + productId;
+            }
+
+            // 3. Nếu không tìm thấy comment (lỗi), quay về danh sách chung
             return "redirect:/api/comments/list";
         }
 
+        // ... (Phần hiển thị danh sách giữ nguyên)
         Pageable pageable = PageRequest.of(page, size);
         Page<Comment> commentPage = commentService.getAll(pageable);
-
         model.addAttribute("commentPage", commentPage);
-        return "screen/comment-list"; // View để hiển thị danh sách comment
-    }
 
+        // Lưu ý: Nếu đây là Admin Controller, bạn nên trả về trang Admin
+        // return "screen/admin/comment-list";
+
+        // Nếu bạn đang dùng hàm này cho cả Customer xem list (ít khi dùng), thì giữ nguyên:
+        return "screen/customer/product-detail";
+    }
     /**
      * Xử lý việc thêm bình luận mới từ trang chi tiết sản phẩm.
      */

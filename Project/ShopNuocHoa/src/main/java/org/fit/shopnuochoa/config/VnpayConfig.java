@@ -14,12 +14,27 @@ import java.util.Random;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
 
 public class VnpayConfig {
+    @Value("${app.public.url}")
+    private String NGROK_PUBLIC_URL;
+
+    public static String vnp_ReturnUrl;
 
     public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    public static String vnp_ReturnUrl = "http://localhost:8085/api/vnpayment/return";
+//    public static String vnp_ReturnUrl = "http://localhost:8085/api/vnpayment/return";
+
+    @PostConstruct
+    public void init() {
+        // Nối URL ngrok với endpoint trả về của VNPay
+        vnp_ReturnUrl = NGROK_PUBLIC_URL.trim() + "/api/vnpayment/return";
+
+        System.out.println("--- VNPay Config Initialized ---");
+        System.out.println("VNPay Return URL: " + vnp_ReturnUrl);
+    }
     // #vnpay
     public static String vnp_TmnCode = "JGV9MSIF";
     public static String secretKey = "E9QLQ1W7KCLQKQLE5522R5JNRR7WIV8I";

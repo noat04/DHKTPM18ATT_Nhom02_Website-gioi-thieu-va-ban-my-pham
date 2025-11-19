@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="card(product)" class="card h-100 shadow-sm border-0 product-card">
+
+    <div class="img-wrapper">
+
+        <div th:if="${product.hotTrend}" class="hot-fire">HOT</div>
+
+        <a th:href="@{/api/products/detail/{id}(id=${product.id})}">
+            <img th:src="${product.imageUrl != null ? product.imageUrl : 'https://via.placeholder.com/300x200?text=No+Image'}"
+                 class="card-img-top" th:alt="${product.name}">
+        </a>
+
+        <div class="action-overlay">
+            <form th:action="@{/api/cart}" method="post" th:if="${product.isInStock()}">
+                <input type="hidden" name="action" value="add">
+                <input type="hidden" name="productId" th:value="${product.id}">
+                <button type="submit" class="btn btn-primary btn-action">
+                    <i class="bi bi-cart-plus-fill"></i> Thêm
+                </button>
+            </form>
+
+            <a th:href="@{/api/products/detail/{id}(id=${product.id})}"
+               class="btn btn-outline-dark btn-action">
+                <i class="bi bi-eye-fill"></i> Xem
+            </a>
+
+            <span th:unless="${product.isInStock()}" class="badge bg-secondary p-2 align-self-center">
+                Hết hàng
+            </span>
+        </div>
+    </div>
+
+    <div class="card-body d-flex flex-column text-center pt-3">
+        <h6 class="card-title mb-1">
+            <a th:href="@{/api/products/detail/{id}(id=${product.id})}"
+               class="text-dark text-decoration-none stretched-link"
+               th:text="${product.name}"></a>
+        </h6>
+
+        <p class="card-text text-danger fw-bold mt-auto"
+           th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></p>
+    </div>
+</div>
+
+</body>
+</html>

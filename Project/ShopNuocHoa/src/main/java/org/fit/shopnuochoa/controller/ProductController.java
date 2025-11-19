@@ -157,7 +157,9 @@ public class ProductController {
         model.addAttribute("categoryId", categoryId);
         model.addAttribute("price", price);
         model.addAttribute("country", countries); // Thêm dòng này
-
+        model.addAttribute("gender", gender); // <-- QUAN TRỌNG
+        model.addAttribute("volume", volume); // <-- QUAN TRỌNG
+        model.addAttribute("rating", rating); // <-- QUAN TRỌNG
         // 4. Trả về fragment (Giữ nguyên)
         // (Hãy chắc chắn bạn có file /fragment/product-ajax.html
         // và nó chứa một fragment tên là 'ajaxUpdate')

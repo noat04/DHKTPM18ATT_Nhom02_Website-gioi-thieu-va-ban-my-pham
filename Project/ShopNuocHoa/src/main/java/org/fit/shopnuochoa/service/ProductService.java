@@ -206,23 +206,31 @@ public class ProductService {
         return avg != null ? avg : 0.0;
     }
 
+    // Trong file: ProductService.java
+
     @Transactional
     public void updateRatingStats(Integer productId) {
         // 1. Tìm sản phẩm
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm với ID: " + productId));
 
-        // 2. Gọi câu truy vấn JPQL hiệu quả (từ ProductRepository)
+        // 2. Gọi câu truy vấn JPQL
         RatingStats stats = productRepository.getRatingStatsByProductId(productId);
 
-        // 3. Cập nhật và lưu lại
+        // 3. [SỬA LỖI] Kiểm tra null an toàn
         if (stats != null) {
-            product.setAverageRating(stats.average());
-            product.setRatingCount(stats.count().intValue()); // Chuyển từ Long sang Integer
+            // Nếu average là null (do không có comment), gán bằng 0.0
+            double avg = stats.average() != null ? stats.average() : 0.0;
+
+            // Nếu count là null, gán bằng 0
+            int count = stats.count() != null ? stats.count().intValue() : 0;
+
+            product.setAverageRating(avg);
+            product.setRatingCount(count);
         } else {
-            // Xử lý trường hợp không có rating nào (hoặc lỗi)
+            // Trường hợp stats hoàn toàn null (hiếm gặp nhưng an toàn)
             product.setAverageRating(0.0);
-//            product.setRatingCount(0);
+            product.setRatingCount(0);
         }
 
         productRepository.save(product);
