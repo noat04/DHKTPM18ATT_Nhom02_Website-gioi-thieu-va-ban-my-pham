@@ -22,7 +22,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     long countByCategoryCountry(String categoryCountry);
 
-    List<Double> countProductByAverageRating(double averageRating);
+    List<Double> countProductByAverageRating(Double averageRating);
 
     Page<Product> findByPriceGreaterThan(Double price, Pageable pageable);
 

@@ -30,7 +30,7 @@ public class Product {
     private Double price;
 
     @Column(name = "average_rating")
-    private double averageRating = 0.0;
+    private Double averageRating = 0.0;
 //    private Boolean inStock;
 
     // 🟡 Mới thêm
