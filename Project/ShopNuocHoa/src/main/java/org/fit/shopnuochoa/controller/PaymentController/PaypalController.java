@@ -1,58 +1,82 @@
 package org.fit.shopnuochoa.controller.PaymentController;
 
-import com.paypal.api.payments.Payment;
 import com.paypal.base.rest.PayPalRESTException;
-import org.fit.shopnuochoa.dto.PaypalRequest;
+import jakarta.servlet.http.HttpSession;
+import org.fit.shopnuochoa.model.CartBean;
+import org.fit.shopnuochoa.model.Orders;
 import org.fit.shopnuochoa.service.PaymentService.PaypalService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-@RestController
+@Controller // Đổi từ @RestController sang @Controller để redirect trang web
 @RequestMapping("/api/paypal")
 public class PaypalController {
 
     @Autowired
     private PaypalService paypalService;
 
-    @PostMapping()
-    public ResponseEntity<String> createPayment(@RequestBody PaypalRequest paypalRequest) {
-        double amount = 0;
+    // 1. BẮT ĐẦU THANH TOÁN
+    @PostMapping("/pay")
+    public String createPayment(HttpSession session, RedirectAttributes redirectAttributes) {
+        CartBean cart = (CartBean) session.getAttribute("cart");
 
-        try {
-            amount = Double.parseDouble(paypalRequest.getTotal()) * 100.0;
-        } catch (NumberFormatException e) {
-            return ResponseEntity.badRequest().body("Số tiền không hợp lệ");
+        if (cart == null || cart.getTotal() <= 0) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Giỏ hàng trống!");
+            return "redirect:/api/cart";
         }
 
         try {
-            String approvalUrl = paypalService.createPayment(amount, paypalRequest.getCurrency(),
-                    "Payment for Order",
-                    "http://localhost:8080/api/paypal/cancel",
-                    "http://localhost:8080/api/paypal/success");
-            return ResponseEntity.ok(approvalUrl);
+            // Lấy tổng tiền VND từ giỏ hàng
+            double totalVND = cart.getTotal();
+
+            // Tạo link thanh toán PayPal
+            String approvalUrl = paypalService.createPayment(totalVND, "Thanh toan don hang ShopNuocHoa");
+
+            // Chuyển hướng người dùng sang trang PayPal
+            return "redirect:" + approvalUrl;
+
         } catch (PayPalRESTException e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error creating payment: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khởi tạo PayPal: " + e.getMessage());
+            return "redirect:/api/cart";
         }
     }
 
+    // 2. XỬ LÝ KHI KHÁCH THANH TOÁN THÀNH CÔNG (RETURN URL)
     @GetMapping("/success")
-    public ResponseEntity<String> success(@RequestParam("paymentId") String paymentId,
-                                          @RequestParam("PayerID") String payerId) {
+    public String success(@RequestParam("paymentId") String paymentId,
+                          @RequestParam("PayerID") String payerId,
+                          HttpSession session,
+                          RedirectAttributes redirectAttributes) {
         try {
-            Payment payment = paypalService.executePayment(paymentId, payerId);
-            return ResponseEntity.ok("Payment Success! Payment ID: " + payment.getId());
+            // Thực hiện trừ tiền và Lưu đơn hàng vào DB
+            Orders order = paypalService.executePaymentAndFinalizeOrder(paymentId, payerId, session);
+
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Thanh toán PayPal thành công! Mã đơn: #" + order.getId());
+
+            return "redirect:/api/checkout/success";
+
         } catch (PayPalRESTException e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Payment execution failed: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi xử lý thanh toán PayPal: " + e.getMessage());
+            return "redirect:/api/cart";
+        } catch (Exception e) {
+            e.printStackTrace();
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi lưu đơn hàng: " + e.getMessage());
+            return "redirect:/api/cart";
         }
     }
 
+    // 3. XỬ LÝ KHI KHÁCH HỦY (CANCEL URL)
     @GetMapping("/cancel")
-    public ResponseEntity<String> cancel() {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Payment was canceled");
+    public String cancel(RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("errorMessage", "Bạn đã hủy thanh toán PayPal.");
+        return "redirect:/api/cart";
     }
 }

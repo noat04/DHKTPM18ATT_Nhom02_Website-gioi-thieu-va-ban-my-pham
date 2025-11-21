@@ -30,6 +30,16 @@ public class Category {
     @Column(name = "imgURL", length = 512)
     private String imgURL;
 
+    @Transient
+    public String getImagePath() {
+        // 1. Nếu chưa có ảnh -> Trả về ảnh mặc định
+        if (imgURL == null || imgURL.isEmpty()) {
+            return "/images/default-product.jpg"; // Bạn nhớ tạo file này trong static/images
+        }
+        // 2. Nếu là ảnh Cloudinary (bắt đầu bằng http) hoặc đường dẫn hợp lệ -> Trả về nguyên gốc
+        return imgURL;
+    }
+
     // Quan hệ 1-N: 1 Category có nhiều Product
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude

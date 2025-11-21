@@ -1,93 +1,438 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 
-<head th:replace="~{screen/customer/header :: html-head}"></head>
+<head th:replace="~{screen/customer/header :: html-head}">
+</head>
 
-<body class="d-flex flex-column min-vh-100 bg-light">
+<style>
+    /* =========================================
+       1. GLOBAL & THEME STYLES
+    ========================================= */
+    :root {
+        --primary-color: #FF5722;
+        --primary-hover: #F4511E;
+        --bg-light: #f5f5f5;
+        --text-dark: #333;
+        --border-color: #e8e8e8;
+    }
+
+    body { background-color: var(--bg-light); font-family: 'Inter', sans-serif; color: #444; }
+
+    /* =========================================
+       2. CART ITEM STYLES (LEFT COLUMN)
+    ========================================= */
+    .cart-card {
+        background: #fff;
+        border-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        border: 1px solid rgba(0,0,0,.05);
+        margin-bottom: 15px;
+    }
+
+    .cart-header {
+        padding: 15px 20px;
+        font-weight: 600;
+        color: #555;
+        background: #fff;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        text-transform: uppercase;
+        font-size: 14px;
+    }
+
+    .cart-item-row {
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        background: #fff;
+        transition: background 0.2s;
+    }
+    .cart-item-row:hover { background-color: #fafafa; }
+    .cart-item-row:last-child { border-bottom: none; }
+
+    .product-img-wrapper {
+        width: 80px; height: 80px;
+        flex-shrink: 0;
+        border: 1px solid #e0e0e0;
+        background: #fff;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .product-img-wrapper img { max-width: 100%; max-height: 100%; object-fit: cover; }
+
+    .product-info { flex: 1; padding-left: 15px; }
+    .product-name { font-weight: 500; color: var(--text-dark); display: block; text-decoration: none; margin-bottom: 4px; line-height: 1.4; }
+    .product-name:hover { color: var(--primary-color); }
+    .product-variant { font-size: 13px; color: #888; background: #f5f5f5; padding: 2px 6px; border-radius: 2px; }
+
+    /* Quantity Input */
+    .qty-group {
+        display: flex; align-items: center;
+        border: 1px solid #ddd; border-radius: 2px;
+    }
+    .qty-input {
+        width: 40px; text-align: center; border: none; border-left: 1px solid #ddd; border-right: 1px solid #ddd;
+        height: 30px; outline: none; font-size: 14px;
+    }
+    .btn-update-icon {
+        background: none; border: none; color: #28a745; cursor: pointer; font-size: 1.2rem; transition: transform 0.2s;
+    }
+    .btn-update-icon:hover { transform: scale(1.1); }
+
+    /* Remove Button */
+    .btn-remove { color: #999; background: none; border: none; cursor: pointer; transition: 0.2s; }
+    .btn-remove:hover { color: #dc3545; }
+
+    /* =========================================
+       3. SUMMARY & VOUCHER STYLES (RIGHT COLUMN)
+    ========================================= */
+    .cart-summary {
+        position: sticky; top: 90px;
+        background: #fff; padding: 20px;
+        border-radius: 4px;
+        box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+    }
+
+    /* Voucher Ticket Design */
+    .voucher-list { max-height: 250px; overflow-y: auto; padding-right: 5px; margin-bottom: 20px; }
+    .voucher-list::-webkit-scrollbar { width: 4px; }
+    .voucher-list::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+    .voucher-ticket {
+        display: block; cursor: pointer; margin-bottom: 12px; position: relative; user-select: none;
+    }
+    .voucher-ticket input[type="radio"] { display: none; }
+
+    .voucher-content {
+        display: flex;
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.2s ease;
+    }
+
+    /* Left side of ticket (Icon) */
+    .voucher-left {
+        width: 60px;
+        display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+        border-right: 2px dashed #d0d0d0;
+        position: relative;
+    }
+    /* Right side of ticket (Info) */
+    .voucher-right { flex: 1; padding: 10px 12px; }
+
+    /* Selected State */
+    .voucher-ticket input:checked + .voucher-content {
+        border-color: var(--primary-color);
+        background-color: #fffbfb;
+        box-shadow: 0 4px 10px rgba(255, 87, 34, 0.1);
+    }
+    .voucher-ticket input:checked + .voucher-content .voucher-left {
+        background: #ffece5; border-right-color: #ffccbc;
+    }
+    /* Green Check Icon on selection */
+    .voucher-ticket input:checked + .voucher-content::after {
+        content: '\F26E'; /* Bootstrap Check Icon */
+        font-family: 'bootstrap-icons';
+        position: absolute; top: 5px; right: 5px;
+        color: var(--primary-color); font-size: 16px;
+    }
+
+    /* Summary Rows */
+    .summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; color: #666; }
+    .summary-total {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ddd;
+    }
+    .summary-total-value { font-size: 22px; color: var(--primary-color); font-weight: 700; }
+
+    .btn-checkout {
+        background: var(--primary-color); color: white;
+        width: 100%; padding: 12px; border: none; border-radius: 2px;
+        font-weight: 600; text-transform: uppercase; margin-top: 20px;
+        box-shadow: 0 2px 5px rgba(255, 87, 34, 0.2); transition: 0.2s;
+    }
+    .btn-checkout:hover { background: var(--primary-hover); color: white; box-shadow: 0 4px 10px rgba(255, 87, 34, 0.3); }
+
+    .empty-cart { padding: 60px 20px; text-align: center; background: #fff; }
+</style>
+
+<body class="d-flex flex-column min-vh-100">
 
 <div th:replace="~{screen/customer/header :: main-header}"></div>
 
-<main class="container my-5">
-    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
-        <span th:text="${successMessage}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<main class="container my-4 flex-grow-1">
+
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/api/home" class="text-decoration-none text-muted">Trang chủ</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Giỏ hàng</li>
+        </ol>
+    </nav>
+
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm border-0" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm border-0" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
-        <span th:text="${errorMessage}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    <h2 class="mb-4">Giỏ hàng của bạn</h2>
-
-    <div th:if="${cart == null || cart.items.isEmpty()}" class="text-center">
-        <div class="alert alert-info" role="alert">
-            Giỏ hàng của bạn đang trống.
-        </div>
-        <a th:href="@{/api/products/list}" class="btn btn-primary mt-3">
-            <i class="bi bi-arrow-left"></i> Tiếp tục mua sắm
+    <div th:if="${cart == null || cart.items.isEmpty()}" class="cart-card empty-cart">
+        <img src="https://deo.shopeemobile.com/shopee/shopee-pcmall-live-sg/cart/9bdd8040b334d31946f4.png" alt="Empty Cart" width="150" class="opacity-75 mb-3">
+        <h5 class="text-muted fw-light">Giỏ hàng của bạn chưa có sản phẩm nào</h5>
+        <a th:href="@{/api/products/list}" class="btn btn-checkout mt-3" style="max-width: 220px; background: #333;">
+            TIẾP TỤC MUA SẮM
         </a>
     </div>
 
-    <div th:unless="${cart == null || cart.items.isEmpty()}">
-        <table class="table table-hover align-middle">
-            <thead class="table-dark">
-            <tr>
-                <th>Sản phẩm</th>
-                <th class="text-end">Đơn giá</th>
-                <th class="text-center" style="width: 15%;">Số lượng</th>
-                <th class="text-end">Thành tiền</th>
-                <th class="text-center">Thao tác</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="item : ${cart.items}">
-                <td th:text="${item.product.name}">Tên sản phẩm</td>
-                <td class="text-end" th:text="${#numbers.formatDecimal(item.product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'">100,000 ₫</td>
-                <td class="text-center">
-                    <form th:action="@{/api/cart}" method="post" class="d-flex justify-content-center">
-                        <input type="hidden" name="action" value="update">
-                        <input type="hidden" name="productId" th:value="${item.product.id}">
-                        <input type="number" name="quantity" th:value="${item.quantity}" class="form-control text-center" style="width: 80px;" min="1">
-                        <button type="submit" class="btn btn-sm btn-outline-primary ms-2" title="Cập nhật">
-                            <i class="bi bi-arrow-repeat"></i>
-                        </button>
-                    </form>
-                </td>
-                <td class="text-end" th:text="${#numbers.formatDecimal(item.getSubTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'">200,000 ₫</td>
-                <td class="text-center">
-                    <form th:action="@{/api/cart}" method="post">
-                        <input type="hidden" name="action" value="remove">
-                        <input type="hidden" name="productId" th:value="${item.product.id}">
-                        <button type="submit" class="btn btn-sm btn-danger" title="Xóa sản phẩm">
-                            <i class="bi bi-trash3-fill"></i>
-                        </button>
-                    </form>
-                </td>
-            </tr>
-            </tbody>
-            <tr class="table-light">
-                <td colspan="3" class="text-end fw-bold fs-5">Tổng cộng:</td>
+    <div th:unless="${cart == null || cart.items.isEmpty()}" class="row g-4">
 
-                <td class="text-end fw-bold fs-5 text-danger"
-                    th:text="${#numbers.formatDecimal(cart.getTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'">
-                </td>
-
-                <td></td>
-            </tr>
-        </table>
-        <div class="d-flex justify-content-end mb-3">
-            <form th:action="@{/api/checkout/confirm}" method="post"
-                  class="row g-3 justify-content-center align-items-center mb-4 p-3 bg-light rounded shadow-sm">
-                <div class="col-auto align-self-end">
-                    <button type="submit" class="btn btn-primary">Thanh Toán</button>
+        <div class="col-lg-8">
+            <div class="cart-card">
+                <div class="cart-header d-none d-md-flex">
+                    <div style="flex: 1;">Sản phẩm</div>
+                    <div style="width: 110px; text-align: center;">Đơn giá</div>
+                    <div style="width: 130px; text-align: center;">Số lượng</div>
+                    <div style="width: 110px; text-align: right;">Thành tiền</div>
+                    <div style="width: 50px; text-align: center;"></div>
                 </div>
-            </form>
+
+                <div th:each="item : ${cart.items}" class="cart-item-row">
+
+                    <div class="product-img-wrapper">
+                        <img th:src="${item.product.imageUrl != null ? item.product.imageUrl : 'https://via.placeholder.com/100x100?text=No+Image'}" class="img-fluid" alt="Product">
+                    </div>
+
+                    <div class="product-info">
+                        <a th:href="@{/api/products/detail/{id}(id=${item.product.id})}" class="product-name" th:text="${item.product.name}">Tên sản phẩm</a>
+                        <span class="product-variant">Mặc định</span>
+                    </div>
+
+                    <div class="d-none d-md-block text-center" style="width: 110px;">
+                        <span th:text="${#numbers.formatDecimal(item.product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                    </div>
+
+                    <div style="width: 130px;" class="d-flex justify-content-center">
+                        <form th:action="@{/api/cart}" method="post" class="d-flex align-items-center gap-2">
+                            <input type="hidden" name="action" value="update">
+                            <input type="hidden" name="productId" th:value="${item.product.id}">
+
+                            <div class="qty-group">
+                                <input type="number" name="quantity" th:value="${item.quantity}" class="qty-input" min="1">
+                            </div>
+                            <button type="submit" class="btn-update-icon" title="Cập nhật số lượng">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="d-none d-md-block text-end text-primary fw-bold" style="width: 110px;">
+                        <span th:text="${#numbers.formatDecimal(item.getSubTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                    </div>
+
+                    <div style="width: 50px;" class="text-center">
+                        <form th:action="@{/api/cart}" method="post">
+                            <input type="hidden" name="action" value="remove">
+                            <input type="hidden" name="productId" th:value="${item.product.id}">
+                            <button type="submit" class="btn-remove" title="Xóa sản phẩm">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <a th:href="@{/api/products/list}" class="text-decoration-none text-muted small mt-2 d-inline-block">
+                <i class="bi bi-arrow-left"></i> Quay lại mua thêm sản phẩm khác
+            </a>
         </div>
 
+        <div class="col-lg-4">
+            <div class="cart-summary">
+                <h5 class="mb-3 fw-bold text-uppercase" style="letter-spacing: 1px;">Thanh toán</h5>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">Nhập mã ưu đãi</label>
+                    <div class="input-group">
+                        <input type="text" id="couponInput" class="form-control" placeholder="VD: SALE10">
+                        <button class="btn btn-outline-primary" type="button" id="btnApplyCoupon">Áp dụng</button>
+                    </div>
+                    <div id="couponMessage" class="small mt-1"></div>
+                </div>
+
+                <div class="voucher-list">
+                    <div class="small fw-bold text-muted mb-2">Mã giảm giá có sẵn:</div>
+
+                    <label class="voucher-ticket">
+                        <input type="radio" name="selectedVoucher" value="15000" data-code="FREESHIP">
+                        <div class="voucher-content">
+                            <div class="voucher-left"><i class="bi bi-truck fs-4 text-success"></i></div>
+                            <div class="voucher-right">
+                                <div class="fw-bold">Mã FreeShip</div>
+                                <div class="small text-muted">Giảm 15k phí vận chuyển</div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="voucher-ticket">
+                        <input type="radio" name="selectedVoucher" value="50000" data-code="WELCOME">
+                        <div class="voucher-content">
+                            <div class="voucher-left"><i class="bi bi-gift fs-4 text-danger"></i></div>
+                            <div class="voucher-right">
+                                <div class="fw-bold">Chào bạn mới</div>
+                                <div class="small text-muted">Giảm 50k cho đơn đầu tiên</div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="voucher-ticket">
+                        <input type="radio" name="selectedVoucher" value="20000" data-code="TET2025">
+                        <div class="voucher-content">
+                            <div class="voucher-left"><i class="bi bi-tag fs-4 text-primary"></i></div>
+                            <div class="voucher-right">
+                                <div class="fw-bold">Lì xì Tết</div>
+                                <div class="small text-muted">Giảm ngay 20k</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+
+                <hr class="text-muted opacity-25">
+
+                <div class="summary-row">
+                    <span>Tạm tính:</span>
+                    <span id="subTotalDisplay" th:text="${#numbers.formatDecimal(cart.getTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'"
+                          th:data-value="${cart.getTotal()}">0 ₫</span>
+                </div>
+
+                <div class="summary-row">
+                    <span>Giảm giá:</span>
+                    <span id="discountDisplay" class="text-success fw-bold">0 ₫</span>
+                </div>
+
+                <div class="summary-row">
+                    <span>Vận chuyển:</span>
+                    <span class="text-success">Miễn phí</span>
+                </div>
+
+                <div class="summary-total">
+                    <span class="summary-total-label">Tổng cộng:</span>
+                    <span id="finalTotalDisplay" class="summary-total-value"
+                          th:text="${#numbers.formatDecimal(cart.getTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</span>
+                </div>
+
+                <form th:action="@{/api/checkout/confirm}" method="post">
+                    <input type="hidden" name="couponCode" id="hiddenCouponCode">
+
+                    <button type="submit" class="btn-checkout">
+                        MUA HÀNG NGAY
+                    </button>
+                </form>
+
+                <div class="text-center mt-3">
+                    <small class="text-muted opacity-75"><i class="bi bi-shield-lock"></i> Bảo mật thanh toán 100%</small>
+                </div>
+            </div>
+        </div>
     </div>
 </main>
 
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+
+        // Các element cần thao tác
+        const btnApply = document.getElementById('btnApplyCoupon');
+        const inputCoupon = document.getElementById('couponInput');
+        const msgCoupon = document.getElementById('couponMessage');
+
+        const subTotalEl = document.getElementById('subTotalDisplay');
+        const discountEl = document.getElementById('discountDisplay');
+        const finalTotalEl = document.getElementById('finalTotalDisplay');
+        const hiddenCouponInput = document.getElementById('hiddenCouponCode');
+        const voucherRadios = document.querySelectorAll('input[name="selectedVoucher"]');
+
+        // Lấy tổng tiền gốc từ data-attribute (VD: 500000)
+        let originalTotal = 0;
+        if(subTotalEl) {
+            originalTotal = parseFloat(subTotalEl.getAttribute('data-value'));
+        }
+
+        // Hàm format tiền tệ VNĐ (VD: 10000 -> 10.000 ₫)
+        const formatCurrency = (amount) => {
+            return new Intl.NumberFormat('vi-VN').format(amount) + ' ₫';
+        };
+
+        // Hàm tính lại tổng tiền và hiển thị
+        const updateCartTotal = (discountAmount) => {
+            // Không cho giảm quá số tiền gốc
+            if(discountAmount > originalTotal) discountAmount = originalTotal;
+
+            let newTotal = originalTotal - discountAmount;
+
+            // Cập nhật giao diện
+            discountEl.textContent = discountAmount > 0 ? '- ' + formatCurrency(discountAmount) : '0 ₫';
+            finalTotalEl.textContent = formatCurrency(newTotal);
+        };
+
+        // 1. Xử lý khi click vào Voucher trong danh sách
+        voucherRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                const discountVal = parseFloat(this.value); // Lấy giá trị giảm (VD: 50000)
+                const code = this.getAttribute('data-code'); // Lấy mã (VD: WELCOME)
+
+                // Điền vào ô input để user thấy
+                inputCoupon.value = code;
+                hiddenCouponInput.value = code;
+
+                // Tính tiền
+                updateCartTotal(discountVal);
+
+                // Thông báo đẹp
+                msgCoupon.className = "small mt-1 text-success fw-bold";
+                msgCoupon.innerHTML = `<i class="bi bi-check-circle"></i> Đã chọn mã: ${code}`;
+            });
+        });
+
+        // 2. Xử lý khi nhập tay mã và bấm "Áp dụng"
+        if(btnApply) {
+            btnApply.addEventListener('click', function() {
+                const code = inputCoupon.value.trim().toUpperCase();
+
+                // Reset radio selection nếu user tự nhập
+                voucherRadios.forEach(r => r.checked = false);
+
+                // --- LOGIC GIẢ LẬP (Sau này thay bằng AJAX gọi về Server) ---
+                if (code === 'SALE10') {
+                    // Giả sử mã SALE10 giảm 10%
+                    let discount = originalTotal * 0.1;
+                    updateCartTotal(discount);
+                    hiddenCouponInput.value = code;
+
+                    msgCoupon.className = "small mt-1 text-success fw-bold";
+                    msgCoupon.innerHTML = `<i class="bi bi-check-circle"></i> Mã SALE10 giảm 10%`;
+                } else if (code === '') {
+                    updateCartTotal(0);
+                    hiddenCouponInput.value = '';
+                    msgCoupon.innerText = "";
+                } else {
+                    // Mã sai -> Reset về 0
+                    updateCartTotal(0);
+                    hiddenCouponInput.value = '';
+                    msgCoupon.className = "small mt-1 text-danger fw-bold";
+                    msgCoupon.innerHTML = `<i class="bi bi-x-circle"></i> Mã giảm giá không hợp lệ!`;
+                }
+            });
+        }
+    });
+</script>
 
 </body>
 </html>

@@ -29,11 +29,13 @@ public class ProductService {
     private ProductRepository productRepository;
     private CategoryRepository categoryRepository;
     private CommentRepository commentRepository;
+    private CloudinaryService cloudinaryService;
 
-    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository,CommentRepository commentRepository) {
+    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository,CommentRepository commentRepository, CloudinaryService cloudinaryService) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.commentRepository = commentRepository;
+        this.cloudinaryService = cloudinaryService;
     }
 
     public List<Product> getAll() {return productRepository.findAll();}
@@ -64,15 +66,22 @@ public class ProductService {
 
     public Product getById(Integer id) {return productRepository.findById(id).orElse(null);}
 
-    public Product  createProduct(Product product, Integer categoryId) {
+    public Product  createProduct(Product product, Integer categoryId, MultipartFile imageFile) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new RuntimeException("Department not found"));
         product.setCategory(category);
+
+        // 2. Xử lý Upload ảnh (MỚI)
+        if (!imageFile.isEmpty()) {
+            String url = cloudinaryService.uploadProductImage(imageFile);
+            product.setImageUrl(url);
+        }
+
         return productRepository.save(product);
     }
 
     // Cập nhật
-    public Optional<Product> updateProduct(int id, Product updatedProduct, Integer categoryId) {
+    public Optional<Product> updateProduct(int id, Product updatedProduct, Integer categoryId,MultipartFile imageFile) {
         return productRepository.findById(id).map(product -> {
             product.setName(updatedProduct.getName());
             product.setPrice(updatedProduct.getPrice());
@@ -81,15 +90,17 @@ public class ProductService {
             product.setVolume(updatedProduct.getVolume());
             product.setGender(updatedProduct.getGender());
 
-            if (updatedProduct.getImageUrl() != null && !updatedProduct.getImageUrl().isBlank()) {
-                product.setImageUrl(updatedProduct.getImageUrl());
+            if (!imageFile.isEmpty()) {
+                // Nếu có ảnh cũ, có thể xóa đi trước khi up mới (dùng hàm updateProductImage)
+                String newUrl = cloudinaryService.updateProductImage(imageFile, product.getImageUrl());
+                product.setImageUrl(newUrl);
             }
-
             if (categoryId != null) {
                 Category category = categoryRepository.findById(categoryId)
                         .orElseThrow(() -> new RuntimeException("Category not found with id: " + categoryId));
                 product.setCategory(category);
             }
+
 
             return productRepository.save(product);
         });
@@ -134,9 +145,6 @@ public class ProductService {
         );
     }
 
-//    public Page<Product> searchProducts(String keyword, Integer categoryId, Double price, Pageable pageable){
-//        return productRepository.searchProducts(keyword, categoryId, price, pageable);
-//    }
 
     public void importFromExcel(MultipartFile file) throws IOException {
         Workbook workbook = new XSSFWorkbook(file.getInputStream());
@@ -205,8 +213,6 @@ public class ProductService {
         Double avg = commentRepository.findAverageRatingByProductId(productId);
         return avg != null ? avg : 0.0;
     }
-
-    // Trong file: ProductService.java
 
     @Transactional
     public void updateRatingStats(Integer productId) {

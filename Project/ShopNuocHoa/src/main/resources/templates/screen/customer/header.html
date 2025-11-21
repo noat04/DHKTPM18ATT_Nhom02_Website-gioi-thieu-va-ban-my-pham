@@ -49,7 +49,13 @@
 
         .cart-icon { position: relative; font-size: 1.5rem; }
         .cart-badge { position: absolute; top: -5px; right: -8px; font-size: 0.7rem; }
-        .dropdown-menu { border-radius: 10px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .dropdown-menu {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            z-index: 9999 !important;
+            color: #343a40;
+        }
 
 
         /* === 2. CSS BANNER & CARD (Dùng cho Trang chủ) === */
@@ -230,13 +236,25 @@
                     <div sec:authorize="isAuthenticated()" class="dropdown">
                         <a class="d-flex align-items-center text-decoration-none dropdown-toggle"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle fs-4 me-2"></i>
-                            <span class="fw-bold" sec:authentication="name">User</span>
+
+                            <img th:if="${currentUser != null}"
+                                 th:src="${currentUser.avatarPath}"
+                                 alt="Avatar"
+                                 class="rounded-circle me-2"
+                                 style="width: 32px; height: 32px; object-fit: cover; border: 1px solid #ddd;">
+
+                            <i th:if="${currentUser == null}" class="bi bi-person-circle fs-4 me-2"></i>
+
+                            <span class="fw-bold"
+                                  th:text="${currentUser != null ? currentUser.full_name : #authentication.name}">
+                                User
+                            </span>
                         </a>
+
                         <ul class="dropdown-menu dropdown-menu-end mt-2">
-                            <li><a class="dropdown-item py-2" href="#"><i class="bi bi-person me-2"></i>Tài khoản</a></li>
-                            <li><a class="dropdown-item py-2" th:href="@{/api/orders/list}"><i class="bi bi-bag-check me-2"></i>Đơn mua</a></li>
-                            <li><a class="dropdown-item py-2" th:href="@{/api/dashboard/test}"><i class="bi bi-bar-chart-line me-2"></i>Thống kê</a></li>
+                            <li><a class="dropdown-item py-2 text-black" th:href="@{/api/profile}"><i class="bi bi-person me-2"></i>Tài khoản</a></li>
+                            <li><a class="dropdown-item py-2 text-black" th:href="@{/api/orders/list}"><i class="bi bi-bag-check me-2"></i>Đơn mua</a></li>
+                            <li><a class="dropdown-item py-2 text-black" th:href="@{/api/dashboard/test}"><i class="bi bi-bar-chart-line me-2"></i>Thống kê</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form th:action="@{/api/logout}" method="post" class="m-0">

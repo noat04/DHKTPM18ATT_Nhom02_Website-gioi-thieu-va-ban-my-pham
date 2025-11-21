@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -83,12 +84,13 @@ public class CategoryController {
     @PostMapping("/form")
     @PreAuthorize("hasAnyRole('ADMIN')")
     public String handleDepartmentForm(@RequestParam("action") String action,
+                                       @RequestParam("imageFile") MultipartFile imageFile, // <-- THÊM NHẬN FILE,
                                        Category category) { // Spring tự động binding dữ liệu từ form vào đối tượng
 
         if ("add".equals(action)) {
-            categoryService.createCategory(category);
+            categoryService.createCategory(category, imageFile);
         } else if ("edit".equals(action)) {
-            categoryService.updateCategory(category.getId(), category);
+            categoryService.updateCategory(category.getId(), category, imageFile);
         }
 
         return "redirect:/api/categories/list"; // Chuyển hướng về trang danh sách sau khi xử lý

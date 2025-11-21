@@ -1,33 +1,175 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{screen/customer/header :: html-head}">
-</head>
+<head th:replace="~{screen/customer/header :: html-head}"></head>
+
+<style>
+    .brand-intro-box {
+        background: white;
+        border-radius: 15px;
+        padding: 40px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.03);
+        position: relative;
+        overflow: hidden;
+    }
+    .brand-intro-box::before {
+        content: '"';
+        position: absolute;
+        top: -10px;
+        left: 20px;
+        font-size: 10rem;
+        color: #f8f9fa;
+        font-family: serif;
+        z-index: 0;
+    }
+    .brand-intro-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* 2. Search Box */
+    .brand-search-input {
+        border-radius: 30px;
+        padding: 12px 25px;
+        border: 1px solid #e9ecef;
+        background-color: #f8f9fa;
+        transition: all 0.3s;
+    }
+    .brand-search-input:focus {
+        background-color: white;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        border-color: #0d6efd;
+    }
+
+    /* 3. Brand Card (Pro Style) */
+    .brand-card {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 140px; /* Chiều cao cố định */
+        background-color: #fff;
+        border: 1px solid #f0f0f0;
+        border-radius: 12px;
+        padding: 25px;
+        text-decoration: none;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        position: relative;
+    }
+
+    .brand-card img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        /* Hiệu ứng đen trắng sang trọng */
+        filter: grayscale(100%) opacity(0.7);
+        transition: all 0.3s ease;
+    }
+
+    /* Hiệu ứng Hover */
+    .brand-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        border-color: transparent;
+    }
+    .brand-card:hover img {
+        filter: grayscale(0%) opacity(1); /* Trả lại màu gốc */
+        transform: scale(1.05);
+    }
+
+    /* Tên thương hiệu (ẩn, dùng cho tìm kiếm) */
+    .brand-name-hidden { display: none; }
+</style>
 
 <body class="d-flex flex-column min-vh-100 bg-light">
 <div th:replace="~{screen/customer/header :: main-header}"></div>
 
 <main class="container my-5">
 
-    <div class="brand-intro text-center">
-        <h1 class="display-5 fw-bold mb-3">Thương Hiệu</h1>
-        <p class="lead text-muted">
-            Ngày nay, công nghệ phát triển, mùi hương là một phần không thể thiếu giúp các chị em phụ nữ trở nên tự tin hơn. Nước hoa chính hãng là người bạn mang lại sự tự tin, phong cách và cá tính cho người sử dụng. Vậy bạn đã tìm thấy cho mình mùi hương nào phù hợp chưa? Cùng <span class="text-primary fw-bold">Ken Perfume</span> tìm hiểu và lựa chọn cho mình một <span class="text-primary fw-bold">thương hiệu nước hoa</span> bạn yêu thích nhất nhé!
-        </p>
-    </div>
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/api/home}" class="text-decoration-none text-muted">Trang chủ</a></li>
+            <li class="breadcrumb-item active fw-bold" aria-current="page">Thương hiệu</li>
+        </ol>
+    </nav>
 
-    <h2 class="text-center mb-4 fw-bold">Thương hiệu nổi bật</h2>
-
-    <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-4">
-
-        <div class="col" th:each="category : ${categories}">
-            <a th:href="@{/api/products/list(categoryId=${category.id})}" class="brand-card">
-                <img th:src="${category.imgURL ?: 'https://via.placeholder.com/150x80?text=' + category.name}"
-                     th:alt="${category.name}">
-            </a>
+    <div class="brand-intro-box text-center mb-5">
+        <div class="brand-intro-content">
+            <h1 class="fw-bold mb-3 text-dark" style="letter-spacing: -1px;">Thế Giới Thương Hiệu</h1>
+            <div class="d-flex justify-content-center">
+                <div style="width: 60px; height: 4px; background: #0d6efd; border-radius: 2px;" class="mb-4"></div>
+            </div>
+            <p class="lead text-muted fs-6 mx-auto" style="max-width: 800px; line-height: 1.8;">
+                Khám phá bộ sưu tập nước hoa chính hãng từ những nhà mốt danh tiếng nhất thế giới.
+                Tại <span class="text-primary fw-bold">Ken Perfume</span>, chúng tôi mang đến cho bạn không chỉ là mùi hương,
+                mà là phong cách và đẳng cấp. Hãy tìm kiếm thương hiệu yêu thích của bạn ngay bên dưới.
+            </p>
         </div>
     </div>
+
+    <div class="row align-items-center mb-4">
+        <div class="col-md-6">
+            <h3 class="fw-bold mb-0"><i class="bi bi-grid-fill me-2 text-primary"></i>Tất cả thương hiệu</h3>
+            <p class="text-muted small mb-0 mt-1">Hiển thị <span th:text="${categories.size()}">0</span> đối tác chính hãng</p>
+        </div>
+        <div class="col-md-6 mt-3 mt-md-0">
+            <div class="position-relative">
+                <input type="text" id="brandSearchInput" class="form-control brand-search-input"
+                       placeholder="Nhập tên thương hiệu để tìm nhanh (VD: Chanel, Gucci...)...">
+                <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3" id="brandGrid">
+
+        <div class="col brand-item" th:each="category : ${categories}">
+            <a th:href="@{/api/products/list(categoryId=${category.id})}" class="brand-card" title="Xem sản phẩm của hãng">
+                <img th:src="${category.imgURL != null && !category.imgURL.isEmpty() ? category.imgURL : 'https://via.placeholder.com/150x80?text=' + category.name}"
+                     th:alt="${category.name}">
+
+                <span class="brand-name-hidden" th:text="${category.name}"></span>
+            </a>
+        </div>
+
+    </div>
+
+    <div id="noResultAlert" class="text-center py-5 d-none">
+        <i class="bi bi-emoji-frown fs-1 text-muted mb-2"></i>
+        <p class="text-muted">Không tìm thấy thương hiệu nào phù hợp.</p>
+    </div>
+
 </main>
 
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const searchInput = document.getElementById('brandSearchInput');
+        const brandItems = document.querySelectorAll('.brand-item');
+        const noResultAlert = document.getElementById('noResultAlert');
+
+        searchInput.addEventListener('keyup', function(e) {
+            const term = e.target.value.toLowerCase();
+            let hasResult = false;
+
+            brandItems.forEach(item => {
+                const brandName = item.querySelector('.brand-name-hidden').textContent.toLowerCase();
+                if (brandName.includes(term)) {
+                    item.style.display = ''; // Hiện
+                    hasResult = true;
+                } else {
+                    item.style.display = 'none'; // Ẩn
+                }
+            });
+
+            // Hiện thông báo nếu không có kết quả
+            if (hasResult) {
+                noResultAlert.classList.add('d-none');
+            } else {
+                noResultAlert.classList.remove('d-none');
+            }
+        });
+    });
+</script>
+
 </body>
 </html>

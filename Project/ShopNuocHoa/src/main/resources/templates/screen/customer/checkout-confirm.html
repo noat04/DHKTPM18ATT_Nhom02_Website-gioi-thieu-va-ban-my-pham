@@ -1,167 +1,373 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{screen/customer/header :: html-head}"></head>
+<head th:replace="~{screen/customer/header :: html-head}">
+</head>
 
-<body class="d-flex flex-column min-vh-100 bg-light">
+<style>
+    body { background-color: #f4f6f8; font-family: 'Inter', sans-serif; }
+
+    /* Card Styles */
+    .checkout-card {
+        background: #fff;
+        border-radius: 12px;
+        border: 1px solid #eff2f5;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    .card-header-custom {
+        padding: 20px;
+        border-bottom: 1px solid #f0f0f0;
+        font-weight: 700;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .card-body-custom { padding: 20px; }
+
+    /* Product List Mini */
+    .product-mini-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px dashed #eee;
+    }
+    .product-mini-item:last-child { border-bottom: none; }
+    .product-name { font-weight: 500; color: #333; font-size: 0.95rem; }
+    .product-meta { font-size: 0.85rem; color: #888; }
+    .product-price { font-weight: 600; color: #333; }
+
+    /* Payment Methods Grid */
+    .payment-methods-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    .payment-option {
+        position: relative;
+    }
+    .payment-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .payment-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        height: 100%;
+        background: #fff;
+    }
+    /* Icon thanh toán */
+    .payment-icon {
+        width: 30px;
+        height: 30px;
+        object-fit: contain;
+        font-size: 1.5rem; /* Nếu dùng icon font */
+        display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Trạng thái Selected */
+    .payment-option input[type="radio"]:checked + .payment-label {
+        border-color: #0d6efd;
+        background-color: #f0f7ff;
+        box-shadow: 0 4px 10px rgba(13, 110, 253, 0.15);
+    }
+    .payment-option input[type="radio"]:checked + .payment-label::after {
+        content: '\F26E'; /* Bootstrap Check Icon */
+        font-family: 'bootstrap-icons';
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: #0d6efd;
+        font-weight: bold;
+    }
+
+    /* Order Summary Sticky */
+    .summary-sticky {
+        position: sticky;
+        top: 100px; /* Cách top khi cuộn */
+    }
+
+    .total-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding-top: 15px; border-top: 2px solid #f0f0f0; margin-top: 10px;
+    }
+    .total-price { font-size: 1.5rem; font-weight: 800; color: #FF5722; }
+</style>
+
+<body class="d-flex flex-column min-vh-100">
 <div th:replace="~{screen/customer/header :: main-header}"></div>
 
-<main class="container my-5">
-    <div class="row justify-content-center">
+<main class="container my-5 flex-grow-1">
+
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a th:href="@{/api/home}" class="text-decoration-none text-muted">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/api/cart}" class="text-decoration-none text-muted">Giỏ hàng</a></li>
+            <li class="breadcrumb-item active fw-bold" aria-current="page">Xác nhận & Thanh toán</li>
+        </ol>
+    </nav>
+
+    <div th:if="${errorMessage}" class="alert alert-danger shadow-sm border-0 rounded-3 mb-4">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}"></span>
+    </div>
+
+    <div th:if="${customer != null and cart != null and !cart.items.isEmpty()}" class="row g-4">
+
         <div class="col-lg-8">
-            <h1 class="text-center mb-4">Xác nhận Đơn hàng</h1>
 
-            <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
-
-            <!-- Kiểm tra xem có customer và cart không -->
-            <div th:if="${customer != null and cart != null and !cart.items.isEmpty()}">
-                <!-- Thông tin khách hàng: Lấy từ đối tượng 'customer' -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0">Thông tin giao hàng</h4>
-                    </div>
-                    <div class="card-body">
-                        <p><strong>Tên khách hàng:</strong> <span th:text="${customer.name}"></span></p>
-                        <p><strong>Ngày tham gia:</strong> <span th:text="${#temporals.format(customer.customerSince, 'dd-MM-yyyy')}"></span></p>
-                        <p><strong>Địa chỉ:</strong> <span>123 Đường ABC, Quận 1, TP. Hồ Chí Minh (ví dụ)</span></p>
-                        <p><strong>Số điện thoại:</strong> <span>0909123456 (ví dụ)</span></p>
-                    </div>
+            <div class="checkout-card">
+                <div class="card-header-custom text-primary">
+                    <i class="bi bi-geo-alt-fill"></i> Thông tin nhận hàng
                 </div>
+                <div class="card-body-custom">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="small text-muted fw-bold mb-1">Họ và tên</label>
+                            <div class="form-control bg-light border-0" th:text="${customer.name}"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="small text-muted fw-bold mb-1">Số điện thoại</label>
+                            <div class="form-control bg-light border-0" th:text="${customer.getPhoneNumber()}"></div>
+                        </div>
+                        <div class="col-12">
+                            <label class="small text-muted fw-bold mb-1">Địa chỉ giao hàng <span class="text-danger">*</span></label>
 
-                <!-- Chi tiết sản phẩm: Lấy từ đối tượng 'cart' -->
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0">Chi tiết sản phẩm</h4>
-                    </div>
-                    <div class="card-body p-0">
-                        <table class="table table-hover mb-0">
-                            <thead>
-                            <tr>
-                                <th>Sản phẩm</th>
-                                <th class="text-center">Số lượng</th>
-                                <th class="text-end">Đơn giá</th>
-                                <th class="text-end">Thành tiền</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <!-- Lặp qua các 'item' trong 'cart' -->
-                            <tr th:each="item : ${cart.items}">
-                                <td th:text="${item.product.name}"></td>
-                                <td class="text-center" th:text="${item.quantity}"></td>
-                                <td class="text-end" th:text="${#numbers.formatDecimal(item.product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
-                                <td class="text-end" th:text="${#numbers.formatDecimal(item.getSubTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
-                            </tr>
-                            </tbody>
-                            <tfoot>
-                            <tr class="table-light fw-bold">
-                                <td colspan="3" class="text-end fs-5">Tổng cộng:</td>
-                                <!-- Tính tổng từ 'cart' -->
-                                <td class="text-end fs-5 text-danger"
-                                    th:text="${#numbers.formatDecimal(cart.total, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
-                            </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-between mt-4">
-
-                    <a th:href="@{/api/cart}" class="btn btn-secondary btn-lg">
-                        <i class="bi bi-arrow-left"></i> Chỉnh sửa giỏ hàng
-                    </a>
-
-                    <div class="d-flex gap-2">
-
-                        <form th:action="@{/api/checkout/finalize}" method="post">
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="bi bi-truck"></i> Xác nhận (COD)
-                            </button>
-                        </form>
-
-                        <a th:href="@{/api/vnpayment/create-payment(amount=${cart.total})}" class="btn btn-primary btn-lg">
-                            Thanh toán VNPay
-                        </a>
-
-                        <button type="button" class="btn btn-danger btn-lg" id="momo-payment-button"
-                                th:data-amount="${cart.total}">
-                            Thanh toán MoMo
-                        </button>
-
-                        <a th:href="@{/api/zalopay/create-payment(amount=${cart.total})}" class="btn btn-info btn-lg text-white">
-                            Thanh toán ZaloPay
-                        </a>
+                            <textarea class="form-control" id="addressInput" name="shippingAddress" rows="2"
+                                      th:text="${customer.address}"
+                                      placeholder="Nhập số nhà, tên đường, phường/xã, quận/huyện..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="small text-muted fw-bold mb-1">Ghi chú đơn hàng</label>
+                            <textarea class="form-control" rows="2" placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao..."></textarea>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Hiển thị khi không có thông tin để xác nhận -->
-            <div th:if="${customer == null or cart == null or cart.items.isEmpty()}" class="alert alert-warning text-center">
-                <p>Không có thông tin đơn hàng để xác nhận. Vui lòng quay lại giỏ hàng.</p>
-                <a th:href="@{/api/cart}" class="btn btn-primary">Về giỏ hàng</a>
+            <div class="checkout-card">
+                <div class="card-header-custom text-success">
+                    <i class="bi bi-credit-card-2-front-fill"></i> Phương thức thanh toán
+                </div>
+                <div class="card-body-custom">
+                    <p class="text-muted small mb-3">Vui lòng chọn 1 trong các phương thức dưới đây:</p>
+
+                    <div class="payment-methods-grid">
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="COD" checked>
+                            <div class="payment-label">
+                                <div class="payment-icon text-success"><i class="bi bi-cash-coin"></i></div>
+                                <div>
+                                    <div class="fw-bold">Tiền mặt (COD)</div>
+                                    <div class="small text-muted">Thanh toán khi nhận hàng</div>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="VNPAY">
+                            <div class="payment-label">
+                                <div class="payment-icon text-primary"><i class="bi bi-wallet2"></i></div> <div>
+                                <div class="fw-bold">VNPAY QR</div>
+                                <div class="small text-muted">ATM / Internet Banking</div>
+                            </div>
+                            </div>
+                        </label>
+
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="MOMO">
+                            <div class="payment-label">
+                                <div class="payment-icon" style="color: #a50064"><i class="bi bi-qr-code-scan"></i></div>
+                                <div>
+                                    <div class="fw-bold">Ví MoMo</div>
+                                    <div class="small text-muted">Quét mã QR MoMo</div>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="ZALOPAY">
+                            <div class="payment-label">
+                                <div class="payment-icon text-info"><i class="bi bi-phone-vibrate"></i></div>
+                                <div>
+                                    <div class="fw-bold">ZaloPay</div>
+                                    <div class="small text-muted">Ví điện tử Zalo</div>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="PAYPAL">
+                            <div class="payment-label">
+                                <div class="payment-icon text-primary"><i class="bi bi-paypal"></i></div>
+                                <div>
+                                    <div class="fw-bold">PayPal</div>
+                                    <div class="small text-muted">Visa / MasterCard</div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <a th:href="@{/api/cart}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Quay lại Giỏ hàng
+            </a>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="checkout-card summary-sticky">
+                <div class="card-header-custom bg-light">
+                    <i class="bi bi-receipt-cutoff"></i> Đơn hàng của bạn
+                </div>
+                <div class="card-body-custom">
+                    <div class="mb-3" style="max-height: 300px; overflow-y: auto;">
+                        <div th:each="item : ${cart.items}" class="product-mini-item">
+                            <div>
+                                <div class="product-name" th:text="${item.product.name}">Nước hoa ABC</div>
+                                <div class="product-meta">x <span th:text="${item.quantity}">1</span></div>
+                            </div>
+                            <div class="product-price"
+                                 th:text="${#numbers.formatDecimal(item.getSubTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2 text-muted">
+                        <span>Tạm tính:</span>
+                        <span th:text="${#numbers.formatDecimal(cart.total, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 text-muted">
+                        <span>Phí vận chuyển:</span>
+                        <span class="text-success">Miễn phí</span>
+                    </div>
+
+                    <div class="total-row">
+                        <span class="fw-bold text-dark">Tổng thanh toán:</span>
+                        <span class="total-price" th:text="${#numbers.formatDecimal(cart.total, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                    </div>
+
+                    <hr>
+
+                    <button type="button" id="btn-place-order" class="btn btn-primary w-100 py-3 fs-5 fw-bold shadow-sm"
+                            th:data-total="${cart.total}"
+                            th:data-vnpay-url="@{/api/vnpayment/create-payment(amount=${cart.total})}"
+                            th:data-zalopay-url="@{/api/zalopay/create-payment(amount=${cart.total})}">
+                        ĐẶT HÀNG NGAY
+                    </button>
+
+                    <p class="text-center small text-muted mt-2">
+                        <i class="bi bi-shield-lock"></i> Thông tin được bảo mật tuyệt đối
+                    </p>
+                </div>
             </div>
         </div>
     </div>
+
+    <div th:if="${customer == null or cart == null or cart.items.isEmpty()}" class="text-center py-5">
+        <img src="https://cdn-icons-png.flaticon.com/512/2038/2038854.png" alt="Empty Cart" style="width: 150px; opacity: 0.5">
+        <h4 class="mt-4 text-muted">Không có thông tin đơn hàng</h4>
+        <a th:href="@{/api/products/list}" class="btn btn-primary mt-3 px-4 rounded-pill">Mua sắm ngay</a>
+    </div>
+
+    <form id="form-cod" th:action="@{/api/checkout/finalize}" method="post" style="display: none;"></form>
+
+    <form id="form-paypal" th:action="@{/api/paypal/pay}" method="post" style="display: none;"></form>
+
 </main>
 
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        const btnOrder = document.getElementById("btn-place-order");
 
-        const momoButton = document.getElementById("momo-payment-button");
+        if(btnOrder) {
+            btnOrder.addEventListener("click", function() {
+                // 1. Lấy phương thức thanh toán đang chọn
+                const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+                const totalAmount = this.getAttribute('data-total');
 
-        if (momoButton) {
-            momoButton.addEventListener("click", function() {
+                // Hiệu ứng loading
+                const originalText = btnOrder.innerHTML;
+                btnOrder.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
+                btnOrder.disabled = true;
 
-                const amount = this.dataset.amount;
-                momoButton.disabled = true; // Vô hiệu hóa nút
-                momoButton.innerHTML = "Đang xử lý...";
+                // 2. Điều hướng xử lý
+                switch (selectedMethod) {
+                    case "COD":
+                        document.getElementById("form-cod").submit();
+                        break;
 
-                // Lấy CSRF token (nếu có)
-                const csrfTokenEl = document.querySelector('form[method="post"] input[name="_csrf"]');
-                const headers = {
-                    'Content-Type': 'application/json'
-                };
-                if (csrfTokenEl) {
-                    headers['X-CSRF-TOKEN'] = csrfTokenEl.value;
+                    case "VNPAY":
+                        const vnpayUrl = this.getAttribute('data-vnpay-url');
+                        window.location.href = vnpayUrl;
+                        break;
+
+                    case "ZALOPAY":
+                        const zalopayUrl = this.getAttribute('data-zalopay-url');
+                        window.location.href = zalopayUrl;
+                        break;
+
+                    case "PAYPAL":
+                        document.getElementById("form-paypal").submit();
+                        break;
+
+                    case "MOMO":
+                        handleMomoPayment(totalAmount, btnOrder, originalText);
+                        break;
+
+                    default:
+                        alert("Vui lòng chọn phương thức thanh toán!");
+                        btnOrder.disabled = false;
+                        btnOrder.innerHTML = originalText;
                 }
-
-                // 1. Gọi API /api/momo (POST) để lấy payUrl
-                fetch('/api/momo', {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({
-                        amount: amount
-                    })
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Lỗi khi tạo yêu cầu thanh toán MoMo.');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        // 2. Kiểm tra response từ MoMo
-                        if (data.payUrl) {
-                            // 3. Chuyển hướng người dùng đến payUrl
-                            window.location.href = data.payUrl;
-                        } else {
-                            alert('Lỗi: ' + data.message);
-                            momoButton.disabled = false;
-                            momoButton.innerHTML = "Thanh toán MoMo";
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Lỗi Fetch:", error);
-                        alert("Không thể kết nối đến MoMo. Vui lòng thử lại.");
-                        momoButton.disabled = false;
-                        momoButton.innerHTML = "Thanh toán MoMo";
-                    });
             });
+        }
+
+        // Hàm xử lý riêng cho MoMo (Fetch API)
+        function handleMomoPayment(amount, btn, originalText) {
+            // Lấy CSRF token (nếu Spring Security bật)
+            const csrfTokenEl = document.querySelector('input[name="_csrf"]');
+            const headers = { 'Content-Type': 'application/json' };
+            if (csrfTokenEl) headers['X-CSRF-TOKEN'] = csrfTokenEl.value;
+
+            fetch('/api/momo', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({ amount: amount })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.payUrl) {
+                        window.location.href = data.payUrl;
+                    } else {
+                        alert('Lỗi MoMo: ' + (data.message || "Không xác định"));
+                        resetBtn(btn, originalText);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Lỗi kết nối đến MoMo.");
+                    resetBtn(btn, originalText);
+                });
+        }
+
+        function resetBtn(btn, text) {
+            btn.disabled = false;
+            btn.innerHTML = text;
         }
     });
 </script>
 
-</body>
-</html>
 </body>
 </html>

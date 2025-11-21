@@ -2,46 +2,152 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{screen/customer/header :: html-head}"></head>
 
-<body class="d-flex flex-column min-vh-100 bg-light">
-<div th:replace="~{screen/customer/header:: main-header}"></div>
+<style>
+    body { background-color: #f0f2f5; }
+    .auth-container {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 0;
+    }
+    .auth-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        overflow: hidden;
+        width: 100%;
+        max-width: 900px;
+        display: flex;
+    }
+    /* Cột trái: Hình ảnh */
+    .auth-banner {
+        flex: 1;
+        background: url('https://images.unsplash.com/photo-1595867275539-944634165d10?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80') no-repeat center center;
+        background-size: cover;
+        position: relative;
+        display: none; /* Ẩn trên mobile */
+    }
+    .auth-banner::before { /* Lớp phủ màu tối */
+        content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.6));
+    }
+    .auth-banner-text {
+        position: absolute; bottom: 40px; left: 40px; right: 40px; color: white;
+    }
 
-<main class="container d-flex justify-content-center align-items-center flex-grow-1">
-    <div class="card shadow-sm" style="width: 28rem;">
-        <div class="card-body p-4">
-            <h1 class="card-title text-center mb-4">Đăng ký tài khoản</h1>
+    /* Cột phải: Form */
+    .auth-form-wrapper {
+        flex: 1;
+        padding: 50px;
+    }
 
-            <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+    @media (min-width: 768px) {
+        .auth-banner { display: block; }
+    }
+
+    /* Input Style */
+    .form-control {
+        padding: 12px 15px;
+        border-radius: 10px;
+        border: 1px solid #e1e1e1;
+        background-color: #f9f9f9;
+    }
+    .form-control:focus {
+        background-color: white;
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    .input-group-text {
+        background: #f9f9f9; border: 1px solid #e1e1e1; border-right: none; border-radius: 10px 0 0 10px; color: #888;
+    }
+    .form-control-icon { border-left: none; border-radius: 0 10px 10px 0; }
+
+    .btn-auth {
+        background: linear-gradient(to right, #667eea, #764ba2);
+        border: none;
+        padding: 12px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: transform 0.2s;
+    }
+    .btn-auth:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(118, 75, 162, 0.3);
+    }
+</style>
+
+<body class="d-flex flex-column min-vh-100">
+<div th:replace="~{screen/customer/header :: main-header}"></div>
+
+<main class="auth-container">
+    <div class="auth-card">
+
+        <div class="auth-banner">
+            <div class="auth-banner-text">
+                <h2 class="fw-bold mb-3">Chào mừng bạn!</h2>
+                <p class="mb-0 opacity-75">Đăng ký thành viên ngay để nhận ưu đãi đặc biệt và theo dõi đơn hàng dễ dàng hơn.</p>
+            </div>
+        </div>
+
+        <div class="auth-form-wrapper">
+            <div class="text-center mb-4">
+                <h3 class="fw-bold text-dark">Tạo tài khoản mới</h3>
+                <p class="text-muted small">Nhập thông tin của bạn để bắt đầu</p>
+            </div>
+
+            <div th:if="${errorMessage}" class="alert alert-danger py-2 rounded-3 text-center small mb-3">
+                <i class="bi bi-exclamation-circle me-1"></i> <span th:text="${errorMessage}"></span>
+            </div>
 
             <form th:action="@{/api/register}" th:object="${registerForm}" method="post">
+
                 <div class="mb-3">
-                    <label for="fullName" class="form-label">Họ và tên</label>
-                    <input type="text" id="fullName" th:field="*{full_name}" class="form-control" required>
+                    <label class="form-label small fw-bold text-secondary">Họ và tên</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                        <input type="text" th:field="*{full_name}" class="form-control form-control-icon" placeholder="Ví dụ: Nguyễn Văn A">
+                    </div>
+                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('full_name')}" th:errors="*{full_name}"></div>
                 </div>
 
                 <div class="mb-3">
-                    <label for="username" class="form-label">Tên đăng nhập</label>
-                    <input type="text" id="username" th:field="*{username}" class="form-control" required>
+                    <label class="form-label small fw-bold text-secondary">Tên đăng nhập</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+                        <input type="text" th:field="*{username}" class="form-control form-control-icon" placeholder="Tối thiểu 3 ký tự">
+                    </div>
+                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
                 </div>
 
                 <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" id="email" th:field="*{email}" class="form-control" required>
+                    <label class="form-label small fw-bold text-secondary">Email</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                        <input type="email" th:field="*{email}" class="form-control form-control-icon" placeholder="name@example.com">
+                    </div>
+                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
                 </div>
 
-                <div class="mb-3">
-                    <label for="password" class="form-label">Mật khẩu</label>
-                    <input type="password" id="password" th:field="*{password}" class="form-control" required>
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-secondary">Mật khẩu</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        <input type="password" th:field="*{password}" class="form-control form-control-icon" placeholder="••••••••">
+                    </div>
+                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
                 </div>
 
-                <div class="d-grid mt-4">
-                    <button type="submit" class="btn btn-primary btn-lg">Đăng ký</button>
+                <button type="submit" class="btn btn-primary btn-auth w-100 text-white mb-3">
+                    Đăng Ký Tài Khoản
+                </button>
+
+                <div class="text-center mt-4">
+                    <span class="text-muted">Đã có tài khoản?</span>
+                    <a th:href="@{/api/login}" class="fw-bold text-decoration-none ms-1 text-primary">Đăng nhập ngay</a>
                 </div>
             </form>
-
-            <div class="text-center mt-3">
-                <span>Đã có tài khoản? </span>
-                <a th:href="@{/api/login}">Đăng nhập ngay</a>
-            </div>
         </div>
     </div>
 </main>

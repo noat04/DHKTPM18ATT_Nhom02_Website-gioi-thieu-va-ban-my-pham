@@ -64,7 +64,9 @@ public class SecurityConfig {
                                 "/api/comments/add",
                                 "/api/comments/edit", // <-- [THÊM MỚI]
                                 "/api/comments/delete/**", // <-- [THÊM MỚI]
-                                "/api/wishlist/toggle").authenticated() // 👈 các trang cần login
+                                "/api/wishlist/toggle",
+                                "/api/profile/**"
+                                ).authenticated() // 👈 các trang cần login
                         .anyRequest().permitAll()
 
                 )

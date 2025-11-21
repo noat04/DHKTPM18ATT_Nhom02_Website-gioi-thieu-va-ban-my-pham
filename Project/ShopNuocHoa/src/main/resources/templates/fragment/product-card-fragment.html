@@ -9,8 +9,7 @@
         <div th:if="${product.hotTrend}" class="hot-fire">HOT</div>
 
         <a th:href="@{/api/products/detail/{id}(id=${product.id})}">
-            <img th:src="${product.imageUrl != null ? product.imageUrl : 'https://via.placeholder.com/300x200?text=No+Image'}"
-                 class="card-img-top" th:alt="${product.name}">
+            <img th:src="${product.imagePath}" class="card-img-top" th:alt="${product.name}">
         </a>
 
         <div class="action-overlay">

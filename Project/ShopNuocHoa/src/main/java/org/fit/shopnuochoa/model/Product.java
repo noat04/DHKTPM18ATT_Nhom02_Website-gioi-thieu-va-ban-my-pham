@@ -47,6 +47,16 @@ public class Product {
     @Column(name = "image_url", length = 512)
     private String imageUrl;
 
+    @Transient
+    public String getImagePath() {
+        // 1. Nếu chưa có ảnh -> Trả về ảnh mặc định
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            return "/images/default-product.jpg"; // Bạn nhớ tạo file này trong static/images
+        }
+        // 2. Nếu là ảnh Cloudinary (bắt đầu bằng http) hoặc đường dẫn hợp lệ -> Trả về nguyên gốc
+        return imageUrl;
+    }
+
     /**
      * Ánh xạ tới cột 'volume' trong DB.
      * Lưu dưới dạng String (VD: "ML_50", "ML_100")
@@ -87,8 +97,5 @@ public class Product {
     @Transient // Không lưu vào database
     private boolean isFavorite; // <-- thêm thuộc tính này
 
-//    // ⭐ Điểm trung bình và số lượt đánh giá
-//    @Transient
-//    private double averageRating;
 }
 

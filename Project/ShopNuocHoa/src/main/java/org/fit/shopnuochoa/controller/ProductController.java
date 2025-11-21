@@ -190,11 +190,14 @@ public class ProductController {
     @PreAuthorize("hasAnyRole('ADMIN')")
     public String handleEmployeeForm(@RequestParam("action") String action,
                                      @RequestParam(value = "categoryId", required = false) Integer categoryId,
+                                     @RequestParam("imageFile") MultipartFile imageFile, // <-- THÊM NHẬN FILE
                                      Product product) {
         if ("add".equals(action)) {
-            productService.createProduct(product, categoryId);
+            // Gọi hàm create mới có tham số imageFile
+            productService.createProduct(product, categoryId, imageFile);
         } else if ("edit".equals(action)) {
-            productService.updateProduct(product.getId(), product, categoryId);
+            // Gọi hàm update mới có tham số imageFile
+            productService.updateProduct(product.getId(), product, categoryId, imageFile);
         }
         return "redirect:/api/products/list";
     }

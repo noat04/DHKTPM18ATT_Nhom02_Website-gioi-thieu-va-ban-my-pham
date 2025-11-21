@@ -36,25 +36,41 @@ public class UserService {
         user.setCreatedAt(LocalDateTime.now());
         return userRepository.save(user);
     }
+    public Optional<Users> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    /**
+     * Hàm này dùng để lưu lại thông tin User đã chỉnh sửa.
+     * Vì User đã có ID nên JPA sẽ tự hiểu là UPDATE.
+     */
+    public Users save(Users user) {
+        return userRepository.save(user);
+    }
+
+    /**
+     * (Tùy chọn) Cập nhật thêm trường Avatar vào hàm updateUser cũ nếu cần
+     */
     public Optional<Users> updateUser(int id, Users updatedUsers) {
         return userRepository.findById(id).map(user -> {
-
-            // ✅ Cập nhật các thông tin cơ bản
             user.setFull_name(updatedUsers.getFull_name());
             user.setEmail(updatedUsers.getEmail());
             user.setRole(updatedUsers.getRole());
             user.setActive(updatedUsers.isActive());
 
-            // ✅ Nếu có mật khẩu mới thì mã hóa và cập nhật
+            // ✅ BỔ SUNG: Cập nhật avatar nếu có
+            if (updatedUsers.getAvatar() != null) {
+                user.setAvatar(updatedUsers.getAvatar());
+            }
+
             if (updatedUsers.getPassword() != null && !updatedUsers.getPassword().isEmpty()) {
                 String hashedPassword = passwordEncoder.encode(updatedUsers.getPassword());
                 user.setPassword(hashedPassword);
             }
-
-            // ❌ Không ghi đè username vì field này readonly
             return userRepository.save(user);
         });
     }
+
 
     public Users registerNewUser(Users user) {
         // 1. Kiểm tra username đã tồn tại chưa
