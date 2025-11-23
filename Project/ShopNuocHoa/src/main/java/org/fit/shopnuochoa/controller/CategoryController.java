@@ -3,6 +3,9 @@ package org.fit.shopnuochoa.controller;
 import org.fit.shopnuochoa.component.SecurityUtils;
 import org.fit.shopnuochoa.model.Category;
 import org.fit.shopnuochoa.service.CategoryService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -30,6 +33,8 @@ public class CategoryController {
     public String showCategoryList(
             @RequestParam(value = "action", required = false) String action,
             @RequestParam(value = "id", required = false) Integer id,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "keyword", defaultValue = "") String keyword,
             Model model,
             Authentication authentication) {
 
@@ -39,19 +44,32 @@ public class CategoryController {
             return "redirect:/api/categories/list";
         }
 
-        // ✅ Lấy danh sách tất cả category
+        // ✅ Nếu là ADMIN → hiển thị admin view với phân trang
+        if (SecurityUtils.hasRole(authentication, "ADMIN")) {
+            Pageable pageable = PageRequest.of(page, 10); // 10 items per page
+            Page<Category> categoryPage;
+
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                // Tìm kiếm theo tên
+                categoryPage = categoryService.searchByName(keyword.trim(), pageable);
+            } else {
+                // Lấy tất cả
+                categoryPage = categoryService.getAllPaged(pageable);
+            }
+
+            model.addAttribute("categoryPage", categoryPage);
+            model.addAttribute("keyword", keyword);
+            return "screen/admin/admin-category-list";
+        }
+
+        // ✅ Nếu chưa đăng nhập hoặc là CUSTOMER → hiển thị customer view (không phân trang)
         List<Category> categories = categoryService.getAll();
         model.addAttribute("categories", categories);
 
-        // ✅ Nếu chưa đăng nhập hoặc là CUSTOMER → hiển thị customer view
         if (authentication == null || SecurityUtils.hasRole(authentication, "CUSTOMER")) {
             return "screen/customer/category-list";
         }
 
-        // ✅ Nếu là ADMIN → hiển thị admin view
-        if (SecurityUtils.hasRole(authentication, "ADMIN")) {
-            return "screen/admin/admin-category-list";
-        }
 
         // ✅ Mặc định (phòng lỗi)
         return "screen/customer/category-list";
