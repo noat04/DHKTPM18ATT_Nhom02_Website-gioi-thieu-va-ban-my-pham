@@ -24,37 +24,32 @@
                 <!-- Thanh tìm kiếm và bộ lọc -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
-                        <form th:action="@{/api/products/list}" method="get" class="row g-3">
-                            <!-- Search theo tên sản phẩm -->
-                            <div class="col-md-4">
-                                <label for="keyword" class="form-label">Tìm sản phẩm</label>
-                                <input type="text" name="keyword" id="keyword" class="form-control"
-                                       placeholder="Nhập tên sản phẩm..." th:value="${keyword}">
-                            </div>
+                        <form th:action="@{/api/products/list}" method="get">
+                            <div class="row g-5 justify-content-center">
+                                <!-- Search theo ID hoặc tên sản phẩm -->
+                                <div class="col-md-5">
+                                    <label for="keyword" class="form-label">Tìm sản phẩm</label>
+                                    <input type="text" name="keyword" id="keyword" class="form-control"
+                                           placeholder="Nhập ID hoặc tên sản phẩm..." th:value="${keyword}">
+                                </div>
 
-                            <!-- Lọc theo danh mục -->
-                            <div class="col-md-3">
-                                <label for="categoryId" class="form-label">Nhà sản xuất</label>
-                                <select name="categoryId" id="categoryId" class="form-select">
-                                    <option value="">-- Tất cả --</option>
-                                    <th:block th:each="cat : ${categories}">
-                                        <option th:value="${cat.id}" th:text="${cat.name}" th:selected="${cat.id == categoryId}"></option>
-                                    </th:block>
-                                </select>
-                            </div>
+                                <!-- Lọc theo danh mục -->
+                                <div class="col-md-3">
+                                    <label for="categoryId" class="form-label">Nhà sản xuất</label>
+                                    <select name="categoryId" id="categoryId" class="form-select">
+                                        <option value="">-- Tất cả --</option>
+                                        <th:block th:each="cat : ${categories}">
+                                            <option th:value="${cat.id}" th:text="${cat.name}" th:selected="${cat.id == categoryId}"></option>
+                                        </th:block>
+                                    </select>
+                                </div>
 
-                            <!-- Lọc theo giá -->
-                            <div class="col-md-3">
-                                <label for="price" class="form-label">Giá lớn hơn</label>
-                                <input type="number" name="price" id="price" class="form-control"
-                                       placeholder="VD: 500000" th:value="${price}">
-                            </div>
-
-                            <!-- Buttons -->
-                            <div class="col-md-2 d-flex align-items-end gap-2">
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="bi bi-search"></i> Tìm
-                                </button>
+                                <!-- Buttons -->
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-search"></i> Tìm
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -70,12 +65,12 @@
                         <ul class="dropdown-menu">
                             <li>
                                 <a class="dropdown-item" th:href="@{/api/products/form(action='add')}">
-                                    Thêm theo form
+                                    <i class="bi bi-pencil-square"></i> Thêm theo form
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#importModal">
-                                    Thêm nhiều (Import)
+                                <a class="dropdown-item" th:href="@{/api/products/import}">
+                                    <i class="bi bi-upload"></i> Thêm nhiều (Import Excel + Ảnh)
                                 </a>
                             </li>
                         </ul>
@@ -131,19 +126,19 @@
                     <ul class="pagination justify-content-center">
                         <li class="page-item" th:classappend="${productPage.first ? 'disabled' : ''}">
                             <a class="page-link"
-                               th:href="@{/api/products/list(page=${productPage.number - 1}, keyword=${keyword}, categoryId=${categoryId}, price=${price})}">
+                               th:href="@{/api/products/list(page=${productPage.number - 1}, keyword=${keyword}, categoryId=${categoryId})}">
                                 «
                             </a>
                         </li>
                         <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, productPage.totalPages - 1)}"
                             th:classappend="${pageNumber == productPage.number ? 'active' : ''}">
                             <a class="page-link"
-                               th:href="@{/api/products/list(page=${pageNumber}, keyword=${keyword}, categoryId=${categoryId}, price=${price})}"
+                               th:href="@{/api/products/list(page=${pageNumber}, keyword=${keyword}, categoryId=${categoryId})}"
                                th:text="${pageNumber + 1}"></a>
                         </li>
                         <li class="page-item" th:classappend="${productPage.last ? 'disabled' : ''}">
                             <a class="page-link"
-                               th:href="@{/api/products/list(page=${productPage.number + 1}, keyword=${keyword}, categoryId=${categoryId}, price=${price})}">
+                               th:href="@{/api/products/list(page=${productPage.number + 1}, keyword=${keyword}, categoryId=${categoryId})}">
                                 »
                             </a>
                         </li>
