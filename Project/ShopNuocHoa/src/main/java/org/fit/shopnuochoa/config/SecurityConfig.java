@@ -42,9 +42,14 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/api/consultant/**") // Tắt CSRF cho API consultant chat
+                        .ignoringRequestMatchers(
+                                "/api/consultant/**",
+                                "/api/products/import/**"
+                        )
                 )
                 .authorizeHttpRequests(auth -> auth
+                        // Thứ tự quan trọng: specific patterns trước, generic patterns sau
+                        .requestMatchers("/api/products/import/**").permitAll() // Import endpoints
                         .requestMatchers(
                                 "/api/register",
                                 "/api/login",
@@ -56,25 +61,23 @@ public class SecurityConfig {
                                 "/css/**",
                                 "/js/**",
                                 "/images/**"
-                        ).permitAll() // 👈 các trang công khai
+                        ).permitAll()
                         .requestMatchers(
                                 "/api/cart/**",
                                 "/api/customers/**",
                                 "/api/orders/**",
                                 "/api/comments/add",
-                                "/api/comments/edit", // <-- [THÊM MỚI]
-                                "/api/comments/delete/**", // <-- [THÊM MỚI]
+                                "/api/comments/edit",
+                                "/api/comments/delete/**",
                                 "/api/wishlist/toggle",
                                 "/api/profile/**"
-                                ).authenticated() // 👈 các trang cần login
+                        ).authenticated()
                         .anyRequest().permitAll()
-
                 )
                 .formLogin(form -> form
                         .loginPage("/api/login")
-                        .successHandler(successHandler)  // 👈 Dùng custom handler// Trang login của bạn
-                        .loginProcessingUrl("/api/login")   // URL POST form
-//                        .defaultSuccessUrl("/api/home", true) // 👈 Chuyển hướng về đây sau khi login thành công
+                        .successHandler(successHandler)
+                        .loginProcessingUrl("/api/login")
                         .failureUrl("/api/login?error=true")
                         .permitAll()
                 )

@@ -1,13 +1,13 @@
 package org.fit.shopnuochoa.controller;
 
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.common.usermodel.HyperlinkType;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.fit.shopnuochoa.Enum.Gender;
 import org.fit.shopnuochoa.Enum.Volume;
 import org.fit.shopnuochoa.component.SecurityUtils;
+import org.fit.shopnuochoa.dto.ProductImportDTO;
 import org.fit.shopnuochoa.model.Category;
 import org.fit.shopnuochoa.model.Comment;
 import org.fit.shopnuochoa.model.Product;
@@ -17,16 +17,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 @Controller
@@ -261,37 +263,61 @@ public class ProductController {
     @PreAuthorize("hasAnyRole('ADMIN')")
     public void exportToExcel(HttpServletResponse response) throws IOException {
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        String headerKey = "Content-Disposition";
-        String headerValue = "attachment; filename=products.xlsx";
-        response.setHeader(headerKey, headerValue);
+        response.setHeader("Content-Disposition", "attachment; filename=products.xlsx");
 
         List<Product> productList = productService.getAll();
-
-        // Tạo workbook
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Products");
 
-        // Header row
+        // Hyperlink style
+        CellStyle hyperlinkStyle = workbook.createCellStyle();
+        Font hyperlinkFont = workbook.createFont();
+        hyperlinkFont.setUnderline(Font.U_SINGLE);
+        hyperlinkFont.setColor(IndexedColors.BLUE.getIndex());
+        hyperlinkStyle.setFont(hyperlinkFont);
+
+        // Header
         Row headerRow = sheet.createRow(0);
         headerRow.createCell(0).setCellValue("ID");
-        headerRow.createCell(1).setCellValue("Tên sản phẩm");
-        headerRow.createCell(2).setCellValue("Giá");
-        headerRow.createCell(3).setCellValue("Nhà sản xuất");
-        headerRow.createCell(4).setCellValue("Tồn kho");
+        headerRow.createCell(1).setCellValue("Name");
+        headerRow.createCell(2).setCellValue("ImageUrl");
+        headerRow.createCell(3).setCellValue("Price");
+        headerRow.createCell(4).setCellValue("Category");
+        headerRow.createCell(5).setCellValue("Volume");
+        headerRow.createCell(6).setCellValue("Gender");
+        headerRow.createCell(7).setCellValue("Quantity");
+        headerRow.createCell(8).setCellValue("HotTrend");
 
-        // Fill data
+        CreationHelper creationHelper = workbook.getCreationHelper();
         int rowCount = 1;
+
         for (Product product : productList) {
             Row row = sheet.createRow(rowCount++);
+
             row.createCell(0).setCellValue(product.getId());
             row.createCell(1).setCellValue(product.getName());
-            row.createCell(2).setCellValue(product.getPrice());
-            row.createCell(3).setCellValue(product.getCategory().getName());
-//            row.createCell(4).setCellValue(Boolean.TRUE.equals(product.getInStock()) ? "Còn hàng" : "Hết hàng");
+
+            // --- IMAGE URL as HYPERLINK ---
+            Cell imgCell = row.createCell(2);
+            String imageUrl = product.getImagePath(); // Cloudinary URL
+            imgCell.setCellValue(imageUrl);
+
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                Hyperlink hyperlink = creationHelper.createHyperlink(HyperlinkType.URL);
+                hyperlink.setAddress(imageUrl);
+                imgCell.setHyperlink(hyperlink);
+                imgCell.setCellStyle(hyperlinkStyle);
+            }
+
+            row.createCell(3).setCellValue(product.getPrice());
+            row.createCell(4).setCellValue(product.getCategory().getName());
+            row.createCell(5).setCellValue(product.getVolume() != null ? product.getVolume().name() : "");
+            row.createCell(6).setCellValue(product.getGender() != null ? product.getGender().name() : "");
+            row.createCell(7).setCellValue(product.getQuantity() != null ? product.getQuantity() : 0);
+            row.createCell(8).setCellValue(Boolean.TRUE.equals(product.getHotTrend()) ? "true" : "false");
         }
 
-        // Auto-size columns
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 9; i++) {
             sheet.autoSizeColumn(i);
         }
 
@@ -299,7 +325,64 @@ public class ProductController {
         workbook.close();
     }
 
-    @PostMapping("/import")
+    // ============= NEW IMPORT FLOW =============
+
+    /**
+     * Step 1: Show import preview page
+     */
+    @GetMapping("/import")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String showImportPage() {
+        return "screen/admin/admin-product-import";
+    }
+
+    /**
+     * Step 2: Preview Excel data
+     */
+    @PostMapping("/import/preview")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseBody
+    public List<ProductImportDTO> previewExcel(@RequestParam("file") MultipartFile file) throws IOException {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("Please select a file to upload.");
+        }
+        return productService.previewExcelData(file);
+    }
+
+    /**
+     * Step 3: Upload images and return URLs
+     */
+    @PostMapping("/import/upload-images")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseBody
+    public Map<String, String> uploadImages(@RequestParam("images") List<MultipartFile> images) throws IOException {
+        return productService.uploadImagesToCloudinary(images);
+    }
+
+    /**
+     * Step 4: Final import with matched data
+     */
+    @PostMapping("/import/confirm")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> confirmImport(@RequestBody List<ProductImportDTO> products) {
+        try {
+            productService.importProductsFromDTO(products);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Import thành công " + products.size() + " sản phẩm!");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Lỗi: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    // ============= OLD IMPORT (Deprecated) =============
+
+    @PostMapping("/import-old")
     @PreAuthorize("hasRole('ADMIN')")
     public String importProducts(@RequestParam("file") MultipartFile file) throws IOException {
         if (file.isEmpty()) {
@@ -317,11 +400,41 @@ public class ProductController {
 
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Products");
+
+        // Header row (không có ImageUrl)
         Row header = sheet.createRow(0);
         header.createCell(0).setCellValue("Name");
         header.createCell(1).setCellValue("Price");
         header.createCell(2).setCellValue("Category");
-        header.createCell(3).setCellValue("InStock");
+        header.createCell(3).setCellValue("Volume");
+        header.createCell(4).setCellValue("Gender");
+        header.createCell(5).setCellValue("Quantity");
+        header.createCell(6).setCellValue("HotTrend");
+
+        // Example row
+        Row example = sheet.createRow(1);
+        example.createCell(0).setCellValue("Dior Sauvage");
+        example.createCell(1).setCellValue(2500000);
+        example.createCell(2).setCellValue("Dior");
+        example.createCell(3).setCellValue("ML_100");
+        example.createCell(4).setCellValue("NAM");
+        example.createCell(5).setCellValue(50);
+        example.createCell(6).setCellValue("true");
+
+        // Instruction row
+        Row instruction = sheet.createRow(2);
+        instruction.createCell(0).setCellValue("Chanel No 5");
+        instruction.createCell(1).setCellValue(3200000);
+        instruction.createCell(2).setCellValue("Chanel");
+        instruction.createCell(3).setCellValue("ML_50");
+        instruction.createCell(4).setCellValue("NU");
+        instruction.createCell(5).setCellValue(30);
+        instruction.createCell(6).setCellValue("true");
+
+        // Auto-size columns
+        for (int i = 0; i < 7; i++) {
+            sheet.autoSizeColumn(i);
+        }
 
         workbook.write(response.getOutputStream());
         workbook.close();

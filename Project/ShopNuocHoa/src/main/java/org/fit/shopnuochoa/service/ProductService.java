@@ -1,11 +1,13 @@
 package org.fit.shopnuochoa.service;
 
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.fit.shopnuochoa.Enum.Gender;
 import org.fit.shopnuochoa.Enum.Volume;
+import org.fit.shopnuochoa.dto.ProductImportDTO;
 import org.fit.shopnuochoa.dto.RatingStats;
 import org.fit.shopnuochoa.model.Category;
 import org.fit.shopnuochoa.model.Product;
@@ -20,7 +22,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -145,6 +149,169 @@ public class ProductService {
         );
     }
 
+    // ============= NEW IMPORT FLOW METHODS =============
+
+    /**
+     * Preview Excel data without importing
+     */
+    public List<ProductImportDTO> previewExcelData(MultipartFile file) throws IOException {
+        Workbook workbook = new XSSFWorkbook(file.getInputStream());
+        Sheet sheet = workbook.getSheetAt(0);
+
+        // Validate header
+        Row header = sheet.getRow(0);
+        if (header == null || !"Name".equals(getCellValueAsString(header.getCell(0)))) {
+            workbook.close();
+            throw new IllegalArgumentException("File không đúng template!");
+        }
+
+        List<ProductImportDTO> products = new ArrayList<>();
+
+        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row == null) continue;
+
+            String name = getCellValueAsString(row.getCell(0));
+            if (name == null || name.isBlank()) continue;
+
+            ProductImportDTO dto = new ProductImportDTO();
+            dto.setName(name);
+            dto.setPrice(getCellValueAsDouble(row.getCell(1)));
+            dto.setCategory(getCellValueAsString(row.getCell(2)));
+
+            // Parse Volume
+            String volumeStr = getCellValueAsString(row.getCell(3));
+            if (volumeStr != null && !volumeStr.isBlank()) {
+                try {
+                    dto.setVolume(Volume.valueOf(volumeStr));
+                } catch (Exception e) {
+                    // Ignore invalid volume
+                }
+            }
+
+            // Parse Gender
+            String genderStr = getCellValueAsString(row.getCell(4));
+            if (genderStr != null && !genderStr.isBlank()) {
+                try {
+                    dto.setGender(Gender.valueOf(genderStr));
+                } catch (Exception e) {
+                    // Ignore invalid gender
+                }
+            }
+
+            dto.setQuantity(getCellValueAsInteger(row.getCell(5)));
+            dto.setHotTrend(getCellValueAsBoolean(row.getCell(6)));
+
+            products.add(dto);
+        }
+
+        workbook.close();
+        return products;
+    }
+
+    /**
+     * Upload images to Cloudinary and return map of filename -> URL
+     */
+    public Map<String, String> uploadImagesToCloudinary(List<MultipartFile> images) throws IOException {
+        Map<String, String> imageMap = new HashMap<>();
+
+        for (MultipartFile image : images) {
+            if (!image.isEmpty()) {
+                String originalFilename = image.getOriginalFilename();
+                String cloudinaryUrl = cloudinaryService.uploadProductImage(image);
+
+                // Lưu mapping: tên file gốc (không extension) -> Cloudinary URL
+                String nameWithoutExt = originalFilename.substring(0, originalFilename.lastIndexOf('.'));
+                imageMap.put(nameWithoutExt, cloudinaryUrl);
+            }
+        }
+
+        return imageMap;
+    }
+
+    /**
+     * Import products from DTO list (after preview and image matching)
+     */
+    @Transactional
+    public void importProductsFromDTO(List<ProductImportDTO> dtos) {
+        List<Product> products = new ArrayList<>();
+
+        for (ProductImportDTO dto : dtos) {
+            // Find or create category
+            Category category = (Category) categoryRepository.findByName(dto.getCategory())
+                    .orElseGet(() -> {
+                        Category newCategory = new Category();
+                        newCategory.setName(dto.getCategory());
+                        return categoryRepository.save(newCategory);
+                    });
+
+            Product product = new Product();
+            product.setName(dto.getName());
+            product.setPrice(dto.getPrice());
+            product.setCategory(category);
+            product.setVolume(dto.getVolume());
+            product.setGender(dto.getGender());
+            product.setQuantity(dto.getQuantity() != null ? dto.getQuantity() : 0);
+            product.setHotTrend(dto.getHotTrend() != null && dto.getHotTrend());
+            product.setImageUrl(dto.getImageUrl()); // Set Cloudinary URL
+
+            products.add(product);
+        }
+
+        productRepository.saveAll(products);
+    }
+
+    // Helper methods for Excel cell reading
+    private String getCellValueAsString(Cell cell) {
+        if (cell == null) return null;
+        return switch (cell.getCellType()) {
+            case STRING -> cell.getStringCellValue();
+            case NUMERIC -> String.valueOf((int) cell.getNumericCellValue());
+            case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
+            default -> null;
+        };
+    }
+
+    private Double getCellValueAsDouble(Cell cell) {
+        if (cell == null) return 0.0;
+        return switch (cell.getCellType()) {
+            case NUMERIC -> cell.getNumericCellValue();
+            case STRING -> {
+                try {
+                    yield Double.parseDouble(cell.getStringCellValue());
+                } catch (Exception e) {
+                    yield 0.0;
+                }
+            }
+            default -> 0.0;
+        };
+    }
+
+    private Integer getCellValueAsInteger(Cell cell) {
+        if (cell == null) return 0;
+        return switch (cell.getCellType()) {
+            case NUMERIC -> (int) cell.getNumericCellValue();
+            case STRING -> {
+                try {
+                    yield Integer.parseInt(cell.getStringCellValue());
+                } catch (Exception e) {
+                    yield 0;
+                }
+            }
+            default -> 0;
+        };
+    }
+
+    private Boolean getCellValueAsBoolean(Cell cell) {
+        if (cell == null) return false;
+        return switch (cell.getCellType()) {
+            case BOOLEAN -> cell.getBooleanCellValue();
+            case STRING -> "true".equalsIgnoreCase(cell.getStringCellValue());
+            default -> false;
+        };
+    }
+
+    // ============= OLD IMPORT METHOD (Deprecated) =============
 
     public void importFromExcel(MultipartFile file) throws IOException {
         Workbook workbook = new XSSFWorkbook(file.getInputStream());
