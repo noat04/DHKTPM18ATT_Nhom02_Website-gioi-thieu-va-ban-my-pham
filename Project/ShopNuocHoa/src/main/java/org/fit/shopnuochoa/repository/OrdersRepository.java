@@ -8,9 +8,11 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface OrdersRepository extends JpaRepository<Orders, Integer> {
 
+    List<Orders> findByCustomerId(Integer customerId);
     Page<Orders> findByCustomerId(Integer customerId, Pageable pageable);
 
     Page<Orders> findByDate(LocalDate date, Pageable pageable);

@@ -14,19 +14,24 @@ import java.util.Optional;
 public class UserService {
     private UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
+
     public List<Users> getAll() {
         return userRepository.findAll();
     }
+
     public Users getUserById(int id) {
         return userRepository.findById(id).orElse(null);
     }
+
     public Users getUserByUsername(String username) {
         return userRepository.findByUsername(username);
     }
+
     public Users createUser(Users user) {
         // Băm mật khẩu trước khi lưu
         String hashedPassword = passwordEncoder.encode(user.getPassword());
@@ -36,6 +41,7 @@ public class UserService {
         user.setCreatedAt(LocalDateTime.now());
         return userRepository.save(user);
     }
+
     public Optional<Users> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
@@ -71,7 +77,6 @@ public class UserService {
         });
     }
 
-
     public Users registerNewUser(Users user) {
         // 1. Kiểm tra username đã tồn tại chưa
         if (userRepository.findByUsername(user.getUsername()) != null) {
@@ -92,9 +97,20 @@ public class UserService {
 
         return userRepository.save(user);
     }
+
+    public void updatePassword(String email, String newPassword) {
+        Users user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với email này"));
+
+        // Mã hóa mật khẩu mới trước khi lưu
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
     public boolean checkPassword(String rawPassword, String encodedPassword) {
         return passwordEncoder.matches(rawPassword, encodedPassword);
     }
+
     public boolean deleteUserById(int id) {
         return userRepository.findById(id).map(user -> {
             // Nếu user có liên kết tới Customer và Customer có Orders -> không xóa

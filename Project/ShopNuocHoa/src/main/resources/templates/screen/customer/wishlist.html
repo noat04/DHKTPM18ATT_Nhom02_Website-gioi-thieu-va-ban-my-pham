@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{screen/customer/header :: html-head}"></head>
+
+<style>
+    .wishlist-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: none;
+        border-radius: 12px;
+        overflow: hidden;
+        background: white;
+    }
+    .wishlist-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+    }
+    .wishlist-img-wrapper {
+        position: relative;
+        height: 250px;
+        overflow: hidden;
+    }
+    .wishlist-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Hoặc contain tùy ảnh của bạn */
+    }
+
+    /* Nút xóa nổi trên ảnh */
+    .btn-remove-wish {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(255, 255, 255, 0.9);
+        color: #dc3545;
+        border-radius: 50%;
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        border: none;
+        z-index: 10;
+    }
+    .btn-remove-wish:hover {
+        background: #dc3545;
+        color: white;
+        transform: scale(1.1);
+    }
+</style>
+
+<body class="d-flex flex-column min-vh-100 bg-light">
+
+<div th:replace="~{screen/customer/header :: main-header}"></div>
+
+<main class="container my-5 flex-grow-1">
+
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h3 class="fw-bold text-primary">
+            <i class="bi bi-heart-fill text-danger me-2"></i>Sản phẩm yêu thích
+        </h3>
+        <span class="text-muted" th:if="${wishlistItems != null}">
+            (Có <span th:text="${wishlistItems.size()}">0</span> sản phẩm)
+        </span>
+    </div>
+
+    <div th:if="${wishlistItems == null || wishlistItems.isEmpty()}" class="text-center py-5 bg-white rounded-3 shadow-sm">
+        <div class="mb-3">
+            <i class="bi bi-heartbreak" style="font-size: 4rem; color: #e0e0e0;"></i>
+        </div>
+        <h5 class="fw-bold text-secondary">Danh sách yêu thích đang trống</h5>
+        <p class="text-muted mb-4">Hãy thả tim các sản phẩm bạn thích để lưu vào đây nhé!</p>
+        <a th:href="@{/api/products/list}" class="btn btn-primary px-4 rounded-pill fw-bold">
+            <i class="bi bi-search me-1"></i> Khám phá ngay
+        </a>
+    </div>
+
+    <div th:if="${wishlistItems != null && !wishlistItems.isEmpty()}"
+         class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+
+        <div class="col" th:each="item : ${wishlistItems}">
+            <div class="card wishlist-card h-100 shadow-sm" th:with="product=${item.product}">
+
+                <div class="wishlist-img-wrapper">
+                    <a th:href="@{/api/products/detail/{id}(id=${product.id})}">
+                        <img th:src="${product.imageUrl != null ? product.imageUrl : 'https://via.placeholder.com/300x300?text=No+Image'}"
+                             class="wishlist-img" th:alt="${product.name}">
+                    </a>
+
+                    <form th:action="@{/api/wishlist/toggle}" method="post">
+                        <input type="hidden" name="productId" th:value="${product.id}">
+                        <button type="submit" class="btn-remove-wish shadow-sm" title="Bỏ thích">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </form>
+
+                    <div th:unless="${product.isInStock()}"
+                         class="position-absolute bottom-0 start-0 w-100 bg-secondary text-white text-center py-1 small bg-opacity-75">
+                        Hết hàng
+                    </div>
+                </div>
+
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-1">
+                        <small class="text-muted text-uppercase"
+                               style="font-size: 0.75rem;"
+                               th:text="${product.category.name}">Thương hiệu</small>
+                    </div>
+
+                    <h6 class="card-title mb-2">
+                        <a th:href="@{/api/products/detail/{id}(id=${product.id})}"
+                           class="text-dark text-decoration-none text-truncate d-block"
+                           th:title="${product.name}"
+                           th:text="${product.name}">Tên sản phẩm</a>
+                    </h6>
+
+                    <p class="card-text text-danger fw-bold mb-3"
+                       th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></p>
+
+                    <div class="mt-auto">
+                        <form th:action="@{/api/cart}" method="post" th:if="${product.isInStock()}">
+                            <input type="hidden" name="action" value="add">
+                            <input type="hidden" name="productId" th:value="${product.id}">
+                            <button type="submit" class="btn btn-outline-primary w-100 rounded-pill btn-sm">
+                                <i class="bi bi-cart-plus me-1"></i> Thêm vào giỏ
+                            </button>
+                        </form>
+
+                        <button th:unless="${product.isInStock()}" class="btn btn-light w-100 rounded-pill btn-sm text-muted border" disabled>
+                            Tạm hết hàng
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<div th:replace="~{screen/customer/footer :: main-footer}"></div>
+
+</body>
+</html>

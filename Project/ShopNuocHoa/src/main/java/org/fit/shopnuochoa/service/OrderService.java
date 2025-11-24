@@ -21,7 +21,7 @@ public class OrderService {
         this.customerRepository = customerRepository;
     }
     public List<Orders> findAll() {return ordersRepository.findAll();}
-
+    public List<Orders> getByCustomer(Integer customerId) {return ordersRepository.findByCustomerId(customerId);}
     // ✅ Thêm hàm này
     public Page<Orders> findAll(Pageable pageable) {
         return ordersRepository.findAll(pageable);

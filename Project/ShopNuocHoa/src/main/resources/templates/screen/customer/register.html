@@ -63,6 +63,26 @@
     }
     .form-control-icon { border-left: none; border-radius: 0 10px 10px 0; }
 
+    /* CSS Mới cho nút ẩn hiện mật khẩu */
+    .password-group {
+        position: relative;
+    }
+    .password-group .form-control {
+        padding-right: 45px; /* Chừa chỗ cho nút mắt */
+    }
+    .btn-toggle-password {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #6c757d;
+        cursor: pointer;
+        z-index: 10;
+    }
+    .btn-toggle-password:hover { color: #333; }
+
     .btn-auth {
         background: linear-gradient(to right, #667eea, #764ba2);
         border: none;
@@ -134,7 +154,16 @@
                     <label class="form-label small fw-bold text-secondary">Mật khẩu</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                        <input type="password" th:field="*{password}" class="form-control form-control-icon" placeholder="••••••••">
+
+                        <div class="password-group flex-grow-1 position-relative">
+                            <input type="password" th:field="*{password}" id="passwordInput"
+                                   class="form-control form-control-icon" placeholder="••••••••"
+                                   style="border-radius: 0 10px 10px 0;">
+
+                            <button type="button" class="btn-toggle-password" onclick="togglePassword()">
+                                <i class="bi bi-eye-slash-fill" id="toggleIcon"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="text-danger small mt-1" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
                 </div>
@@ -153,5 +182,23 @@
 </main>
 
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
+
+<script>
+    function togglePassword() {
+        const passwordInput = document.getElementById('passwordInput');
+        const toggleIcon = document.getElementById('toggleIcon');
+
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+            toggleIcon.classList.remove("bi-eye-slash-fill");
+            toggleIcon.classList.add("bi-eye-fill");
+        } else {
+            passwordInput.type = "password";
+            toggleIcon.classList.remove("bi-eye-fill");
+            toggleIcon.classList.add("bi-eye-slash-fill");
+        }
+    }
+</script>
+
 </body>
 </html>

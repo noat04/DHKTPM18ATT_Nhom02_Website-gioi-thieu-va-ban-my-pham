@@ -9,7 +9,6 @@ import org.fit.shopnuochoa.service.CustomerService;
 import org.fit.shopnuochoa.service.EmailService;
 import org.fit.shopnuochoa.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -204,6 +203,127 @@ public class UserController {
         }
     }
 
+    // 1. Hiển thị trang nhập Email
+    @GetMapping("/forgot-password")
+    public String showForgotPasswordForm() {
+        return "screen/forgot-password";
+    }
+
+    // 2. Xử lý gửi OTP về Email
+    @PostMapping("/forgot-password")
+    public String processForgotPassword(@RequestParam("email") String email,
+                                        HttpSession session,
+                                        RedirectAttributes ra) {
+        // Kiểm tra email có tồn tại trong DB không
+        // (Giả sử bạn đã có hàm findByEmail trong UserService/Repo trả về Optional)
+        // Hoặc dùng try-catch nếu hàm của bạn ném lỗi
+        try {
+            Optional<Users> user = userService.findByEmail(email); // Cần đảm bảo hàm này có trong Service
+            if (user == null) {
+                ra.addFlashAttribute("errorMessage", "Email này chưa được đăng ký!");
+                return "redirect:/api/forgot-password";
+            }
+
+            // Sinh OTP và gửi mail
+            String otp = emailService.generateOtp();
+            boolean isSent = emailService.sendOtpEmail(email, otp);
+
+            if (!isSent) {
+                ra.addFlashAttribute("errorMessage", "Lỗi gửi mail. Vui lòng thử lại sau.");
+                return "redirect:/api/forgot-password";
+            }
+
+            // Lưu thông tin vào Session để sang bước sau check
+            session.setAttribute("resetEmail", email);
+            session.setAttribute("resetOtp", otp);
+            session.setAttribute("resetTime", System.currentTimeMillis());
+
+            return "redirect:/api/reset-password";
+
+        } catch (Exception e) {
+            ra.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            return "redirect:/api/forgot-password";
+        }
+    }
+
+    // 3. Hiển thị trang Nhập OTP và Mật khẩu mới
+    // Trong ForgotPasswordController.java
+
+    @GetMapping("/reset-password")
+    public String showResetPasswordForm(HttpSession session, Model model, RedirectAttributes ra) {
+        // 1. Kiểm tra session xem có hợp lệ không
+        Long resetTime = (Long) session.getAttribute("resetTime");
+        if (session.getAttribute("resetEmail") == null || resetTime == null) {
+            ra.addFlashAttribute("errorMessage", "Hết phiên làm việc. Vui lòng thực hiện lại.");
+            return "redirect:/api/forgot-password";
+        }
+
+        // 2. [THÊM MỚI] Tính thời gian còn lại (theo giây)
+        long currentTime = System.currentTimeMillis();
+        long timeElapsed = currentTime - resetTime; // Thời gian đã trôi qua (ms)
+        long timeLimit = 5 * 60 * 1000; // Giới hạn 5 phút (ms)
+
+        long remainingMillis = timeLimit - timeElapsed;
+        long remainingSeconds = remainingMillis / 1000;
+
+        // Nếu đã hết giờ (số âm), gán về 0
+        if (remainingSeconds < 0) {
+            remainingSeconds = 0;
+        }
+
+        // 3. Gửi số giây còn lại sang View
+        model.addAttribute("remainingSeconds", remainingSeconds);
+
+        return "screen/reset-password";
+    }
+
+    // 4. Xử lý Đổi mật khẩu
+    @PostMapping("/reset-password")
+    public String processResetPassword(@RequestParam("otp") String otp,
+                                       @RequestParam("newPassword") String newPassword,
+                                       @RequestParam("confirmPassword") String confirmPassword,
+                                       HttpSession session,
+                                       RedirectAttributes ra) {
+
+        String sessionOtp = (String) session.getAttribute("resetOtp");
+        String email = (String) session.getAttribute("resetEmail");
+        Long otpTime = (Long) session.getAttribute("resetTime");
+
+        if (email == null || sessionOtp == null) {
+            ra.addFlashAttribute("errorMessage", "Yêu cầu không hợp lệ.");
+            return "redirect:/api/forgot-password";
+        }
+
+        // Check hết hạn (5 phút)
+        if (System.currentTimeMillis() - otpTime > 5 * 60 * 1000) {
+            ra.addFlashAttribute("errorMessage", "Mã OTP đã hết hạn.");
+            return "redirect:/api/forgot-password";
+        }
+
+        // Check OTP
+        if (!otp.equals(sessionOtp)) {
+            ra.addFlashAttribute("errorMessage", "Mã OTP không chính xác.");
+            return "redirect:/api/reset-password";
+        }
+
+        // Check mật khẩu trùng khớp
+        if (!newPassword.equals(confirmPassword)) {
+            ra.addFlashAttribute("errorMessage", "Mật khẩu xác nhận không khớp.");
+            return "redirect:/api/reset-password";
+        }
+
+        // Thực hiện đổi mật khẩu
+        userService.updatePassword(email, newPassword);
+
+        // Xóa session
+        session.removeAttribute("resetEmail");
+        session.removeAttribute("resetOtp");
+        session.removeAttribute("resetTime");
+
+        ra.addFlashAttribute("successMessage", "Đổi mật khẩu thành công! Vui lòng đăng nhập.");
+        return "redirect:/api/login";
+    }
+
     // UPLOAD AVATAR LÊN CLOUDINARY
     @PostMapping("/upload-avatar")
     public String uploadAvatar(@RequestParam("avatarFile") MultipartFile file,
@@ -322,7 +442,7 @@ public class UserController {
         model.addAttribute("user", user);
         model.addAttribute("customer", customer);
 
-        return "screen/account-setting"; // Trả về file profile.html (có tabs)
+        return "screen/customer/account-setting"; // Trả về file profile.html (có tabs)
     }
 
     // Xử lý cập nhật hồ sơ
@@ -349,7 +469,6 @@ public class UserController {
 
         return "redirect:/api/profile";
     }
-
 
 
     // ==========================

@@ -39,7 +39,8 @@ public class Users {
     // Validate Full Name
     @NotBlank(message = "Họ và tên không được để trống")
     @Size(min = 2, max = 100, message = "Họ và tên phải từ 2 đến 100 ký tự")
-    @Column(nullable = false, unique = true, length = 100)
+    @Pattern(regexp = "^[A-ZÀ-Ỹ].*", message = "Ký tự đầu tiên của họ tên phải viết hoa")
+    @Column(nullable = false, length = 100) // Bỏ unique=true nếu không cần thiết tên phải duy nhất
     private String full_name;
 
     @Column(name = "avatar")

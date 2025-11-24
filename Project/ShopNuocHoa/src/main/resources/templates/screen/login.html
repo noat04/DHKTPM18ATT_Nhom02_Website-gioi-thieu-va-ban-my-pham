@@ -26,7 +26,6 @@
     /* Banner bên trái */
     .auth-banner {
         flex: 1;
-        /* Ảnh nền khác với trang đăng ký một chút để phân biệt */
         background: url('https://images.unsplash.com/photo-1615526675159-e248c3021d3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80') no-repeat center center;
         background-size: cover;
         position: relative;
@@ -53,28 +52,65 @@
         justify-content: center;
     }
 
-    /* Style cho Input */
+    /* --- STYLE INPUT & GROUP --- */
     .input-group-text {
-        background: #f9f9f9; border: 1px solid #e1e1e1; border-right: none; border-radius: 10px 0 0 10px; color: #6c757d;
+        background: #f9f9f9;
+        border: 1px solid #e1e1e1;
+        color: #6c757d;
     }
+
+    /* Icon bên trái */
+    .input-group-text:first-child {
+        border-right: none;
+        border-radius: 10px 0 0 10px;
+    }
+
     .form-control {
         padding: 12px 15px;
-        border-radius: 0 10px 10px 0;
         border: 1px solid #e1e1e1;
-        border-left: none;
         background-color: #f9f9f9;
+        /* Mặc định bo góc phải (dùng cho username) */
+        border-radius: 0 10px 10px 0;
+        border-left: none;
     }
+
+    /* [SỬA ĐỔI] Input mật khẩu nằm giữa nên không bo góc phải */
+    .password-input {
+        border-radius: 0 !important; /* Vuông góc phải */
+        border-right: none;
+    }
+
     .form-control:focus {
         background-color: white;
         border-color: #e1e1e1;
-        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-        border-left: 1px solid #667eea; /* Hiệu ứng viền trái khi focus */
+        box-shadow: none; /* Tắt shadow mặc định bootstrap để tự custom */
+        border-left: 1px solid #e1e1e1;
     }
-    /* Fix viền cho input group khi focus */
-    .input-group:focus-within .input-group-text {
+
+    /* Hiệu ứng focus cho cả group */
+    .input-group:focus-within .input-group-text,
+    .input-group:focus-within .form-control,
+    .input-group:focus-within .btn-toggle-password {
         border-color: #667eea;
         background-color: white;
+    }
+    .input-group:focus-within .input-group-text i,
+    .input-group:focus-within .btn-toggle-password i {
         color: #667eea;
+    }
+
+    /* [THÊM MỚI] Nút con mắt bên phải */
+    .btn-toggle-password {
+        background: #f9f9f9;
+        border: 1px solid #e1e1e1;
+        border-left: none;
+        border-radius: 0 10px 10px 0;
+        color: #6c757d;
+        cursor: pointer;
+        z-index: 5; /* Đảm bảo nút nổi lên trên */
+    }
+    .btn-toggle-password:hover {
+        background-color: #f1f1f1;
     }
 
     .btn-auth {
@@ -125,24 +161,34 @@
                     <label class="form-label small fw-bold text-secondary">Tên đăng nhập</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
-                        <input type="text" name="username" class="form-control" placeholder="Nhập tên đăng nhập" required autofocus>
+                        <input type="text" name="username" class="form-control"
+                               placeholder="Nhập tên đăng nhập" required autofocus autocomplete="username">
                     </div>
                 </div>
 
                 <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <label class="form-label small fw-bold text-secondary mb-0">Mật khẩu</label>
-                        <a href="#" class="text-decoration-none small text-primary">Quên mật khẩu?</a>
                     </div>
                     <div class="input-group mt-2">
                         <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
-                        <input type="password" name="password" class="form-control" placeholder="Nhập mật khẩu" required>
+
+                        <input type="password" name="password" id="passwordInput"
+                               class="form-control password-input"
+                               placeholder="Nhập mật khẩu" required autocomplete="current-password">
+
+                        <button class="btn btn-toggle-password" type="button" id="togglePasswordBtn">
+                            <i class="bi bi-eye-slash-fill" id="toggleIcon"></i>
+                        </button>
                     </div>
                 </div>
 
-                <div class="mb-4 form-check">
-                    <input type="checkbox" class="form-check-input" id="remember-me" name="remember-me">
-                    <label class="form-check-label small text-secondary" for="remember-me">Ghi nhớ đăng nhập</label>
+                <div class="mb-4 form-check d-flex justify-content-between align-items-center">
+<!--                    <div>-->
+<!--                        <input type="checkbox" class="form-check-input" id="remember-me" name="remember-me">-->
+<!--                        <label class="form-check-label small text-secondary" for="remember-me">Ghi nhớ đăng nhập</label>-->
+<!--                    </div>-->
+                    <a th:href="@{/api/forgot-password}" class="text-decoration-none small text-primary">Quên mật khẩu?</a>
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-auth w-100 text-white mb-4">
@@ -159,5 +205,31 @@
 </main>
 
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const toggleBtn = document.getElementById("togglePasswordBtn");
+        const passwordInput = document.getElementById("passwordInput");
+        const toggleIcon = document.getElementById("toggleIcon");
+
+        if(toggleBtn && passwordInput) {
+            toggleBtn.addEventListener("click", function() {
+                // Kiểm tra type hiện tại
+                const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+                passwordInput.setAttribute("type", type);
+
+                // Đổi icon
+                if (type === "text") {
+                    toggleIcon.classList.remove("bi-eye-slash-fill");
+                    toggleIcon.classList.add("bi-eye-fill");
+                } else {
+                    toggleIcon.classList.remove("bi-eye-fill");
+                    toggleIcon.classList.add("bi-eye-slash-fill");
+                }
+            });
+        }
+    });
+</script>
+
 </body>
 </html>

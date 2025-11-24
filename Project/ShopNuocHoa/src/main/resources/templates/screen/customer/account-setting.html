@@ -137,7 +137,7 @@
                     </div>
 
                     <h3 class="user-name" th:text="${user.full_name}">User Name</h3>
-                    <p class="user-role">Thành viên thân thiết</p>
+                    <p class="user-role" th:text="${customer.nickName ?: '---'}"></p>
 
                     <form th:action="@{/api/upload-avatar}" method="post" enctype="multipart/form-data" class="mt-3">
                         <label class="btn-upload cursor-pointer">
@@ -237,7 +237,7 @@
                     <div class="tab-pane fade" id="edit" role="tabpanel">
                         <h5 class="fw-bold text-dark mb-4 ps-2 border-start border-4 border-warning">Cập nhật thông tin</h5>
 
-                        <form th:action="@{/api/profile/update}" method="post" th:object="${customer}">
+                        <form th:action="@{/api/profile/edit}" method="post" th:object="${customer}">
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Họ và tên <span class="text-danger">*</span></label>
