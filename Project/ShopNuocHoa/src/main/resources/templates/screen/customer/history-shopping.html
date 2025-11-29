@@ -1,74 +1,172 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{screen/customer/header :: html-head}"></head>
+<style>
+    /* 1. Khung Đơn Hàng */
+    .order-card {
+        background: white;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        margin-bottom: 25px;
+        overflow: hidden;
+        transition: transform 0.2s;
+    }
+    .order-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    }
+
+    /* 2. Header Đơn Hàng */
+    .order-header {
+        background-color: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .order-id { font-weight: 600; color: #333; }
+    .order-date { font-size: 0.9rem; color: #666; }
+    .order-status {
+        font-weight: 600;
+        color: #198754; /* Màu xanh lá (Thành công) */
+        text-transform: uppercase;
+        font-size: 0.85rem;
+    }
+
+    /* 3. Item Sản phẩm (Thay thế Table) */
+    .order-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 20px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .order-item:last-child { border-bottom: none; }
+
+    .item-img {
+        width: 80px;
+        height: 80px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 1px solid #eee;
+        margin-right: 15px;
+    }
+    .item-info { flex-grow: 1; }
+    .item-name { font-weight: 600; color: #333; margin-bottom: 5px; display: block; text-decoration: none; }
+    .item-name:hover { color: #0d6efd; }
+    .item-meta { font-size: 0.9rem; color: #888; }
+    .item-price { font-weight: 600; color: #333; text-align: right; }
+
+    /* 4. Footer Tổng tiền */
+    .order-footer {
+        padding: 15px 20px;
+        background-color: #fff;
+        border-top: 1px solid #eee;
+        display: flex;
+        justify-content: flex-end; /* Căn phải */
+        align-items: center;
+        gap: 15px;
+    }
+    .total-label { font-size: 1rem; color: #555; }
+    .total-price { font-size: 1.4rem; font-weight: 700; color: #dc3545; /* Màu đỏ */ }
+
+    .btn-action { border-radius: 20px; padding: 6px 20px; font-weight: 500; }
+</style>
 <body class="d-flex flex-column min-vh-100 bg-light">
+
 <div th:replace="~{screen/customer/header:: main-header}"></div>
 
 <main class="container my-5">
-    <h2 class="mb-4 text-center text-primary fw-bold"> Lịch sử mua hàng</h2>
 
-    <div th:if="${ordersPage == null || ordersPage.isEmpty()}" class="text-center">
-        <div class="alert alert-info" role="alert">
-            Bạn chưa có đơn hàng nào.
-        </div>
-        <a th:href="@{/api/products/list}" class="btn btn-primary mt-3">
-            <i class="bi bi-arrow-left"></i> Tiếp tục mua sắm
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h3 class="fw-bold text-dark mb-0">
+            <i class="bi bi-receipt-cutoff me-2 text-primary"></i>Lịch sử đơn hàng
+        </h3>
+        <a th:href="@{/api/products/list}" class="btn btn-outline-primary rounded-pill">
+            <i class="bi bi-cart-plus me-1"></i> Mua sắm tiếp
         </a>
     </div>
 
+    <div th:if="${ordersPage == null || ordersPage.isEmpty()}" class="text-center py-5 bg-white rounded-3 shadow-sm">
+        <div class="mb-3">
+            <i class="bi bi-bag-x" style="font-size: 4rem; color: #e0e0e0;"></i>
+        </div>
+        <h5 class="fw-bold text-secondary">Bạn chưa có đơn hàng nào</h5>
+        <p class="text-muted mb-4">Hãy khám phá các sản phẩm tuyệt vời của chúng tôi nhé!</p>
+        <a th:href="@{/api/products/list}" class="btn btn-primary px-4 rounded-pill fw-bold">Khám phá ngay</a>
+    </div>
+
     <div th:unless="${ordersPage == null || ordersPage.isEmpty() }">
-        <div th:each="order : ${ordersPage.content}" class="card mb-4 shadow-sm">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <span>Mã đơn hàng: <strong th:text="${order.id}"></strong></span>
-                <span>Ngày đặt: <strong th:text="${#temporals.format(order.date, 'dd/MM/yyyy')}"></strong></span>
+
+        <div th:each="order : ${ordersPage.content}" class="order-card">
+
+            <div class="order-header">
+                <div>
+                    <span class="order-id me-3">Đơn hàng #<span th:text="${order.id}"></span></span>
+                    <span class="order-date">
+                        <i class="bi bi-calendar3 me-1"></i>
+                        <span th:text="${#temporals.format(order.date, 'dd/MM/yyyy HH:mm')}"></span>
+                    </span>
+                </div>
+                <div class="order-status">
+                    <i class="bi bi-check-circle-fill me-1"></i> Hoàn thành
+                </div>
             </div>
 
-            <div class="card-body">
-                <h6 class="text-muted">Chi tiết sản phẩm:</h6>
-                <table class="table table-bordered table-striped align-middle mt-2">
-                    <thead>
-                    <tr>
-                        <th>Sản phẩm</th>
-                        <th>Giá mua</th>
-                        <th>Số lượng</th>
-                        <th>Tổng</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="line : ${orderLinesByOrder[order.id]}">
-                        <td th:text="${line.product.name}"></td>
-                        <td th:text="${#numbers.formatDecimal(line.purchasePrice, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
-                        <td th:text="${line.amount}"></td>
-                        <td th:text="${#numbers.formatDecimal(line.purchasePrice * line.amount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></td>
-                    </tr>
-                    </tbody>
-                    <tfoot>
-                        <tr class="table-light">
-                            <td colspan="3" class="text-end fw-bold">Tổng hóa đơn:</td>
-                            <td class="text-end fw-bold text-danger"
-                                th:text="${#numbers.formatDecimal(order.getTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'">
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
+            <div class="order-items-list">
+                <div th:each="line : ${orderLinesByOrder[order.id]}" class="order-item">
+
+                    <a th:href="@{/api/products/detail/{id}(id=${line.product.id})}">
+                        <img th:src="${line.product.imageUrl != null ? line.product.imageUrl : 'https://via.placeholder.com/80'}"
+                             class="item-img" alt="Sản phẩm">
+                    </a>
+
+                    <div class="item-info">
+                        <a th:href="@{/api/products/detail/{id}(id=${line.product.id})}"
+                           class="item-name" th:text="${line.product.name}">Tên sản phẩm</a>
+                        <div class="item-meta">
+                            <span>Số lượng: x<span th:text="${line.amount}">1</span></span>
+                            <span class="mx-2">|</span>
+                            <span>Đơn giá: <span th:text="${#numbers.formatDecimal(line.purchasePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span></span>
+                        </div>
+                    </div>
+
+                    <div class="item-price">
+                        <span th:text="${#numbers.formatDecimal(line.purchasePrice * line.amount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="order-footer">
+                <div class="me-auto">
+                </div>
+
+                <span class="total-label">Thành tiền:</span>
+                <span class="total-price"
+                      th:text="${#numbers.formatDecimal(order.getTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'">
+                </span>
             </div>
         </div>
 
-        <!-- Phân trang -->
-        <nav class="d-flex justify-content-center">
+        <nav class="d-flex justify-content-center mt-5" th:if="${ordersPage.totalPages > 1}">
             <ul class="pagination">
-                <li th:classappend="${currentPage == 0} ? 'disabled' : ''" class="page-item">
-                    <a th:href="@{|/api/orders/list?page=${currentPage - 1}|}" class="page-link">Trước</a>
+                <li th:classappend="${ordersPage.first} ? 'disabled' : ''" class="page-item">
+                    <a th:href="@{|/api/orders/list?page=${ordersPage.number - 1}|}" class="page-link rounded-start-pill">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
                 </li>
 
-                <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
-                    th:classappend="${i == currentPage} ? 'active' : ''"
+                <li th:each="i : ${#numbers.sequence(0, ordersPage.totalPages - 1)}"
+                    th:classappend="${i == ordersPage.number} ? 'active' : ''"
                     class="page-item">
-                    <a th:href="@{|/api/orders/list?page=${i}|}" class="page-link" th:text="${i + 1}"></a>
+                    <a th:href="@{|/api/orders/list?page=${i}|}" class="page-link" th:text="${i + 1}">1</a>
                 </li>
 
-                <li th:classappend="${currentPage + 1 >= totalPages} ? 'disabled' : ''" class="page-item">
-                    <a th:href="@{|/api/orders/list?page=${currentPage + 1}|}" class="page-link">Sau</a>
+                <li th:classappend="${ordersPage.last} ? 'disabled' : ''" class="page-item">
+                    <a th:href="@{|/api/orders/list?page=${ordersPage.number + 1}|}" class="page-link rounded-end-pill">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
                 </li>
             </ul>
         </nav>

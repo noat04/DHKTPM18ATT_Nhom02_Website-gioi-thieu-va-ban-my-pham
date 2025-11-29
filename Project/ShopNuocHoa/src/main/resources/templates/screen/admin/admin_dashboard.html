@@ -44,8 +44,10 @@
                 <div class="col-md-3">
                     <div class="card text-center text-bg-success">
                         <div class="card-body">
-                            <h5>Đơn hàng</h5>
-                            <h3 th:text="${totalOrders}">87</h3>
+                            <a th:href="@{/api/orders/list}" style="text-decoration: none; color: inherit;">
+                                <h5>Đơn hàng</h5>
+                                <h3 th:text="${totalOrders}">87</h3>
+                            </a>
                         </div>
                     </div>
                 </div>

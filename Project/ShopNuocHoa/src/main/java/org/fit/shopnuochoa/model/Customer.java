@@ -2,6 +2,7 @@ package org.fit.shopnuochoa.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.fit.shopnuochoa.Enum.Gender;
 
 import java.time.LocalDate;
 import java.util.Set;
@@ -24,6 +25,33 @@ public class Customer {
 
     @Column(nullable = false)
     private LocalDate customerSince;
+
+    // [SỬA] Cho phép null (người dùng sẽ cập nhật sau)
+    @Column(nullable = true)
+    private String phoneNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender", nullable = true) // [SỬA] Cho phép null
+    private Gender gender;
+
+    // [SỬA] Cho phép null
+    @Column(nullable = true)
+    private LocalDate birthday;
+
+    // [SỬA] Cho phép null (để tránh lỗi khi đăng ký)
+    @Column(nullable = true)
+    private String address;
+
+    @Column(nullable = false)
+    private String email;
+
+    // [SỬA] Cho phép null
+    @Column(nullable = true)
+    private String idCard;
+
+    // [SỬA] Cho phép null
+    @Column(nullable = true)
+    private String nickName;
 
     // Quan hệ 1-N: 1 Customer có nhiều Order
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

@@ -45,6 +45,8 @@ public class CartController {
         return "screen/customer/cart"; // Trả về file view hiển thị giỏ hàng
     }
 
+    /// Bên trong file CartController.java
+
     /**
      * Xử lý các hành động thêm, sửa, xóa sản phẩm trong giỏ hàng
      */
@@ -54,32 +56,39 @@ public class CartController {
                                    @RequestParam(value = "quantity", required = false) Integer quantity,
                                    HttpSession session, RedirectAttributes redirectAttributes) {
 
-
-
         CartBean cart = getCart(session);
+        Product product;
 
+        // DÙNG try-catch ĐỂ BẮT CÁC LỖI TỒN KHO TỪ CARTBEAN
         try {
             switch (action) {
                 case "add":
-                    if (productId != null) {
-                        Product p = productService.getById(productId);
-                        if (p != null) {
-                            if (p.getInStock()) {
-                                cart.addProduct(p);
-                                // Gửi thông báo thành công
-                                redirectAttributes.addFlashAttribute("successMessage", "Đã thêm sản phẩm vào giỏ hàng!");
-                            } else {
-                                // 3. Gửi thông báo lỗi khi sản phẩm hết hàng
-                                redirectAttributes.addFlashAttribute("errorMessage", "Sản phẩm \"" + p.getName() + "\" đã hết hàng!");
-                            }
-                        }
+                    if (productId == null) break;
+                    product = productService.getById(productId);
+                    if (product == null) break;
+
+                    // Lấy số lượng muốn thêm (mặc định là 1 nếu không có)
+                    int quantityToAdd = (quantity != null && quantity > 0) ? quantity : 1;
+
+                    // Logic gọi addProduct N lần
+                    // (Nếu 1 trong các lần gọi thất bại, nó sẽ bị bắt ở catch)
+                    for (int i = 0; i < quantityToAdd; i++) {
+                        cart.addProduct(product);
                     }
+                    redirectAttributes.addFlashAttribute("successMessage",
+                            "Đã thêm " + quantityToAdd + " sản phẩm \"" + product.getName() + "\" vào giỏ!");
                     break;
+
                 case "update":
-                    if (productId != null && quantity != null) {
-                        cart.updateQuantity(productId, quantity);
-                    }
+                    if (productId == null || quantity == null) break;
+
+                    // Không cần kiểm tra tồn kho ở đây nữa,
+                    // vì cart.updateQuantity() (trong CartBean) sẽ tự làm
+                    cart.updateQuantity(productId, quantity);
+
+                    redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật số lượng.");
                     break;
+
                 case "remove":
                     if (productId != null) {
                         cart.removeProduct(productId);
@@ -89,12 +98,17 @@ public class CartController {
                     cart.clear();
                     break;
             }
+        } catch (RuntimeException e) {
+            // === PHẦN SỬA LỖI QUAN TRỌNG ===
+            // Bắt lỗi (ví dụ: "Không đủ hàng!") và gửi cho người dùng
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+
         } catch (Exception e) {
-            // Xử lý lỗi nếu cần
+            // Bắt các lỗi chung khác
+            redirectAttributes.addFlashAttribute("errorMessage", "Đã xảy ra lỗi: " + e.getMessage());
             e.printStackTrace();
         }
 
-        // Chuyển hướng về trang giỏ hàng sau khi thực hiện hành động
         return "redirect:/api/cart";
     }
 }

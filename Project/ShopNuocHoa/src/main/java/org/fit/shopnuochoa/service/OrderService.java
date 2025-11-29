@@ -21,6 +21,11 @@ public class OrderService {
         this.customerRepository = customerRepository;
     }
     public List<Orders> findAll() {return ordersRepository.findAll();}
+    public List<Orders> getByCustomer(Integer customerId) {return ordersRepository.findByCustomerId(customerId);}
+    // ✅ Thêm hàm này
+    public Page<Orders> findAll(Pageable pageable) {
+        return ordersRepository.findAll(pageable);
+    }
     public Optional<Orders> findById(int id) {
         return ordersRepository.findById(id);
     }
@@ -56,4 +61,7 @@ public class OrderService {
         return ordersRepository.findByDateRange(startDate.atStartOfDay(), endDate.atStartOfDay(),pageable);
     }
 
+    public Page<Orders> searchByCustomerNameOrUsername(String keyword, Pageable pageable) {
+        return ordersRepository.searchByCustomerNameOrUsername(keyword, pageable);
+    }
 }

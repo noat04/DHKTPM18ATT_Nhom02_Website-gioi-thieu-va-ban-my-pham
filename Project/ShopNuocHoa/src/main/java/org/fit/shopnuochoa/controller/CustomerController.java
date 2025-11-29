@@ -16,10 +16,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequestMapping("/api/customers")
 public class CustomerController {
+
     private CustomerService customerService;
+
     public CustomerController(CustomerService customerService) {
         this.customerService = customerService;
     }
+
     @GetMapping("/list")
 //    @PreAuthorize("hasAnyRole('ADMIN')")
     public String showCategoryList(@RequestParam(value = "action", required = false) String action,
@@ -39,6 +42,7 @@ public class CustomerController {
         model.addAttribute("customers", customers);
         return "screen/admin/admin-customer-list"; // Trả về file view department-list.html
     }
+
     @GetMapping("/form")
     @PreAuthorize("hasAnyRole('CUSTOMER')")
     public String showDepartmentForm(@RequestParam(value = "action", required = false, defaultValue = "add") String action,

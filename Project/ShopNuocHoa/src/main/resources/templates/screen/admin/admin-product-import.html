@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Import Sản phẩm</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <th:block th:replace="~{fragment/sidebar :: sidebar-styles}"></th:block>
+    <style>
+        .product-preview-card {
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+        .product-preview-card.has-image {
+            border-color: #28a745;
+            background-color: #f0fff4;
+        }
+        .product-preview-card.no-image {
+            border-color: #ffc107;
+            background-color: #fffbf0;
+        }
+        .image-preview {
+            width: 100%;
+            height: 150px;
+            object-fit: contain;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            background: #f8f9fa;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .step {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            background: #e9ecef;
+            margin: 0 5px;
+            border-radius: 8px;
+            position: relative;
+        }
+        .step.active {
+            background: #0d6efd;
+            color: white;
+        }
+        .step.completed {
+            background: #28a745;
+            color: white;
+        }
+        .drop-zone {
+            border: 3px dashed #0d6efd;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .drop-zone:hover {
+            background: #e7f3ff;
+        }
+        .drop-zone.dragover {
+            background: #cfe2ff;
+            border-color: #0a58ca;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div th:replace="~{fragment/sidebar :: main-sidebar}"></div>
+
+        <div class="col-md-9 col-lg-10 content">
+            <main class="container my-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="bi bi-upload"></i> Import Sản phẩm</h2>
+                    <a href="/api/products/list" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Quay lại
+                    </a>
+                </div>
+
+                <!-- Step Indicator -->
+                <div class="step-indicator">
+                    <div class="step active" id="step1">
+                        <h5><i class="bi bi-1-circle"></i> Upload Excel</h5>
+                        <small>Tải file Excel chứa dữ liệu</small>
+                    </div>
+                    <div class="step" id="step2">
+                        <h5><i class="bi bi-2-circle"></i> Upload Ảnh</h5>
+                        <small>Tải ảnh sản phẩm lên</small>
+                    </div>
+                    <div class="step" id="step3">
+                        <h5><i class="bi bi-3-circle"></i> Match & Xác nhận</h5>
+                        <small>Kiểm tra và xác nhận import</small>
+                    </div>
+                </div>
+
+                <!-- Hướng dẫn -->
+                <div class="alert alert-info">
+                    <h5><i class="bi bi-info-circle-fill"></i> Hướng dẫn Import</h5>
+                    <ol class="mb-0">
+                        <li><strong>Bước 1:</strong> Tải template Excel, điền thông tin sản phẩm (Name, Price, Category, Volume, Gender, Quantity, HotTrend)</li>
+                        <li><strong>Bước 2:</strong> Upload file Excel đã điền → Hệ thống sẽ hiển thị preview</li>
+                        <li><strong>Bước 3:</strong> Upload ảnh sản phẩm (tên ảnh phải khớp với tên sản phẩm)</li>
+                        <li><strong>VD:</strong> Sản phẩm "Dior Sauvage" → Ảnh: "Dior Sauvage.jpg" hoặc "dior sauvage.png"</li>
+                        <li><strong>Bước 4:</strong> Kiểm tra preview → Click "Xác nhận Import"</li>
+                    </ol>
+                </div>
+
+                <!-- Section 1: Upload Excel -->
+                <div class="card shadow-sm mb-4" id="excelSection">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0"><i class="bi bi-file-earmark-excel"></i> Bước 1: Upload File Excel</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <a href="/api/products/template" class="btn btn-success">
+                                <i class="bi bi-download"></i> Tải Template Excel
+                            </a>
+                        </div>
+
+                        <div class="drop-zone" id="excelDropZone">
+                            <i class="bi bi-file-earmark-excel" style="font-size: 48px; color: #0d6efd;"></i>
+                            <h5 class="mt-3">Kéo thả file Excel vào đây hoặc click để chọn</h5>
+                            <p class="text-muted">Chấp nhận: .xlsx, .xls</p>
+                            <input type="file" id="excelFile" accept=".xlsx,.xls" style="display: none;">
+                        </div>
+
+                        <div id="excelFileName" class="mt-3" style="display: none;">
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle"></i> <strong id="excelNameDisplay"></strong>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary btn-lg w-100 mt-3" id="btnPreviewExcel" style="display: none;">
+                            <i class="bi bi-eye"></i> Xem Preview Dữ liệu
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Section 2: Preview Products & Upload Images -->
+                <div class="card shadow-sm mb-4" id="previewSection" style="display: none;">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0"><i class="bi bi-images"></i> Bước 2: Upload Ảnh Sản phẩm</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="drop-zone" id="imagesDropZone">
+                                    <i class="bi bi-images" style="font-size: 48px; color: #0d6efd;"></i>
+                                    <h5 class="mt-3">Upload Ảnh Sản phẩm</h5>
+                                    <p class="text-muted">Chọn nhiều ảnh cùng lúc (Ctrl/Cmd + Click)</p>
+                                    <input type="file" id="imagesFile" multiple accept="image/*" style="display: none;">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-warning">
+                                    <h6><i class="bi bi-exclamation-triangle"></i> Lưu ý quan trọng:</h6>
+                                    <ul class="mb-0">
+                                        <li>Tên ảnh phải <strong>khớp chính xác</strong> với tên sản phẩm</li>
+                                        <li>Không phân biệt hoa thường</li>
+                                        <li>VD: "Dior Sauvage" ↔ "dior sauvage.jpg" ✅</li>
+                                        <li>Sản phẩm không có ảnh vẫn import được nhưng sẽ dùng ảnh mặc định</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="uploadProgress" style="display: none;">
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                     id="progressBar" style="width: 0%"></div>
+                            </div>
+                            <p class="text-center mt-2" id="progressText">Đang upload...</p>
+                        </div>
+
+                        <h5 class="mt-4"><i class="bi bi-list-check"></i> Danh sách sản phẩm (<span id="totalProducts">0</span> sản phẩm)</h5>
+                        <div id="productsList" class="row"></div>
+
+                        <div class="alert alert-info mt-3">
+                            <i class="bi bi-info-circle"></i>
+                            <strong id="matchedCount">0</strong> sản phẩm đã có ảnh /
+                            <strong id="unmatchedCount">0</strong> sản phẩm chưa có ảnh
+                        </div>
+
+                        <button class="btn btn-success btn-lg w-100 mt-3" id="btnConfirmImport">
+                            <i class="bi bi-check-circle"></i> Xác nhận Import Vào Database
+                        </button>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let productsData = [];
+let imagesMap = {};
+
+// ========== STEP 1: UPLOAD EXCEL ==========
+const excelDropZone = document.getElementById('excelDropZone');
+const excelFileInput = document.getElementById('excelFile');
+
+excelDropZone.addEventListener('click', () => excelFileInput.click());
+
+excelDropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    excelDropZone.classList.add('dragover');
+});
+
+excelDropZone.addEventListener('dragleave', () => {
+    excelDropZone.classList.remove('dragover');
+});
+
+excelDropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    excelDropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    handleExcelFile(file);
+});
+
+excelFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    handleExcelFile(file);
+});
+
+function handleExcelFile(file) {
+    if (!file) return;
+
+    document.getElementById('excelFileName').style.display = 'block';
+    document.getElementById('excelNameDisplay').textContent = file.name;
+    document.getElementById('btnPreviewExcel').style.display = 'block';
+
+    // Store file for preview
+    window.currentExcelFile = file;
+}
+
+document.getElementById('btnPreviewExcel').addEventListener('click', async () => {
+    const file = window.currentExcelFile;
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('/api/products/import/preview', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) throw new Error('Failed to preview Excel');
+
+        productsData = await response.json();
+
+        // Update UI
+        document.getElementById('step1').classList.add('completed');
+        document.getElementById('step1').classList.remove('active');
+        document.getElementById('step2').classList.add('active');
+
+        document.getElementById('previewSection').style.display = 'block';
+        document.getElementById('totalProducts').textContent = productsData.length;
+
+        renderProductsList();
+        updateMatchCount();
+
+        // Scroll to preview section
+        document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
+
+    } catch (error) {
+        alert('Lỗi khi đọc file Excel: ' + error.message);
+    }
+});
+
+// ========== STEP 2: UPLOAD IMAGES ==========
+const imagesDropZone = document.getElementById('imagesDropZone');
+const imagesFileInput = document.getElementById('imagesFile');
+
+imagesDropZone.addEventListener('click', () => imagesFileInput.click());
+
+imagesDropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    imagesDropZone.classList.add('dragover');
+});
+
+imagesDropZone.addEventListener('dragleave', () => {
+    imagesDropZone.classList.remove('dragover');
+});
+
+imagesDropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    imagesDropZone.classList.remove('dragover');
+    const files = Array.from(e.dataTransfer.files);
+    handleImageFiles(files);
+});
+
+imagesFileInput.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files);
+    handleImageFiles(files);
+});
+
+async function handleImageFiles(files) {
+    if (files.length === 0) return;
+
+    document.getElementById('uploadProgress').style.display = 'block';
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('progressText').textContent = `Đang upload ${files.length} ảnh...`;
+
+    const formData = new FormData();
+    files.forEach(file => formData.append('images', file));
+
+    try {
+        const response = await fetch('/api/products/import/upload-images', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) throw new Error('Failed to upload images');
+
+        imagesMap = await response.json();
+
+        document.getElementById('progressBar').style.width = '100%';
+        document.getElementById('progressText').textContent = `✓ Đã upload thành công ${Object.keys(imagesMap).length} ảnh!`;
+
+        setTimeout(() => {
+            document.getElementById('uploadProgress').style.display = 'none';
+        }, 2000);
+
+        // Match images with products
+        matchImages();
+
+        // Update UI
+        document.getElementById('step2').classList.add('completed');
+        document.getElementById('step2').classList.remove('active');
+        document.getElementById('step3').classList.add('active');
+
+    } catch (error) {
+        alert('Lỗi khi upload ảnh: ' + error.message);
+        document.getElementById('uploadProgress').style.display = 'none';
+    }
+}
+
+function matchImages() {
+    productsData.forEach(product => {
+        const normalizedProductName = product.name.toLowerCase().trim();
+
+        // Try to find matching image
+        for (const [imageName, imageUrl] of Object.entries(imagesMap)) {
+            const normalizedImageName = imageName.toLowerCase().trim();
+
+            if (normalizedProductName === normalizedImageName) {
+                product.imageUrl = imageUrl;
+                product.imageName = imageName;
+                break;
+            }
+        }
+    });
+
+    renderProductsList();
+    updateMatchCount();
+}
+
+function renderProductsList() {
+    const container = document.getElementById('productsList');
+    container.innerHTML = '';
+
+    productsData.forEach((product, index) => {
+        const hasImage = !!product.imageUrl;
+        const card = document.createElement('div');
+        card.className = 'col-md-4 col-lg-3';
+        card.innerHTML = `
+            <div class="product-preview-card ${hasImage ? 'has-image' : 'no-image'}">
+                <div class="text-center mb-2">
+                    ${hasImage
+                        ? `<img src="${product.imageUrl}" class="image-preview" alt="${product.name}">`
+                        : `<div class="image-preview d-flex align-items-center justify-content-center">
+                               <i class="bi bi-image" style="font-size: 48px; color: #adb5bd;"></i>
+                           </div>`
+                    }
+                </div>
+                <h6 class="text-truncate" title="${product.name}">
+                    ${hasImage ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-exclamation-circle-fill text-warning"></i>'}
+                    ${product.name}
+                </h6>
+                <p class="mb-1 small"><strong>Giá:</strong> ${product.price.toLocaleString('vi-VN')} VNĐ</p>
+                <p class="mb-1 small"><strong>NSX:</strong> ${product.category}</p>
+                <p class="mb-1 small"><strong>Dung tích:</strong> ${product.volume || 'N/A'}</p>
+                ${hasImage
+                    ? `<small class="text-success"><i class="bi bi-image"></i> ${product.imageName}</small>`
+                    : `<small class="text-muted"><i class="bi bi-image"></i> Chưa có ảnh</small>`
+                }
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function updateMatchCount() {
+    const matched = productsData.filter(p => p.imageUrl).length;
+    const unmatched = productsData.length - matched;
+
+    document.getElementById('matchedCount').textContent = matched;
+    document.getElementById('unmatchedCount').textContent = unmatched;
+}
+
+// ========== STEP 3: CONFIRM IMPORT ==========
+document.getElementById('btnConfirmImport').addEventListener('click', async () => {
+    if (!confirm(`Xác nhận import ${productsData.length} sản phẩm vào database?`)) {
+        return;
+    }
+
+    const btn = document.getElementById('btnConfirmImport');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Đang import...';
+
+    try {
+        const response = await fetch('/api/products/import/confirm', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(productsData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('✓ ' + result.message);
+            window.location.href = '/api/products/list';
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        alert('Lỗi khi import: ' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-circle"></i> Xác nhận Import Vào Database';
+    }
+});
+</script>
+</body>
+</html>
+

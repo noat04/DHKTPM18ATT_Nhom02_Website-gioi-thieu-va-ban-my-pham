@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("/api/orders")
 public class OrderController {
+
     private final SecurityUtils securityUtils;
     private final OrderService orderService;
     private final OrderLineService orderLineService;
@@ -47,41 +48,63 @@ public class OrderController {
     public String showOrderHistory(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String keyword,
             Model model,
             Authentication authentication) {
 
-        // 2️⃣ Lấy user hiện tại từ SecurityContext
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName(); // Lấy username đã đăng nhập
-
-        // 3️⃣ Tìm User & Customer tương ứng
-        Users user = userService.getUserByUsername(username);
-        Customer customer = customerService.getByUser(user.getId());
-
         Pageable pageable = PageRequest.of(page, size);
-        Page<Orders> ordersPage = orderService.findByCustomer(customer.getId(), pageable);
+        Page<Orders> ordersPage;
 
-        // Lấy toàn bộ OrderLine để hiển thị chi tiết sản phẩm trong từng đơn hàng
-        List<OrderLine> allOrderLines = orderLineService.findAll();
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(r -> r.getAuthority().equals("ROLE_ADMIN"));
 
-        // Gom nhóm chi tiết theo OrderId
-        Map<Integer, List<OrderLine>> orderLinesByOrder = allOrderLines.stream()
-                .collect(Collectors.groupingBy(line -> line.getOrder().getId()));
+        if (isAdmin) {
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                ordersPage = orderService.searchByCustomerNameOrUsername(keyword.trim(), pageable);
+            } else {
+                ordersPage = orderService.findAll(pageable);
+            }
+        } else {
+            // ✅ Customer xem đơn hàng của chính họ
+            String username = authentication.getName();
+            Users user = userService.getUserByUsername(username);
+            if (user == null) {
+                model.addAttribute("message", "Không tìm thấy người dùng trong hệ thống.");
+                return "error/404";
+            }
 
+            Customer customer = customerService.getByUser(user.getId());
+            if (customer == null) {
+                model.addAttribute("message", "Không tìm thấy thông tin khách hàng.");
+                return "error/404";
+            }
+
+            ordersPage = orderService.findByCustomer(customer.getId(), pageable);
+        }
+
+        // Lấy danh sách các đơn hàng ở trang hiện tại
+        List<Orders> ordersOnPage = ordersPage.getContent();
+
+        // Tạo Map<Integer, List<OrderLine>> mà HTML cần
+        // (Giả sử bạn có hàm 'findAllByOrderId' trong OrderLineService)
+        Map<Integer, List<OrderLine>> orderLinesMap = ordersOnPage.stream()
+                .collect(Collectors.toMap(
+                        Orders::getId, // Key = Order ID
+                        order -> orderLineService.findAllByOrderId(order.getId()) // Value = List OrderLines
+                ));
+
+        // Thêm Map này vào model
+        model.addAttribute("orderLinesByOrder", orderLinesMap);
+        // Truyền danh sách đơn hàng sang view
+        model.addAttribute("orders", ordersPage.getContent());
         model.addAttribute("ordersPage", ordersPage);
-        model.addAttribute("orderLinesByOrder", orderLinesByOrder);
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", ordersPage.getTotalPages());
+        model.addAttribute("keyword", keyword);
 
-        // ✅ Kiểm tra role để điều hướng đến view tương ứng
-        String roleView = authentication.getAuthorities().stream()
-                .anyMatch(auth1 -> auth1.getAuthority().equals("ROLE_ADMIN"))
-                ? "screen/admin/admin-oder-list"
+        return isAdmin
+                ? "screen/admin/admin-order-list"
                 : "screen/customer/history-shopping";
-        authentication.getAuthorities().forEach(auth1 ->
-                System.out.println("Current role: " + auth1.getAuthority())
-        );
-        return roleView;
-//        return "screen/customer/history-shopping";
     }
+
 }
