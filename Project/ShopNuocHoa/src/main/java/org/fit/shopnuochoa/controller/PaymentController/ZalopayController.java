@@ -23,22 +23,13 @@ public class ZalopayController {
         this.zalopayService = zalopayService;
     }
 
-//    @PostMapping
-//    public ResponseEntity<String> createPayment(@RequestBody Map<String, Object> orderRequest) {
-//        try {
-//            String response = zalopayService.createOrder(orderRequest);
-//            return ResponseEntity.ok(response);
-//        } catch (Exception e) {
-//            return ResponseEntity.status(500).body("Error creating payment: " + e.getMessage());
-//        }
-//    }
-
     /**
      * [SỬA ĐỔI]
      * Chuyển thành @Controller, dùng @GetMapping và trả về RedirectView.
      */
     @GetMapping("/create-payment")
     public RedirectView createPayment(@RequestParam("amount") String amount,
+                                      @RequestParam(required = false) String note,
                                       HttpSession session,
                                       RedirectAttributes redirectAttributes) {
 
@@ -48,6 +39,7 @@ public class ZalopayController {
         }
 
         try {
+            session.setAttribute("checkoutNote", note);
             // 2. Chuyển đổi amount
             long amountAsLong = (long) Double.parseDouble(amount);
             String appUser = "user123"; // (Bạn có thể lấy username thật nếu muốn)

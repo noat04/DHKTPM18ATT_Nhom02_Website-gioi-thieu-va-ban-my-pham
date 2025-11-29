@@ -18,8 +18,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.Map;
@@ -105,6 +107,17 @@ public class OrderController {
         return isAdmin
                 ? "screen/admin/admin-order-list"
                 : "screen/customer/history-shopping";
+    }
+    // 3. Xử lý ĐÃ NHẬN HÀNG
+    @PostMapping("/complete")
+    public String completeOrder(@RequestParam("orderId") Integer orderId, RedirectAttributes ra) {
+        try {
+            orderService.confirmReceived(orderId);
+            ra.addFlashAttribute("successMessage", "Cảm ơn bạn đã mua sắm! Đơn hàng đã hoàn tất.");
+        } catch (Exception e) {
+            ra.addFlashAttribute("errorMessage", "Lỗi xác nhận: " + e.getMessage());
+        }
+        return "redirect:/api/orders/list";
     }
 
 }

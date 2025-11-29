@@ -22,9 +22,12 @@ public class PaypalController {
 
     // 1. BẮT ĐẦU THANH TOÁN
     @PostMapping("/pay")
-    public String createPayment(HttpSession session, RedirectAttributes redirectAttributes) {
+    public String createPayment(
+            @RequestParam(value = "note", required = false) String note, // [THÊM] Nhận note từ form
+            HttpSession session, RedirectAttributes redirectAttributes) {
         CartBean cart = (CartBean) session.getAttribute("cart");
 
+        session.setAttribute("checkoutNote", note);
         if (cart == null || cart.getTotal() <= 0) {
             redirectAttributes.addFlashAttribute("errorMessage", "Giỏ hàng trống!");
             return "redirect:/api/cart";

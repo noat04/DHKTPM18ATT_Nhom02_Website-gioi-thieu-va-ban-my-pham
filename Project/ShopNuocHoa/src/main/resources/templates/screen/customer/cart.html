@@ -267,40 +267,41 @@
                 </div>
 
                 <div class="voucher-list">
-                    <div class="small fw-bold text-muted mb-2">Mã giảm giá có sẵn:</div>
+                    <div class="small fw-bold text-muted mb-2">Mã giảm giá dành cho bạn:</div>
 
-                    <label class="voucher-ticket">
-                        <input type="radio" name="selectedVoucher" value="15000" data-code="FREESHIP">
-                        <div class="voucher-content">
-                            <div class="voucher-left"><i class="bi bi-truck fs-4 text-success"></i></div>
-                            <div class="voucher-right">
-                                <div class="fw-bold">Mã FreeShip</div>
-                                <div class="small text-muted">Giảm 15k phí vận chuyển</div>
-                            </div>
-                        </div>
-                    </label>
+                    <th:block th:each="coupon : ${coupons}">
+                        <label class="voucher-ticket">
+                            <input type="radio" name="selectedVoucher"
+                                   th:value="${coupon.discountValue}"
+                                   th:data-code="${coupon.code}"
+                                   th:data-percent="${coupon.isPercentage}"
+                                   th:data-max="${coupon.maxDiscountAmount}">
 
-                    <label class="voucher-ticket">
-                        <input type="radio" name="selectedVoucher" value="50000" data-code="WELCOME">
-                        <div class="voucher-content">
-                            <div class="voucher-left"><i class="bi bi-gift fs-4 text-danger"></i></div>
-                            <div class="voucher-right">
-                                <div class="fw-bold">Chào bạn mới</div>
-                                <div class="small text-muted">Giảm 50k cho đơn đầu tiên</div>
-                            </div>
-                        </div>
-                    </label>
+                            <div class="voucher-content">
+                                <div class="voucher-left">
+                                    <div class="voucher-left">
+                                        <i class="bi bi-gift fs-4 text-danger" th:if="${coupon instanceof T(org.fit.shopnuochoa.model.WelcomeCoupon)}"></i>
 
-                    <label class="voucher-ticket">
-                        <input type="radio" name="selectedVoucher" value="20000" data-code="TET2025">
-                        <div class="voucher-content">
-                            <div class="voucher-left"><i class="bi bi-tag fs-4 text-primary"></i></div>
-                            <div class="voucher-right">
-                                <div class="fw-bold">Lì xì Tết</div>
-                                <div class="small text-muted">Giảm ngay 20k</div>
+                                        <i class="bi bi-tag fs-4 text-primary" th:if="${coupon instanceof T(org.fit.shopnuochoa.model.OrderCoupon)}"></i>
+
+                                        <i class="bi bi-bag-heart fs-4 text-success" th:if="${coupon instanceof T(org.fit.shopnuochoa.model.CategoryCoupon)}"></i>
+                                    </div>
+                                </div>
+                                <div class="voucher-right">
+                                    <div class="fw-bold" th:text="${coupon.code}">CODE</div>
+                                    <div class="small text-muted" th:text="${coupon.description}">Mô tả</div>
+                                    <div class="x-small text-danger fw-bold">
+                                        <span th:if="${coupon.isPercentage}" th:text="'-' + ${coupon.discountValue} + '%'"></span>
+                                        <span th:unless="${coupon.isPercentage}" th:text="'-' + ${#numbers.formatDecimal(coupon.discountValue, 0, 'COMMA', 0, 'POINT')} + 'đ'"></span>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </label>
+                        </label>
+                    </th:block>
+
+                    <div th:if="${coupons == null || coupons.isEmpty()}" class="text-center text-muted small py-3">
+                        Chưa có mã giảm giá nào phù hợp.
+                    </div>
                 </div>
 
                 <hr class="text-muted opacity-25">
@@ -383,21 +384,31 @@
         };
 
         // 1. Xử lý khi click vào Voucher trong danh sách
+        // Xử lý khi chọn radio button
         voucherRadios.forEach(radio => {
             radio.addEventListener('change', function() {
-                const discountVal = parseFloat(this.value); // Lấy giá trị giảm (VD: 50000)
-                const code = this.getAttribute('data-code'); // Lấy mã (VD: WELCOME)
+                const code = this.getAttribute('data-code');
+                const isPercent = this.getAttribute('data-percent') === 'true';
+                const value = parseFloat(this.value);
+                const maxDiscount = parseFloat(this.getAttribute('data-max')) || 0;
 
-                // Điền vào ô input để user thấy
+                let discountAmount = 0;
+
+                if (isPercent) {
+                    discountAmount = originalTotal * (value / 100);
+                    if (maxDiscount > 0 && discountAmount > maxDiscount) {
+                        discountAmount = maxDiscount;
+                    }
+                } else {
+                    discountAmount = value;
+                }
+
                 inputCoupon.value = code;
                 hiddenCouponInput.value = code;
+                updateCartTotal(discountAmount);
 
-                // Tính tiền
-                updateCartTotal(discountVal);
-
-                // Thông báo đẹp
                 msgCoupon.className = "small mt-1 text-success fw-bold";
-                msgCoupon.innerHTML = `<i class="bi bi-check-circle"></i> Đã chọn mã: ${code}`;
+                msgCoupon.innerHTML = `<i class="bi bi-check-circle"></i> Đã áp dụng mã: ${code}`;
             });
         });
 

@@ -9,11 +9,15 @@ import java.util.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.fit.shopnuochoa.Enum.PaymentMethod;
+import org.fit.shopnuochoa.Enum.ShippingMethod;
 import org.fit.shopnuochoa.config.VnpayConfig;
 import org.fit.shopnuochoa.dto.VnpayRequest;
 import org.fit.shopnuochoa.model.CartBean;
+import org.fit.shopnuochoa.model.Customer;
 import org.fit.shopnuochoa.model.Orders;
 import org.fit.shopnuochoa.service.CheckOutService;
+import org.fit.shopnuochoa.service.EmailService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,10 +32,12 @@ public class VnpayService {
 
     // === THÊM SERVICE CHECKOUT ===
     private final CheckOutService checkOutService;
+    private final EmailService emailService;
 
     // === CẬP NHẬT CONSTRUCTOR ===
-    public VnpayService(CheckOutService checkOutService) {
+    public VnpayService(CheckOutService checkOutService,EmailService emailService) {
         this.checkOutService = checkOutService;
+        this.emailService=emailService;
     }
 //    public String createPayment(VnpayRequest paymentRequest) throws UnsupportedEncodingException {
 //        String vnp_Version = "2.1.0";
@@ -195,6 +201,96 @@ public String createPayment(VnpayRequest paymentRequest, HttpServletRequest requ
      * Xử lý logic trả về TẠI ĐÂY (thay vì trong Controller).
      * Bao gồm: Xác thực Chữ ký (Hash) và Hoàn tất đơn hàng.
      */
+//    @Transactional
+//    public String handlePaymentReturn(Map<String, String> allParams, HttpSession session, RedirectAttributes redirectAttributes) {
+//
+//        // 1. Lấy SecureHash mà VNPay gửi về
+//        String vnp_SecureHash = allParams.get("vnp_SecureHash");
+//
+//        // 2. Xóa hash khỏi map để chuẩn bị tính toán lại
+//        allParams.remove("vnp_SecureHash");
+//        allParams.remove("vnp_SecureHashType");
+//
+//        // 3. Sắp xếp các tham số theo A-Z
+//        List<String> fieldNames = new ArrayList<>(allParams.keySet());
+//        Collections.sort(fieldNames);
+//
+//        // 4. Tạo chuỗi hashData
+//        StringBuilder hashData = new StringBuilder();
+//        for (String fieldName : fieldNames) {
+//            String fieldValue = allParams.get(fieldName);
+//            if ((fieldValue != null) && (fieldValue.length() > 0)) {
+//                try {
+//                    hashData.append(fieldName).append('=')
+//                            .append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
+//                    hashData.append('&');
+//                } catch (UnsupportedEncodingException e) {
+//                    e.printStackTrace();
+//                    redirectAttributes.addFlashAttribute("errorMessage", "Lỗi tạo chữ ký thanh toán.");
+//                    return "redirect:/api/cart";
+//                }
+//            }
+//        }
+//        if (hashData.length() > 0) {
+//            hashData.setLength(hashData.length() - 1);
+//        }
+//
+//        // 5. Tính toán chữ ký (hash) của chúng ta
+//        String calculatedHash = VnpayConfig.hmacSHA512(VnpayConfig.secretKey, hashData.toString());
+//
+//        // 6. === KIỂM TRA BẢO MẬT ===
+//        if (vnp_SecureHash != null && vnp_SecureHash.equals(calculatedHash)) {
+//
+//            // ----- HASH HỢP LỆ (Dữ liệu từ VNPay là thật) -----
+//
+//            String responseCode = allParams.get("vnp_ResponseCode");
+//            CartBean cart = (CartBean) session.getAttribute("cart");
+//            Integer customerId = (Integer) session.getAttribute("checkoutCustomerId");
+//
+//            // == TRƯỜNG HỢP 1: THANH TOÁN THÀNH CÔNG ==
+//            if ("00".equals(responseCode)) {
+//
+//                if (cart == null || customerId == null) {
+//                    redirectAttributes.addFlashAttribute("errorMessage", "Phiên làm việc hết hạn. Vui lòng thử lại.");
+//                    return "redirect:/api/cart";
+//                }
+//
+//                try {
+//                    // GỌI LOGIC CHÍNH: Lưu đơn hàng, trừ kho
+//                    Orders finalOrder = checkOutService.finalizeOrder(customerId, cart);
+//
+//                    session.removeAttribute("cart");
+//                    session.removeAttribute("checkoutCustomerId");
+//
+//                    redirectAttributes.addFlashAttribute("successMessage",
+//                            "Thanh toán thành công! Mã đơn hàng của bạn là #" + finalOrder.getId());
+//                    return "redirect:/api/checkout/success"; // Chuyển đến trang success
+//
+//                } catch (Exception e) {
+//                    // Lỗi (ví dụ: hết hàng trong lúc thanh toán)
+//                    redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi lưu đơn hàng: " + e.getMessage());
+//                    return "redirect:/api/cart";
+//                }
+//
+//            }
+//
+//            // == TRƯỜNG HỢP 2: THANH TOÁN THẤT BẠI (Hủy, Sai OTP...) ==
+//            else {
+//                // "Dịch" mã lỗi sang tiếng Việt
+//                String errorMessage = getVnpayErrorMessage(responseCode);
+//
+//                // Hiển thị lỗi chi tiết
+//                redirectAttributes.addFlashAttribute("errorMessage", errorMessage);
+//                return "redirect:/api/cart"; // Quay về giỏ hàng để thanh toán lại
+//            }
+//
+//        } else {
+//            // ----- HASH KHÔNG HỢP LỆ (Lỗi bảo mật) -----
+//            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi bảo mật: Chữ ký không hợp lệ (Checksum failed).");
+//            return "redirect:/api/cart";
+//        }
+//    }
+
     @Transactional
     public String handlePaymentReturn(Map<String, String> allParams, HttpSession session, RedirectAttributes redirectAttributes) {
 
@@ -213,11 +309,11 @@ public String createPayment(VnpayRequest paymentRequest, HttpServletRequest requ
         StringBuilder hashData = new StringBuilder();
         for (String fieldName : fieldNames) {
             String fieldValue = allParams.get(fieldName);
-            if ((fieldValue != null) && (fieldValue.length() > 0)) {
+            if (fieldValue != null && !fieldValue.isEmpty()) {
                 try {
                     hashData.append(fieldName).append('=')
-                            .append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
-                    hashData.append('&');
+                            .append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()))
+                            .append('&');
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                     redirectAttributes.addFlashAttribute("errorMessage", "Lỗi tạo chữ ký thanh toán.");
@@ -225,65 +321,76 @@ public String createPayment(VnpayRequest paymentRequest, HttpServletRequest requ
                 }
             }
         }
-        if (hashData.length() > 0) {
-            hashData.setLength(hashData.length() - 1);
-        }
+        if (hashData.length() > 0) hashData.setLength(hashData.length() - 1);
 
-        // 5. Tính toán chữ ký (hash) của chúng ta
+        // 5. Tính toán chữ ký
         String calculatedHash = VnpayConfig.hmacSHA512(VnpayConfig.secretKey, hashData.toString());
 
-        // 6. === KIỂM TRA BẢO MẬT ===
-        if (vnp_SecureHash != null && vnp_SecureHash.equals(calculatedHash)) {
+        // 6. Kiểm tra bảo mật
+        if (vnp_SecureHash == null || !vnp_SecureHash.equals(calculatedHash)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi bảo mật: Chữ ký không hợp lệ.");
+            return "redirect:/api/cart";
+        }
 
-            // ----- HASH HỢP LỆ (Dữ liệu từ VNPay là thật) -----
+        // 7. Lấy dữ liệu từ session
+        CartBean cart = (CartBean) session.getAttribute("cart");
+        Integer customerId = (Integer) session.getAttribute("checkoutCustomerId");
+        String shippingAddress = (String) session.getAttribute("checkoutAddress");
+        String note = (String) session.getAttribute("checkoutNote");
+        ShippingMethod shippingMethod = (ShippingMethod) session.getAttribute("checkoutShipping");
+        String couponCode = (String) session.getAttribute("checkoutCouponCode");
+        if (cart == null || customerId == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Phiên làm việc hết hạn. Vui lòng thử lại.");
+            return "redirect:/api/cart";
+        }
 
-            String responseCode = allParams.get("vnp_ResponseCode");
-            CartBean cart = (CartBean) session.getAttribute("cart");
-            Integer customerId = (Integer) session.getAttribute("checkoutCustomerId");
+        // 8. Kiểm tra kết quả thanh toán VNPay
+        String responseCode = allParams.get("vnp_ResponseCode");
+        if ("00".equals(responseCode)) { // thành công
+            try {
+                // 1. Lưu đơn hàng
+                Orders finalOrder = checkOutService.finalizeOrderCOD(
+                        customerId,
+                        cart,
+                        PaymentMethod.VNPAY,
+                        shippingMethod,
+                        shippingAddress,
+                        note,
+                        couponCode
+                );
 
-            // == TRƯỜNG HỢP 1: THANH TOÁN THÀNH CÔNG ==
-            if ("00".equals(responseCode)) {
-
-                if (cart == null || customerId == null) {
-                    redirectAttributes.addFlashAttribute("errorMessage", "Phiên làm việc hết hạn. Vui lòng thử lại.");
-                    return "redirect:/api/cart";
-                }
-
+                // Gửi email PDF
                 try {
-                    // GỌI LOGIC CHÍNH: Lưu đơn hàng, trừ kho
-                    Orders finalOrder = checkOutService.finalizeOrder(customerId, cart);
-
-                    session.removeAttribute("cart");
-                    session.removeAttribute("checkoutCustomerId");
-
-                    redirectAttributes.addFlashAttribute("successMessage",
-                            "Thanh toán thành công! Mã đơn hàng của bạn là #" + finalOrder.getId());
-                    return "redirect:/api/checkout/success"; // Chuyển đến trang success
-
-                } catch (Exception e) {
-                    // Lỗi (ví dụ: hết hàng trong lúc thanh toán)
-                    redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi lưu đơn hàng: " + e.getMessage());
-                    return "redirect:/api/cart";
+                    emailService.sendInvoiceEmailWithPdf(finalOrder);
+                } catch (Exception ex) {
+                    System.err.println("Gửi email hóa đơn thất bại: " + ex.getMessage());
                 }
 
+                // 3. Cleanup session
+                session.removeAttribute("cart");
+                session.removeAttribute("checkoutCustomerId");
+                session.removeAttribute("checkoutAddress");
+                session.removeAttribute("checkoutNote");
+                session.removeAttribute("checkoutShipping");
+
+                // 4. Thông báo thành công
+                redirectAttributes.addFlashAttribute("successMessage",
+                        "Thanh toán VNPay thành công! Mã đơn hàng #" + finalOrder.getId());
+                return "redirect:/api/checkout/success";
+
+            } catch (Exception e) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi lưu đơn hàng: " + e.getMessage());
+                return "redirect:/api/cart";
             }
+        }
 
-            // == TRƯỜNG HỢP 2: THANH TOÁN THẤT BẠI (Hủy, Sai OTP...) ==
-            else {
-                // "Dịch" mã lỗi sang tiếng Việt
-                String errorMessage = getVnpayErrorMessage(responseCode);
-
-                // Hiển thị lỗi chi tiết
-                redirectAttributes.addFlashAttribute("errorMessage", errorMessage);
-                return "redirect:/api/cart"; // Quay về giỏ hàng để thanh toán lại
-            }
-
-        } else {
-            // ----- HASH KHÔNG HỢP LỆ (Lỗi bảo mật) -----
-            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi bảo mật: Chữ ký không hợp lệ (Checksum failed).");
+        else { // thất bại
+            String errorMessage = getVnpayErrorMessage(responseCode);
+            redirectAttributes.addFlashAttribute("errorMessage", errorMessage);
             return "redirect:/api/cart";
         }
     }
+
 
     private String getVnpayErrorMessage(String responseCode) {
         switch (responseCode) {

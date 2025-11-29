@@ -103,6 +103,17 @@
         background-color: white;
     }
     .form-label { font-weight: 600; color: #444; font-size: 0.9rem; }
+    /* Thêm CSS cho select box đẹp hơn */
+    .form-select {
+        border-radius: 8px;
+        padding: 10px 15px;
+        border: 1px solid #e0e0e0;
+        background-color: #fcfcfc;
+    }
+    .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    }
 </style>
 <body class="d-flex flex-column min-vh-100">
 
@@ -224,7 +235,7 @@
                         </div>
                         <div class="info-row">
                             <div class="info-label">Địa chỉ</div>
-                            <div class="info-value" th:text="${customer.address ?: '---'}"></div>
+                            <div class="info-value" th:text="${customer.getFullAddress() ?: '---'}"></div>
                         </div>
 
                         <div class="mt-4 pt-3 border-top text-end">
@@ -279,8 +290,45 @@
                                 </div>
 
                                 <div class="col-12">
-                                    <label class="form-label">Địa chỉ giao hàng</label>
-                                    <textarea class="form-control" rows="3" th:field="*{address}" placeholder="Số nhà, đường, phường/xã..."></textarea>
+                                    <label class="form-label fw-bold">Địa chỉ giao hàng</label>
+
+                                    <div class="card bg-light border-0 p-3 rounded-3">
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <label class="small text-muted">Tỉnh/Thành phố</label>
+                                                <select class="form-select" id="province" th:field="*{province}">
+                                                    <option value="">-- Chọn --</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <label class="small text-muted">Quận/Huyện</label>
+                                                <select class="form-select" id="district" th:field="*{district}" disabled>
+                                                    <option value="">-- Chọn --</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <label class="small text-muted">Phường/Xã</label>
+                                                <select class="form-select" id="ward" th:field="*{ward}" disabled>
+                                                    <option value="">-- Chọn --</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="col-12">
+                                                <label class="small text-muted">Địa chỉ cụ thể</label>
+                                                <input type="text" class="form-control" id="streetDetail"
+                                                       th:field="*{streetDetail}"
+                                                       placeholder="Số nhà, tên đường, tòa nhà...">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="address-data"
+                                         th:data-province="*{province}"
+                                         th:data-district="*{district}"
+                                         th:data-ward="*{ward}">
+                                    </div>
                                 </div>
                             </div>
 
@@ -300,6 +348,112 @@
 </main>
 
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // API Hành chính
+        const host = "https://provinces.open-api.vn/api/";
 
+        // Các element
+        const provinceEl = document.getElementById("province");
+        const districtEl = document.getElementById("district");
+        const wardEl = document.getElementById("ward");
+
+        // Lấy dữ liệu cũ từ Server (để fill lại form nếu khách đã có địa chỉ)
+        const dataEl = document.getElementById("address-data");
+        const savedProvince = dataEl.dataset.province;
+        const savedDistrict = dataEl.dataset.district;
+        const savedWard = dataEl.dataset.ward;
+
+        // Hàm gọi API
+        const callAPI = (api) => {
+            return axios.get(api).then((response) => {
+                return response.data;
+            });
+        }
+
+        // Hàm render option
+        // SelectId: ID của thẻ select
+        // Data: Mảng dữ liệu từ API
+        // SelectedText: Tên địa danh cần chọn mặc định (dữ liệu cũ)
+        const renderData = (selectId, data, selectedText) => {
+            let selectBox = document.getElementById(selectId);
+            let row = '<option value="">-- Chọn --</option>';
+            let selectedCode = null; // Mã code của mục được chọn (để load cấp con)
+
+            data.forEach(element => {
+                // So sánh tên từ API với tên trong Database
+                let isSelected = (element.name === selectedText) ? "selected" : "";
+
+                if(isSelected) selectedCode = element.code; // Lưu lại mã code nếu trùng
+
+                // Value lưu TÊN (để lưu vào DB), data-code lưu MÃ (để gọi API)
+                row += `<option value="${element.name}" data-code="${element.code}" ${isSelected}>${element.name}</option>`;
+            });
+
+            selectBox.innerHTML = row;
+            return selectedCode; // Trả về mã code của mục vừa được chọn tự động
+        }
+
+        // --- QUY TRÌNH LOAD DỮ LIỆU (Tuần tự) ---
+
+        // 1. Load Tỉnh
+        callAPI(host + "?depth=1").then((data) => {
+            const provinceCode = renderData("province", data, savedProvince);
+
+            // Nếu có tỉnh cũ -> Load Huyện
+            if (provinceCode) {
+                districtEl.disabled = false;
+                callAPI(host + "p/" + provinceCode + "?depth=2").then((res) => {
+                    const districtCode = renderData("district", res.districts, savedDistrict);
+
+                    // Nếu có huyện cũ -> Load Xã
+                    if (districtCode) {
+                        wardEl.disabled = false;
+                        callAPI(host + "d/" + districtCode + "?depth=2").then((res) => {
+                            renderData("ward", res.wards, savedWard);
+                        });
+                    }
+                });
+            }
+        });
+
+        // --- XỬ LÝ SỰ KIỆN KHI NGƯỜI DÙNG CHỌN LẠI ---
+
+        // Chọn Tỉnh -> Load Huyện mới
+        provinceEl.addEventListener("change", () => {
+            const selectedOption = provinceEl.options[provinceEl.selectedIndex];
+            const code = selectedOption.dataset.code;
+
+            districtEl.innerHTML = '<option value="">-- Chọn --</option>';
+            wardEl.innerHTML = '<option value="">-- Chọn --</option>';
+            districtEl.disabled = true;
+            wardEl.disabled = true;
+
+            if(code) {
+                callAPI(host + "p/" + code + "?depth=2").then((res) => {
+                    renderData("district", res.districts, "");
+                    districtEl.disabled = false;
+                });
+            }
+        });
+
+        // Chọn Huyện -> Load Xã mới
+        districtEl.addEventListener("change", () => {
+            const selectedOption = districtEl.options[districtEl.selectedIndex];
+            const code = selectedOption.dataset.code;
+
+            wardEl.innerHTML = '<option value="">-- Chọn --</option>';
+            wardEl.disabled = true;
+
+            if(code) {
+                callAPI(host + "d/" + code + "?depth=2").then((res) => {
+                    renderData("ward", res.wards, "");
+                    wardEl.disabled = false;
+                });
+            }
+        });
+    });
+</script>
 </body>
 </html>

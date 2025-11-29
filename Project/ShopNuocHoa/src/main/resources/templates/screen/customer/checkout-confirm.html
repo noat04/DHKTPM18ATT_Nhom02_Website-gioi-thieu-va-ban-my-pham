@@ -143,17 +143,49 @@
                             <label class="small text-muted fw-bold mb-1">Địa chỉ giao hàng <span class="text-danger">*</span></label>
 
                             <textarea class="form-control" id="addressInput" name="shippingAddress" rows="2"
-                                      th:text="${customer.address}"
+                                      th:text="${customer.getFullAddress()}"
                                       placeholder="Nhập số nhà, tên đường, phường/xã, quận/huyện..."></textarea>
                         </div>
                         <div class="col-12">
                             <label class="small text-muted fw-bold mb-1">Ghi chú đơn hàng</label>
-                            <textarea class="form-control" rows="2" placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao..."></textarea>
+                            <textarea class="form-control" name="note" rows="2"
+                                      placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao..."></textarea>
+
                         </div>
                     </div>
                 </div>
             </div>
 
+            <div class="checkout-card">
+                <div class="card-header-custom text-warning">
+                    <i class="bi bi-truck"></i> Phương thức vận chuyển
+                </div>
+                <div class="card-body-custom">
+                    <div class="payment-methods-grid"> <label class="payment-option">
+                        <input type="radio" name="shippingMethod" value="STANDARD" checked>
+                        <div class="payment-label">
+                            <div class="payment-icon text-secondary"><i class="bi bi-box-seam"></i></div>
+                            <div>
+                                <div class="fw-bold">Tiêu chuẩn</div>
+                                <div class="small text-muted">3-5 ngày (30.000₫)</div>
+                            </div>
+                        </div>
+                    </label>
+
+                        <label class="payment-option">
+                            <input type="radio" name="shippingMethod" value="EXPRESS">
+                            <div class="payment-label">
+                                <div class="payment-icon text-danger"><i class="bi bi-rocket-takeoff"></i></div>
+                                <div>
+                                    <div class="fw-bold">Hỏa tốc</div>
+                                    <div class="small text-muted">1-2 ngày (50.000₫)</div>
+                                </div>
+                            </div>
+                        </label>
+
+                    </div>
+                </div>
+            </div>
             <div class="checkout-card">
                 <div class="card-header-custom text-success">
                     <i class="bi bi-credit-card-2-front-fill"></i> Phương thức thanh toán
@@ -162,16 +194,16 @@
                     <p class="text-muted small mb-3">Vui lòng chọn 1 trong các phương thức dưới đây:</p>
 
                     <div class="payment-methods-grid">
-<!--                        <label class="payment-option">-->
-<!--                            <input type="radio" name="paymentMethod" value="COD" checked>-->
-<!--                            <div class="payment-label">-->
-<!--                                <div class="payment-icon text-success"><i class="bi bi-cash-coin"></i></div>-->
-<!--                                <div>-->
-<!--                                    <div class="fw-bold">Tiền mặt (COD)</div>-->
-<!--                                    <div class="small text-muted">Thanh toán khi nhận hàng</div>-->
-<!--                                </div>-->
-<!--                            </div>-->
-<!--                        </label>-->
+                        <label class="payment-option">
+                            <input type="radio" name="paymentMethod" value="COD" checked>
+                            <div class="payment-label">
+                                <div class="payment-icon text-success"><i class="bi bi-cash-coin"></i></div>
+                                <div>
+                                    <div class="fw-bold">Tiền mặt (COD)</div>
+                                    <div class="small text-muted">Thanh toán khi nhận hàng</div>
+                                </div>
+                            </div>
+                        </label>
 
                         <label class="payment-option">
                             <input type="radio" name="paymentMethod" value="VNPAY">
@@ -219,6 +251,7 @@
                 </div>
             </div>
 
+
             <a th:href="@{/api/cart}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Quay lại Giỏ hàng
             </a>
@@ -244,24 +277,38 @@
 
                     <div class="d-flex justify-content-between mb-2 text-muted">
                         <span>Tạm tính:</span>
-                        <span th:text="${#numbers.formatDecimal(cart.total, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                        <span id="subTotalDisplay"
+                              th:data-value="${cart.getTotal()}"
+                              th:text="${#numbers.formatDecimal(cart.total, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 text-muted">
+                        <span>Giảm giá:</span>
+<!--                        <span id="discountDisplay" class="text-success">0 ₫</span>-->
+                        <span id="discountDisplay"
+                              th:data-value="${discountAmount != null ? discountAmount : 0}"
+                              th:text="${discountAmount != null ? '- ' + #numbers.formatDecimal(discountAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : '0 ₫'}"
+                              class="text-success fw-bold">
+                        </span>
                     </div>
                     <div class="d-flex justify-content-between mb-2 text-muted">
                         <span>Phí vận chuyển:</span>
-                        <span class="text-success">Miễn phí</span>
+                        <span id="shippingFeeDisplay">30.000 ₫</span>
                     </div>
 
                     <div class="total-row">
                         <span class="fw-bold text-dark">Tổng thanh toán:</span>
-                        <span class="total-price" th:text="${#numbers.formatDecimal(cart.total, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                        <span id="finalTotalDisplay"
+                              th:text="${finalTotal != null ? #numbers.formatDecimal(finalTotal, 0, 'COMMA', 0, 'POINT') + ' ₫' : '0 ₫'}"
+                              class="total-price">
+                        </span>
+
                     </div>
 
                     <hr>
-
                     <button type="button" id="btn-place-order" class="btn btn-primary w-100 py-3 fs-5 fw-bold shadow-sm"
-                            th:data-total="${cart.total}"
-                            th:data-vnpay-url="@{/api/vnpayment/create-payment(amount=${cart.total})}"
-                            th:data-zalopay-url="@{/api/zalopay/create-payment(amount=${cart.total})}">
+                            th:data-total="${finalTotal}"
+                            th:data-vnpay-url="@{/api/vnpayment/create-payment(amount=${finalTotal})}"
+                            th:data-zalopay-url="@{/api/zalopay/create-payment(amount=${finalTotal})}">
                         ĐẶT HÀNG NGAY
                     </button>
 
@@ -279,93 +326,178 @@
         <a th:href="@{/api/products/list}" class="btn btn-primary mt-3 px-4 rounded-pill">Mua sắm ngay</a>
     </div>
 
-    <form id="form-cod" th:action="@{/api/checkout/finalize}" method="post" style="display: none;"></form>
+    <form id="form-cod" th:action="@{/api/checkout/finalize}" method="post" style="display: none;">
+        <input type="hidden" name="shippingAddress" id="hidden-address">
+        <input type="hidden" name="paymentMethod" id="hidden-payment">
+        <input type="hidden" name="shippingMethod" id="hidden-shipping">
+        <input type="hidden" name="couponCode" id="hidden-coupon">
+        <input type="hidden" name="note" id="hidden-note"> <!-- Thêm dòng này -->
+    </form>
 
-    <form id="form-paypal" th:action="@{/api/paypal/pay}" method="post" style="display: none;"></form>
+    <form id="form-paypal" th:action="@{/api/paypal/pay}" method="post" style="display: none;">
+        <input type="hidden" name="note" id="paypal-note">
+    </form>
 
 </main>
 
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
         const btnOrder = document.getElementById("btn-place-order");
+        const addressInput = document.getElementById("addressInput");
+        const noteInput = document.querySelector('textarea[name="note"]');
+        const subTotalEl = document.getElementById("subTotalDisplay");
+        const shippingFeeEl = document.getElementById("shippingFeeDisplay");
+        const finalTotalEl = document.getElementById("finalTotalDisplay");
+        const discountEl = document.getElementById("discountDisplay");
 
-        if(btnOrder) {
-            btnOrder.addEventListener("click", function() {
-                // 1. Lấy phương thức thanh toán đang chọn
-                const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
-                const totalAmount = this.getAttribute('data-total');
+        const shippingRadios = document.querySelectorAll('input[name="shippingMethod"]');
 
-                // Hiệu ứng loading
-                const originalText = btnOrder.innerHTML;
-                btnOrder.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...';
-                btnOrder.disabled = true;
+        let subTotal = parseFloat(subTotalEl?.getAttribute("data-value")) || 0;
+        let discount = parseFloat(discountEl?.getAttribute("data-value")) || 0;
+        let shippingFee = 30000; // mặc định Tiêu chuẩn
 
-                // 2. Điều hướng xử lý
-                switch (selectedMethod) {
-                    case "COD":
-                        document.getElementById("form-cod").submit();
-                        break;
+        // Format tiền
+        const formatCurrency = (amount) => new Intl.NumberFormat("vi-VN").format(amount) + " ₫";
 
-                    case "VNPAY":
-                        const vnpayUrl = this.getAttribute('data-vnpay-url');
-                        window.location.href = vnpayUrl;
-                        break;
+        // Tính lại tổng tiền
+        const recalculateTotal = () => {
+            const selectedShipping = document.querySelector('input[name="shippingMethod"]:checked')?.value;
+            const address = addressInput.value.trim().toLowerCase();
 
-                    case "ZALOPAY":
-                        const zalopayUrl = this.getAttribute('data-zalopay-url');
-                        window.location.href = zalopayUrl;
-                        break;
+            let shippingFee = 0;
+            if (selectedShipping === "EXPRESS") {
+                if (address.includes("quận") || address.includes("tp")) shippingFee = 30000;
+                else shippingFee = 50000;
+            } else { // STANDARD
+                if (address.includes("quận") || address.includes("tp")) shippingFee = 15000;
+                else shippingFee = 25000;
+            }
 
-                    case "PAYPAL":
-                        document.getElementById("form-paypal").submit();
-                        break;
+            let finalTotal = subTotal + shippingFee - discount;
+            if (finalTotal < 0) finalTotal = 0;
 
-                    case "MOMO":
-                        handleMomoPayment(totalAmount, btnOrder, originalText);
-                        break;
+            shippingFeeEl.textContent = formatCurrency(shippingFee);
+            finalTotalEl.textContent = formatCurrency(finalTotal);
+        };
 
-                    default:
-                        alert("Vui lòng chọn phương thức thanh toán!");
-                        btnOrder.disabled = false;
-                        btnOrder.innerHTML = originalText;
-                }
-            });
-        }
 
-        // Hàm xử lý riêng cho MoMo (Fetch API)
-        function handleMomoPayment(amount, btn, originalText) {
-            // Lấy CSRF token (nếu Spring Security bật)
-            const csrfTokenEl = document.querySelector('input[name="_csrf"]');
-            const headers = { 'Content-Type': 'application/json' };
-            if (csrfTokenEl) headers['X-CSRF-TOKEN'] = csrfTokenEl.value;
+        // Lắng nghe thay đổi phương thức vận chuyển
+        shippingRadios.forEach(r => r.addEventListener("change", recalculateTotal));
 
-            fetch('/api/momo', {
-                method: 'POST',
+        // Xử lý nút đặt hàng
+        btnOrder.addEventListener("click", function () {
+            const address = addressInput.value.trim();
+            const note = noteInput?.value || "";
+            // Lưu vào sessionStorage tạm thời (client-side)
+            sessionStorage.setItem("checkoutNote", note);
+
+            // Gửi lên server (form COD)
+            document.getElementById("hidden-note").value = note;
+
+            const payment = document.querySelector('input[name="paymentMethod"]:checked')?.value;
+            const shipping = document.querySelector('input[name="shippingMethod"]:checked')?.value;
+            const amount = this.getAttribute("data-total");
+            const originalText = this.innerHTML;
+
+            if (!address) {
+                alert("⚠ Vui lòng nhập địa chỉ giao hàng!");
+                addressInput.focus();
+                return;
+            }
+
+            // Gán dữ liệu vào form COD
+
+            document.getElementById("hidden-address").value = address;
+            document.getElementById("hidden-payment").value = payment;
+            document.getElementById("hidden-shipping").value = shipping;
+            document.getElementById("hidden-coupon").value = document.querySelector('input[name="couponCode"]')?.value || "";
+
+            // Disable nút + spinner
+            btnOrder.disabled = true;
+            btnOrder.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...`;
+
+            switch(payment) {
+                case "COD":
+                    document.getElementById("form-cod").submit();
+                    break;
+
+                case "VNPAY":
+                    let vnpayUrl = btnOrder.getAttribute("data-vnpay-url");
+                    vnpayUrl += `&note=${encodeURIComponent(note)}`;
+                    window.location.href = vnpayUrl;
+                    break;
+
+                case "ZALOPAY":
+                    let zalopayUrl = btnOrder.getAttribute("data-zalopay-url");
+                    zalopayUrl += `&note=${encodeURIComponent(note)}`;
+                    window.location.href = zalopayUrl;
+                    break;
+
+                case "PAYPAL":
+                    document.getElementById("paypal-note").value = noteInput.value;
+                    document.getElementById("form-paypal").submit();
+                    break;
+
+                case "MOMO":
+                    // Lưu snapshot vào sessionStorage
+                    sessionStorage.setItem("checkout_snapshot", JSON.stringify({
+                        address,
+                        note,
+                        payment,
+                        shipping,
+                        coupon: document.querySelector('input[name="couponCode"]')?.value || ""
+                    }));
+                    // handleMomoPayment(amount, btnOrder, originalText);
+                    const finalAmount = parseFloat(amount) || 0; // ✅ convert số
+
+                    handleMomoPayment(finalAmount, btnOrder, originalText, note);
+
+                    break;
+
+                default:
+                    alert("💡 Hãy chọn phương thức thanh toán!");
+                    btnOrder.disabled = false;
+                    btnOrder.innerHTML = originalText;
+            }
+        });
+
+        // Xử lý API MoMo
+        function handleMomoPayment(amount, btn, originalText, note) {
+            const csrfToken = document.querySelector('input[name="_csrf"]')?.value;
+            const headers = { "Content-Type": "application/json" };
+            if (csrfToken) headers["X-CSRF-TOKEN"] = csrfToken;
+
+            fetch("/api/momo", {
+                method: "POST",
                 headers: headers,
-                body: JSON.stringify({ amount: amount })
+                body: JSON.stringify({
+                    amount: amount,                           // ✅ số thuần
+                    shippingAddress: addressInput.value.trim(), // ✅ trùng DTO
+                    note: note,                              // ✅ gửi note chuẩn
+                    shippingMethod: document.querySelector('input[name="shippingMethod"]:checked')?.value || "STANDARD",
+                    couponCode: document.querySelector('input[name="couponCode"]')?.value || ""
+                })
             })
                 .then(res => res.json())
                 .then(data => {
                     if (data.payUrl) {
                         window.location.href = data.payUrl;
                     } else {
-                        alert('Lỗi MoMo: ' + (data.message || "Không xác định"));
-                        resetBtn(btn, originalText);
+                        alert("❌ Lỗi MoMo: " + (data.message || "Không xác định"));
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
                     }
                 })
-                .catch(err => {
-                    console.error(err);
-                    alert("Lỗi kết nối đến MoMo.");
-                    resetBtn(btn, originalText);
+                .catch(() => {
+                    alert("🚫 Không kết nối MoMo!");
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
                 });
         }
 
-        function resetBtn(btn, text) {
-            btn.disabled = false;
-            btn.innerHTML = text;
-        }
+        recalculateTotal(); // chạy lần đầu
     });
 </script>
 

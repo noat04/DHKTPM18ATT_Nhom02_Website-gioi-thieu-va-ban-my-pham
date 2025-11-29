@@ -31,19 +31,16 @@ public class Product {
 
     @Column(name = "average_rating")
     private Double averageRating = 0.0;
-//    private Boolean inStock;
 
-    // 🟡 Mới thêm
     @Column(name = "hot_trend")
     private Boolean hotTrend = false;
 
-    @Column(name = "rating_count") // <-- Ánh xạ tới cột 'rating_count' trong    DB
-    private Integer ratingCount;   // <-- Thêm thuộc tính này
+    @Column(name = "rating_count")
+    private Integer ratingCount;
 
-    @Column(name = "quantity") // Ánh xạ tới cột 'quantity' mới
-    private Integer quantity = 0; // Đặt giá trị mặc định
+    @Column(name = "quantity")
+    private Integer quantity = 0;
 
-    // Ảnh chính của sản phẩm
     @Column(name = "image_url", length = 512)
     private String imageUrl;
 
@@ -95,7 +92,7 @@ public class Product {
     }
 
     @Transient // Không lưu vào database
-    private boolean isFavorite; // <-- thêm thuộc tính này
+    private boolean isFavorite;
 
 }
 

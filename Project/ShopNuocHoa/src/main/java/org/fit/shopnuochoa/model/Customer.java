@@ -39,8 +39,24 @@ public class Customer {
     private LocalDate birthday;
 
     // [SỬA] Cho phép null (để tránh lỗi khi đăng ký)
-    @Column(nullable = true)
-    private String address;
+    @Column(name = "province")
+    private String province; // Tỉnh/Thành phố (VD: Hà Nội)
+
+    @Column(name = "district")
+    private String district; // Quận/Huyện (VD: Quận Cầu Giấy)
+
+    @Column(name = "ward")
+    private String ward;     // Phường/Xã (VD: Phường Dịch Vọng)
+
+    @Column(name = "street_detail")
+    private String streetDetail; // Số nhà, tên đường (VD: 123 Xuân Thủy)
+
+    // Hàm tiện ích để lấy địa chỉ đầy đủ hiển thị (khi in hóa đơn)
+    @Transient
+    public String getFullAddress() {
+        if (streetDetail == null && province == null) return "Chưa cập nhật";
+        return String.format("%s, %s, %s, %s", streetDetail, ward, district, province);
+    }
 
     @Column(nullable = false)
     private String email;

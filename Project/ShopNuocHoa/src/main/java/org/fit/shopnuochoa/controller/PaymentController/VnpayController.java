@@ -26,6 +26,7 @@ public class VnpayController {
     @GetMapping("/create-payment")
     public RedirectView createPayment(
             @RequestParam("amount") String amount,
+            @RequestParam(required = false) String note,
             HttpSession session, // <-- Thêm session
             HttpServletRequest request // <-- Thêm tham số này
     ) {
@@ -40,6 +41,7 @@ public class VnpayController {
         paymentRequest.setAmount(amount);
 
         try {
+            session.setAttribute("checkoutNote", note);
             String paymentUrl = vnpayService.createPayment(paymentRequest, request);
 //            String paymentUrl = vnpayService.createPayment(paymentRequest);
             return new RedirectView(paymentUrl);

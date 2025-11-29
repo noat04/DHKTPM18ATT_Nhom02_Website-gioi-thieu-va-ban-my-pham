@@ -9,11 +9,14 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
+import org.fit.shopnuochoa.Enum.PaymentMethod;
+import org.fit.shopnuochoa.Enum.ShippingMethod;
 import org.fit.shopnuochoa.config.ZalopayConfig;
 import org.fit.shopnuochoa.cryto.HMACUtil;
 import org.fit.shopnuochoa.model.CartBean;
 import org.fit.shopnuochoa.model.Orders;
 import org.fit.shopnuochoa.service.CheckOutService;
+import org.fit.shopnuochoa.service.EmailService;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,10 +41,12 @@ public class ZalopayService {
     private String CALLBACK_URL;
 
     private final CheckOutService checkOutService;
+    private final EmailService emailService;
 
     @Autowired // Đảm bảo bạn đã inject
-    public ZalopayService(CheckOutService checkOutService) {
+    public ZalopayService(CheckOutService checkOutService,EmailService emailService) {
         this.checkOutService = checkOutService;
+        this.emailService = emailService;
     }
 
     /**
@@ -146,47 +151,67 @@ public class ZalopayService {
     /**
      * Xử lý khi ZaloPay chuyển hướng người dùng về /return
      */
+
     @Transactional
     public String handlePaymentReturn(Map<String, String> allParams, HttpSession session, RedirectAttributes redirectAttributes) {
 
         // 1. Lấy trạng thái từ ZaloPay
         String status = allParams.get("status");
-//        String appTransId = allParams.get("app_trans_id");
-        String appTransId = allParams.get("apptransid"); // <-- ĐÃ SỬA
+        String appTransId = allParams.get("apptransid");
 
         // 2. Lấy app_trans_id đã lưu từ session
         String sessionTransId = (String) session.getAttribute("zalopay_trans_id");
 
-        // 3. Kiểm tra (app_trans_id phải khớp, phòng trường hợp giả mạo)
+        // 3. Kiểm tra (app_trans_id phải khớp)
         if (sessionTransId == null || !sessionTransId.equals(appTransId)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi: Mã giao dịch ZaloPay không khớp.");
             return "redirect:/api/cart";
         }
-
-        // (Trong thực tế, bạn PHẢI gọi API "getOrderStatus" ở đây
-        // và xác thực chữ ký MAC trả về để đảm bảo 100% an toàn)
 
         // 4. Kiểm tra trạng thái thanh toán
         if ("1".equals(status)) { // status=1 là THÀNH CÔNG
 
             CartBean cart = (CartBean) session.getAttribute("cart");
             Integer customerId = (Integer) session.getAttribute("checkoutCustomerId");
-
+            String shippingAddress = (String) session.getAttribute("checkoutAddress");
+            String note = (String) session.getAttribute("checkoutNote");
+            ShippingMethod shippingMethod = (ShippingMethod) session.getAttribute("checkoutShipping");
+            String couponCode = (String) session.getAttribute("checkoutCouponCode");
             if (cart == null || customerId == null) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Phiên làm việc hết hạn.");
                 return "redirect:/api/cart";
             }
 
             try {
-                // 5. GỌI LOGIC CHÍNH: Lưu đơn hàng, trừ kho
-                Orders finalOrder = checkOutService.finalizeOrder(customerId, cart);
+                // 5. Gọi finalizeOrderCOD giống VNPay/MoMo
+                Orders finalOrder = checkOutService.finalizeOrderCOD(
+                        customerId,
+                        cart,
+                        PaymentMethod.ZALOPAY, // Thanh toán online qua ZaloPay
+                        shippingMethod,
+                        shippingAddress,
+                        note,
+                        couponCode
+                );
 
-                // 6. Xóa session
+                // 6. Gửi email hóa đơn (nếu có EmailService)
+                try {
+                    emailService.sendInvoiceEmailWithPdf(finalOrder);
+                } catch (Exception ex) {
+                    System.err.println("Gửi email hóa đơn thất bại: " + ex.getMessage());
+                }
+
+                // 7. Cleanup session
                 session.removeAttribute("cart");
                 session.removeAttribute("checkoutCustomerId");
+                session.removeAttribute("checkoutAddress");
+                session.removeAttribute("checkoutNote");
+                session.removeAttribute("checkoutShipping");
                 session.removeAttribute("zalopay_trans_id");
 
-                redirectAttributes.addFlashAttribute("successMessage", "Thanh toán ZaloPay thành công! Mã đơn hàng: #" + finalOrder.getId());
+                // 8. Thông báo thành công
+                redirectAttributes.addFlashAttribute("successMessage",
+                        "Thanh toán ZaloPay thành công! Mã đơn hàng #" + finalOrder.getId());
                 return "redirect:/api/checkout/success";
 
             } catch (Exception e) {
@@ -194,11 +219,12 @@ public class ZalopayService {
                 return "redirect:/api/cart";
             }
         } else {
-            // Thanh toán thất bại (status=2) hoặc đang chờ (status=3)
+            // Thanh toán thất bại hoặc bị hủy
             redirectAttributes.addFlashAttribute("errorMessage", "Thanh toán ZaloPay thất bại hoặc bị hủy.");
             return "redirect:/api/cart";
         }
     }
+
 
     public String getOrderStatus(String appTransId) {
         String data = ZalopayConfig.config.get("app_id") + "|" + appTransId + "|" + ZalopayConfig.config.get("key1");

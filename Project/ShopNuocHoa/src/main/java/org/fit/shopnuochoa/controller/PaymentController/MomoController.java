@@ -2,6 +2,7 @@ package org.fit.shopnuochoa.controller.PaymentController;
 
 import jakarta.servlet.http.HttpSession;
 import org.fit.shopnuochoa.dto.MomoRequest;
+import org.fit.shopnuochoa.model.CartBean;
 import org.fit.shopnuochoa.service.PaymentService.MomoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,28 +19,36 @@ public class MomoController {
     @Autowired
     private MomoService momoService;
 
-//    @PostMapping
-//    public String testPayment(@RequestBody MomoRequest paymentRequest) {
-//        String response = momoService.createPaymentRequest(paymentRequest.getAmount());
-//        return response;
-//    }
+
     @PostMapping
-    @ResponseBody // <-- Thêm @ResponseBody để trả về JSON
-    public ResponseEntity<String> createPayment(@RequestBody MomoRequest paymentRequest) {
+    @ResponseBody
+    public ResponseEntity<String> createPayment(@RequestBody MomoRequest paymentRequest, HttpSession session) {
         try {
-            // Service trả về JSON response (chứa payUrl) từ MoMo
-            String momoResponseJson = momoService.createPaymentRequest(paymentRequest.getAmount());
-            return ResponseEntity.ok(momoResponseJson);
+            // 1. Lưu giỏ hàng và thông tin COD snapshot
+            CartBean cart = (CartBean) session.getAttribute("cart");
+            Integer customerId = (Integer) session.getAttribute("checkoutCustomerId");
+
+            if (cart == null || customerId == null) {
+                return ResponseEntity.internalServerError().body("{\"message\":\"Session expired\"}");
+            }
+
+            session.setAttribute("momo_amount", paymentRequest.getAmount());
+            session.setAttribute("checkout_by_momo", true);
+            session.setAttribute("checkoutAddress", paymentRequest.getShippingAddress());
+            session.setAttribute("checkoutNote", paymentRequest.getNote());
+            session.setAttribute("checkoutShipping", paymentRequest.getShippingMethod());
+            session.setAttribute("checkoutCouponCode", paymentRequest.getCouponCode());
+
+            // 2. Gọi MoMo API lấy payUrl
+            String momoJson = momoService.createPaymentRequest(paymentRequest.getAmount());
+            return ResponseEntity.ok(momoJson);
+
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Lỗi: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("{\"message\":\"Lỗi momo\"}");
         }
     }
 
-//    @GetMapping("/order-status/{orderId}")
-//    public String checkPaymentStatus(@PathVariable String orderId) {
-//        String response = momoService.checkPaymentStatus(orderId);
-//        return response;
-//    }
+
     /**
      * [SỬA ĐỔI]
      * Endpoint này (REDIRECT_URL) được MoMo gọi về

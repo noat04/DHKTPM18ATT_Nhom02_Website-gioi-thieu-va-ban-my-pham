@@ -2,8 +2,11 @@ package org.fit.shopnuochoa.controller;
 
 import jakarta.servlet.http.HttpSession;
 import org.fit.shopnuochoa.model.CartBean;
+import org.fit.shopnuochoa.model.Coupon;
 import org.fit.shopnuochoa.model.Product;
-import org.fit.shopnuochoa.service.ProductService;
+import org.fit.shopnuochoa.model.Users;
+import org.fit.shopnuochoa.service.*;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,20 +15,26 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 @Controller
 @RequestMapping("/api/cart") // Đổi thành /cart để ngắn gọn hơn
 public class CartController {
     private final ProductService productService;
+    private final CouponService couponService; // Inject CheckOutService
+    private final UserService userService;         // Cần để lấy CustomerId
+    private final CustomerService customerService;
 
-    public CartController(ProductService productService) {
+    public CartController(ProductService productService,
+                          CouponService couponService,
+                          UserService userService,
+                          CustomerService customerService) {
         this.productService = productService;
+        this.couponService = couponService;
+        this.userService = userService;
+        this.customerService = customerService;
     }
 
-    /**
-     * Lấy giỏ hàng từ session. Nếu chưa có, tạo mới.
-     * @param session HttpSession hiện tại
-     * @return CartBean object
-     */
     private CartBean getCart(HttpSession session) {
         CartBean cart = (CartBean) session.getAttribute("cart");
         if (cart == null) {
@@ -39,10 +48,34 @@ public class CartController {
      * Hiển thị trang giỏ hàng
      */
     @GetMapping
-    public String showCart(HttpSession session, Model model) {
+    public String showCart(HttpSession session, Model model, Authentication authentication) {
         CartBean cart = getCart(session);
         model.addAttribute("cart", cart);
-        return "screen/customer/cart"; // Trả về file view hiển thị giỏ hàng
+
+        // [THÊM MỚI] Logic lấy Coupon khả dụng
+        if (authentication != null && authentication.isAuthenticated()) {
+            try {
+                String username = authentication.getName();
+                Users user = userService.getUserByUsername(username);
+
+                if (user != null && user.getCustomer() != null) {
+                    Integer customerId = user.getCustomer().getId();
+
+                    // Gọi hàm lọc coupon thông minh
+                    List<Coupon> applicableCoupons = couponService.findApplicableCoupons(cart, customerId);
+
+                    model.addAttribute("coupons", applicableCoupons);
+                }
+            } catch (Exception e) {
+                // Log lỗi nếu cần, nhưng đừng để chết trang Cart
+                System.err.println("Lỗi lấy coupon: " + e.getMessage());
+            }
+        } else {
+            // Nếu chưa đăng nhập, có thể lấy coupon chung (không cần check lịch sử mua hàng)
+            // Hoặc bỏ qua
+        }
+
+        return "screen/customer/cart";
     }
 
     /// Bên trong file CartController.java

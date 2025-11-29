@@ -1,78 +1,46 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{screen/customer/header :: html-head}"></head>
+
 <style>
-    /* 1. Khung Đơn Hàng */
+    /* CSS chung (Giữ nguyên phần cũ) */
     .order-card {
-        background: white;
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        margin-bottom: 25px;
-        overflow: hidden;
+        background: white; border: none; border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px; overflow: hidden;
         transition: transform 0.2s;
     }
-    .order-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-    }
+    .order-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
 
-    /* 2. Header Đơn Hàng */
     .order-header {
-        background-color: #f8f9fa;
-        padding: 15px 20px;
-        border-bottom: 1px solid #eee;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .order-id { font-weight: 600; color: #333; }
-    .order-date { font-size: 0.9rem; color: #666; }
-    .order-status {
-        font-weight: 600;
-        color: #198754; /* Màu xanh lá (Thành công) */
-        text-transform: uppercase;
-        font-size: 0.85rem;
+        background-color: #fff; padding: 15px 20px; border-bottom: 1px solid #f0f0f0;
+        display: flex; justify-content: space-between; align-items: center;
     }
 
-    /* 3. Item Sản phẩm (Thay thế Table) */
-    .order-item {
-        display: flex;
-        align-items: center;
-        padding: 15px 20px;
-        border-bottom: 1px solid #f0f0f0;
+    /* [MỚI] Badge trạng thái đẹp hơn */
+    .status-badge {
+        padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+        display: inline-flex; align-items: center; gap: 5px;
     }
-    .order-item:last-child { border-bottom: none; }
+    .status-PENDING { background-color: #fff3cd; color: #856404; }
+    .status-SHIPPING { background-color: #cff4fc; color: #055160; }
+    .status-DELIVERED { background-color: #d1e7dd; color: #0f5132; }
+    .status-COMPLETED { background-color: #e2e3e5; color: #41464b; }
+    .status-CANCELLED { background-color: #f8d7da; color: #842029; }
 
-    .item-img {
-        width: 80px;
-        height: 80px;
-        border-radius: 8px;
-        object-fit: cover;
-        border: 1px solid #eee;
-        margin-right: 15px;
-    }
-    .item-info { flex-grow: 1; }
-    .item-name { font-weight: 600; color: #333; margin-bottom: 5px; display: block; text-decoration: none; }
-    .item-name:hover { color: #0d6efd; }
-    .item-meta { font-size: 0.9rem; color: #888; }
-    .item-price { font-weight: 600; color: #333; text-align: right; }
+    /* Product Item */
+    .order-item { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid #f8f9fa; }
+    .item-img { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; border: 1px solid #eee; margin-right: 15px; }
 
-    /* 4. Footer Tổng tiền */
+    /* Footer */
     .order-footer {
-        padding: 15px 20px;
-        background-color: #fff;
-        border-top: 1px solid #eee;
-        display: flex;
-        justify-content: flex-end; /* Căn phải */
-        align-items: center;
-        gap: 15px;
+        padding: 15px 20px; background-color: #fdfdfd; border-top: 1px solid #eee;
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
     }
-    .total-label { font-size: 1rem; color: #555; }
-    .total-price { font-size: 1.4rem; font-weight: 700; color: #dc3545; /* Màu đỏ */ }
-
-    .btn-action { border-radius: 20px; padding: 6px 20px; font-weight: 500; }
+    .price-group { text-align: right; }
+    .small-label { font-size: 0.85rem; color: #888; }
+    .main-price { font-size: 1.3rem; font-weight: 700; color: #dc3545; }
 </style>
+
 <body class="d-flex flex-column min-vh-100 bg-light">
 
 <div th:replace="~{screen/customer/header:: main-header}"></div>
@@ -83,7 +51,7 @@
         <h3 class="fw-bold text-dark mb-0">
             <i class="bi bi-receipt-cutoff me-2 text-primary"></i>Lịch sử đơn hàng
         </h3>
-        <a th:href="@{/api/products/list}" class="btn btn-outline-primary rounded-pill">
+        <a th:href="@{/api/products/list}" class="btn btn-outline-primary rounded-pill btn-sm">
             <i class="bi bi-cart-plus me-1"></i> Mua sắm tiếp
         </a>
     </div>
@@ -93,8 +61,7 @@
             <i class="bi bi-bag-x" style="font-size: 4rem; color: #e0e0e0;"></i>
         </div>
         <h5 class="fw-bold text-secondary">Bạn chưa có đơn hàng nào</h5>
-        <p class="text-muted mb-4">Hãy khám phá các sản phẩm tuyệt vời của chúng tôi nhé!</p>
-        <a th:href="@{/api/products/list}" class="btn btn-primary px-4 rounded-pill fw-bold">Khám phá ngay</a>
+        <a th:href="@{/api/products/list}" class="btn btn-primary px-4 rounded-pill fw-bold mt-3">Khám phá ngay</a>
     </div>
 
     <div th:unless="${ordersPage == null || ordersPage.isEmpty() }">
@@ -102,50 +69,80 @@
         <div th:each="order : ${ordersPage.content}" class="order-card">
 
             <div class="order-header">
-                <div>
-                    <span class="order-id me-3">Đơn hàng #<span th:text="${order.id}"></span></span>
-                    <span class="order-date">
-                        <i class="bi bi-calendar3 me-1"></i>
-                        <span th:text="${#temporals.format(order.date, 'dd/MM/yyyy HH:mm')}"></span>
-                    </span>
+                <div class="d-flex flex-column">
+                    <span class="fw-bold text-dark">Đơn hàng #<span th:text="${order.id}"></span></span>
+                    <span class="small text-muted" th:text="${#temporals.format(order.date, 'dd/MM/yyyy HH:mm')}"></span>
                 </div>
-                <div class="order-status">
-                    <i class="bi bi-check-circle-fill me-1"></i> Hoàn thành
+
+                <div>
+                    <span th:if="${order.status.name() == 'PENDING'}" class="status-badge status-PENDING"><i class="bi bi-hourglass-split"></i> Chờ xử lý</span>
+                    <span th:if="${order.status.name() == 'SHIPPING'}" class="status-badge status-SHIPPING"><i class="bi bi-truck"></i> Đang giao</span>
+                    <span th:if="${order.status.name() == 'DELIVERED'}" class="status-badge status-DELIVERED"><i class="bi bi-geo-alt-fill"></i> Đã giao</span>
+                    <span th:if="${order.status.name() == 'COMPLETED'}" class="status-badge status-COMPLETED"><i class="bi bi-check-circle-fill"></i> Hoàn thành</span>
+                    <span th:if="${order.status.name() == 'CANCELLED'}" class="status-badge status-CANCELLED"><i class="bi bi-x-circle-fill"></i> Đã hủy</span>
                 </div>
             </div>
 
             <div class="order-items-list">
                 <div th:each="line : ${orderLinesByOrder[order.id]}" class="order-item">
-
                     <a th:href="@{/api/products/detail/{id}(id=${line.product.id})}">
-                        <img th:src="${line.product.imageUrl != null ? line.product.imageUrl : 'https://via.placeholder.com/80'}"
-                             class="item-img" alt="Sản phẩm">
+                        <img th:src="${line.product.imagePath}" class="item-img" alt="SP">
                     </a>
-
-                    <div class="item-info">
+                    <div class="flex-grow-1 ps-2">
                         <a th:href="@{/api/products/detail/{id}(id=${line.product.id})}"
-                           class="item-name" th:text="${line.product.name}">Tên sản phẩm</a>
-                        <div class="item-meta">
-                            <span>Số lượng: x<span th:text="${line.amount}">1</span></span>
-                            <span class="mx-2">|</span>
-                            <span>Đơn giá: <span th:text="${#numbers.formatDecimal(line.purchasePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span></span>
+                           class="text-decoration-none text-dark fw-bold d-block mb-1"
+                           th:text="${line.product.name}">Tên SP</a>
+                        <div class="small text-muted">
+                            x<span th:text="${line.amount}">1</span>
+                            <span class="mx-1">|</span>
+                            <span th:text="${#numbers.formatDecimal(line.purchasePrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
                         </div>
                     </div>
-
-                    <div class="item-price">
+                    <div class="fw-bold text-dark">
                         <span th:text="${#numbers.formatDecimal(line.purchasePrice * line.amount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
                     </div>
                 </div>
             </div>
 
             <div class="order-footer">
-                <div class="me-auto">
+
+                <div class="text-start">
+                    <div class="small text-muted mb-1">
+                        <i class="bi bi-calendar-event me-1"></i>
+                        <span th:if="${order.status.name() == 'SHIPPING' or order.status.name() == 'PENDING'}">
+                            Dự kiến giao: <strong th:text="${#temporals.format(order.getEstimatedDeliveryDate(), 'dd/MM/yyyy')}"></strong>
+                        </span>
+                        <span th:if="${order.status.name() == 'DELIVERED' or order.status.name() == 'COMPLETED'}">
+                            Ngày nhận: <strong th:text="${#temporals.format(order.deliveryDate, 'dd/MM/yyyy')}"></strong>
+                        </span>
+                    </div>
+
+                    <div th:if="${order.status.name() == 'DELIVERED'}">
+                        <form th:action="@{/api/orders/complete}" method="post">
+                            <input type="hidden" name="orderId" th:value="${order.id}">
+                            <button type="submit" class="btn btn-primary btn-sm rounded-pill shadow-sm px-3">
+                                <i class="bi bi-check-lg"></i> Đã nhận được hàng
+                            </button>
+                        </form>
+                        <small class="text-success d-block mt-1" style="font-size: 0.75rem;">
+                            * Vui lòng xác nhận khi bạn đã nhận và kiểm tra hàng.
+                        </small>
+                    </div>
+
+                    <div th:if="${order.status.name() == 'COMPLETED'}" class="text-success small">
+                        <i class="bi bi-star-fill text-warning"></i> Cảm ơn bạn đã mua sắm!
+                    </div>
                 </div>
 
-                <span class="total-label">Thành tiền:</span>
-                <span class="total-price"
-                      th:text="${#numbers.formatDecimal(order.getTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'">
-                </span>
+                <div class="price-group">
+                    <div class="small-label">
+                        Phí vận chuyển: <span th:text="${#numbers.formatDecimal(order.shippingFee, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                    </div>
+                    <div class="d-flex align-items-end justify-content-end gap-2 mt-1">
+                        <span class="small-label pb-1">Thành tiền:</span>
+                        <span class="main-price" th:text="${#numbers.formatDecimal(order.getFinalTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+                    </div>
+                </div>
             </div>
         </div>
 

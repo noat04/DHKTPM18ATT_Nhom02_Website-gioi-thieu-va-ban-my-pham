@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý Mã Giảm Giá</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <th:block th:replace="~{fragment/sidebar :: sidebar-styles}"></th:block>
+
+    <style>
+        .coupon-code {
+            font-family: monospace;
+            font-weight: bold;
+            color: #d63384;
+            background: #f8f9fa;
+            padding: 4px 8px;
+            border: 1px dashed #d63384;
+            border-radius: 4px;
+        }
+        .table-actions .btn { margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="d-flex" id="wrapper">
+    <div th:replace="~{fragment/sidebar :: main-sidebar}"></div>
+
+    <div id="page-content-wrapper" class="w-100">
+        <div class="container-fluid px-4 py-4">
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold text-primary"><i class="bi bi-ticket-perforated"></i> Quản lý Mã Giảm Giá</h2>
+
+                <div class="dropdown">
+                    <button class="btn btn-success dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-plus-lg"></i> Thêm mới Coupon
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" th:href="@{/api/coupons/create(type='ORDER_TOTAL')}">
+                                <i class="bi bi-receipt me-2"></i>Giảm theo Hóa đơn
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" th:href="@{/api/coupons/create(type='CATEGORY_SPECIFIC')}">
+                                <i class="bi bi-tags me-2"></i>Giảm theo Thương hiệu
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" th:href="@{/api/coupons/create(type='WELCOME')}">
+                                <i class="bi bi-gift me-2"></i>Chào mừng (Khách mới)
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Mã Code</th>
+                                <th>Loại</th>
+                                <th>Giá trị giảm</th>
+                                <th>Điều kiện áp dụng</th>
+                                <th>Số lượng</th>
+                                <th>Thời gian</th>
+                                <th>Trạng thái</th>
+                                <th>Hành động</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="coupon : ${coupons}">
+                                <td th:text="${coupon.id}">1</td>
+
+                                <td>
+                                    <span class="coupon-code" th:text="${coupon.code}">CODE</span>
+                                    <div class="small text-muted mt-1" th:text="${coupon.description}">Mô tả</div>
+                                </td>
+
+                                <td>
+                                        <span th:if="${coupon instanceof T(org.fit.shopnuochoa.model.OrderCoupon)}"
+                                              class="badge bg-primary">Hóa đơn</span>
+                                    <span th:if="${coupon instanceof T(org.fit.shopnuochoa.model.CategoryCoupon)}"
+                                          class="badge bg-success">Thương hiệu</span>
+                                    <span th:if="${coupon instanceof T(org.fit.shopnuochoa.model.WelcomeCoupon)}"
+                                          class="badge bg-warning text-dark">Khách mới</span>
+                                </td>
+
+                                <td class="fw-bold text-danger">
+                                        <span th:if="${coupon.isPercentage}"
+                                              th:text="'-' + ${coupon.discountValue} + '%'"></span>
+                                    <span th:unless="${coupon.isPercentage}"
+                                          th:text="'-' + ${#numbers.formatDecimal(coupon.discountValue, 0, 'COMMA', 0, 'POINT')} + '₫'"></span>
+
+                                    <div th:if="${coupon.maxDiscountAmount != null}" class="small text-muted fw-normal">
+                                        Tối đa: <span th:text="${#numbers.formatDecimal(coupon.maxDiscountAmount, 0, 'COMMA', 0, 'POINT')}"></span>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div th:if="${coupon instanceof T(org.fit.shopnuochoa.model.OrderCoupon)}">
+                                        <small>Đơn tối thiểu:</small><br>
+                                        <strong th:text="${#numbers.formatDecimal(coupon.minOrderAmount, 0, 'COMMA', 0, 'POINT')} + '₫'"></strong>
+                                    </div>
+
+                                    <div th:if="${coupon instanceof T(org.fit.shopnuochoa.model.CategoryCoupon)}">
+                                        <small>Áp dụng cho:</small><br>
+                                        <strong class="text-success"
+                                                th:text="${coupon.targetCategory != null ? coupon.targetCategory.name : 'Tất cả'}"></strong>
+                                    </div>
+
+                                    <div th:if="${coupon instanceof T(org.fit.shopnuochoa.model.WelcomeCoupon)}">
+                                        <em class="text-muted">Chỉ đơn đầu tiên</em>
+                                    </div>
+                                </td>
+
+                                <td>
+                                        <span th:class="${coupon.quantity > 0 ? 'text-dark' : 'text-danger fw-bold'}"
+                                              th:text="${coupon.quantity}">100</span>
+                                </td>
+
+                                <td class="small">
+                                    <div th:if="${coupon.startDate}">
+                                        Bắt đầu: <span th:text="${#temporals.format(coupon.startDate, 'dd/MM/yyyy')}"></span>
+                                    </div>
+                                    <div th:if="${coupon.endDate}">
+                                        Kết thúc: <span th:text="${#temporals.format(coupon.endDate, 'dd/MM/yyyy')}"></span>
+                                    </div>
+                                    <span th:if="${coupon.startDate == null && coupon.endDate == null}" class="text-muted">Không giới hạn</span>
+                                </td>
+
+                                <td>
+                                    <span th:if="${coupon.active}" class="badge bg-success-subtle text-success border border-success">Hoạt động</span>
+                                    <span th:unless="${coupon.active}" class="badge bg-danger-subtle text-danger border border-danger">Đã khóa</span>
+                                </td>
+
+                                <td class="table-actions">
+                                    <a th:href="@{/api/coupons/edit/{id}(id=${coupon.id})}"
+                                       class="btn btn-sm btn-outline-primary" title="Sửa">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+
+                                    <a th:href="@{/api/coupons/delete/{id}(id=${coupon.id})}"
+                                       class="btn btn-sm btn-outline-danger"
+                                       onclick="return confirm('Bạn có chắc chắn muốn xóa mã giảm giá này?');"
+                                       title="Xóa">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+
+                            <tr th:if="${coupons.isEmpty()}">
+                                <td colspan="9" class="text-center py-4 text-muted">
+                                    Chưa có mã giảm giá nào. Hãy tạo mới!
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

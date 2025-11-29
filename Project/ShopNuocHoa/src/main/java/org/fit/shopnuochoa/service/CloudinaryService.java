@@ -15,6 +15,23 @@ public class CloudinaryService {
 
     private final Cloudinary cloudinary;
 
+    /**
+     * Upload ảnh Coupon
+     */
+    public String uploadCouponImage(MultipartFile file) {
+        return uploadFile(file, "shopnuochoa_coupons");
+    }
+
+    /**
+     * Cập nhật ảnh Coupon (Xóa cũ -> Up mới)
+     */
+    public String updateCouponImage(MultipartFile newFile, String oldImageUrl) {
+        // 1. Xóa ảnh cũ nếu có
+        deleteImageIfExist(oldImageUrl);
+        // 2. Upload ảnh mới
+        return uploadCouponImage(newFile);
+    }
+
     // ==================================================
     // XỬ LÝ AVATAR (USER)
     // ==================================================

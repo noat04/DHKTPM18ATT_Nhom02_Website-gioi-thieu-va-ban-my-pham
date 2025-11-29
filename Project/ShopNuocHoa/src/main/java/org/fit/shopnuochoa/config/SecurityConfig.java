@@ -5,6 +5,7 @@ import org.fit.shopnuochoa.service.CustomUserDetailsService;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -44,12 +45,15 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(
                                 "/api/consultant/**",
-                                "/api/products/import/**"
+                                "/api/products/import/**",
+                                "/api/momo",                  // ✅ cho phép POST MoMo không cần CSRF
+                                "/api/momo/callback/**"       // (nếu bạn có callback)
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
                         // Thứ tự quan trọng: specific patterns trước, generic patterns sau
                         .requestMatchers("/api/products/import/**").permitAll() // Import endpoints
+                        .requestMatchers(HttpMethod.POST, "/api/momo").permitAll() // ✅ cho phép gọi thanh toán MoMo
                         .requestMatchers(
                                 "/api/register",
                                 "/api/login",
@@ -59,6 +63,7 @@ public class SecurityConfig {
                                 "/api/forgot-password",
                                 "/api/reset-password",
                                 "/api/consultant/**",
+                                "/api/momo/**",   // ✅ cho phép redirect GET MoMo payUrl
                                 "/api/images/**",
                                 "/css/**",
                                 "/js/**",

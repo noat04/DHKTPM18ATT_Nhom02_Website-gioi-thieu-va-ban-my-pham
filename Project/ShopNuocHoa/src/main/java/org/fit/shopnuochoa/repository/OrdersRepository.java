@@ -1,10 +1,12 @@
 package org.fit.shopnuochoa.repository;
 
+import org.fit.shopnuochoa.Enum.OrderStatus;
 import org.fit.shopnuochoa.model.Orders;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,6 +15,7 @@ import java.util.List;
 public interface OrdersRepository extends JpaRepository<Orders, Integer> {
 
     List<Orders> findByCustomerId(Integer customerId);
+
     Page<Orders> findByCustomerId(Integer customerId, Pageable pageable);
 
     Page<Orders> findByDate(LocalDate date, Pageable pageable);
@@ -28,7 +31,12 @@ public interface OrdersRepository extends JpaRepository<Orders, Integer> {
     LEFT JOIN c.user u
     WHERE LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
        OR LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%'))
-""")
+    """)
+
     Page<Orders> searchByCustomerNameOrUsername(String keyword, Pageable pageable);
 
+    List<Orders> findByStatus(OrderStatus status);
+
+    @Query("SELECT o FROM Orders o JOIN FETCH o.orderLines WHERE o.id = :id")
+    Orders findFullOrderWithLines(@Param("id") Integer id);
 }

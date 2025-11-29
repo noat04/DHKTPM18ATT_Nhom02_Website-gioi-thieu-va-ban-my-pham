@@ -4,9 +4,12 @@ import com.paypal.api.payments.*;
 import com.paypal.base.rest.APIContext;
 import com.paypal.base.rest.PayPalRESTException;
 import jakarta.servlet.http.HttpSession;
+import org.fit.shopnuochoa.Enum.PaymentMethod;
+import org.fit.shopnuochoa.Enum.ShippingMethod;
 import org.fit.shopnuochoa.model.CartBean;
 import org.fit.shopnuochoa.model.Orders;
 import org.fit.shopnuochoa.service.CheckOutService;
+import org.fit.shopnuochoa.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -24,6 +27,9 @@ public class PaypalService {
 
     @Autowired
     private CheckOutService checkOutService;
+
+    @Autowired
+    private EmailService emailService;
 
     @Value("${app.public.url}")
     private String NGROK_PUBLIC_URL;
@@ -78,38 +84,94 @@ public class PaypalService {
         return null;
     }
 
-    @Transactional
-    public Orders executePaymentAndFinalizeOrder(String paymentId, String payerId, HttpSession session)
-            throws PayPalRESTException {
+//    @Transactional
+//    public Orders executePaymentAndFinalizeOrder(String paymentId, String payerId, HttpSession session)
+//            throws PayPalRESTException {
+//
+//        // 1. Thực hiện trừ tiền trên PayPal
+//        Payment payment = new Payment();
+//        payment.setId(paymentId);
+//        PaymentExecution paymentExecution = new PaymentExecution();
+//        paymentExecution.setPayerId(payerId);
+//        Payment executedPayment = payment.execute(apiContext, paymentExecution);
+//
+//        // 2. Kiểm tra nếu trạng thái là "approved" (đã thanh toán)
+//        if ("approved".equals(executedPayment.getState())) {
+//
+//            // Lấy thông tin từ Session để lưu vào Database
+//            CartBean cart = (CartBean) session.getAttribute("cart");
+//            Integer customerId = (Integer) session.getAttribute("checkoutCustomerId");
+//
+//            if (cart == null || customerId == null) {
+//                throw new RuntimeException("Phiên làm việc hết hạn hoặc giỏ hàng trống.");
+//            }
+//
+//            // 3. GỌI CHECKOUT SERVICE ĐỂ LƯU ĐƠN HÀNG
+//            Orders newOrder = checkOutService.finalizeOrder(customerId, cart);
+//
+//            // Xóa session giỏ hàng sau khi lưu thành công
+//            session.removeAttribute("cart");
+//            session.removeAttribute("checkoutCustomerId");
+//
+//            return newOrder;
+//        } else {
+//            throw new RuntimeException("Thanh toán PayPal chưa hoàn tất. Trạng thái: " + executedPayment.getState());
+//        }
+//    }
+@Transactional
+public Orders executePaymentAndFinalizeOrder(String paymentId, String payerId, HttpSession session)
+        throws PayPalRESTException {
 
-        // 1. Thực hiện trừ tiền trên PayPal
-        Payment payment = new Payment();
-        payment.setId(paymentId);
-        PaymentExecution paymentExecution = new PaymentExecution();
-        paymentExecution.setPayerId(payerId);
-        Payment executedPayment = payment.execute(apiContext, paymentExecution);
+    // 1. Thực hiện trừ tiền trên PayPal
+    Payment payment = new Payment();
+    payment.setId(paymentId);
+    PaymentExecution paymentExecution = new PaymentExecution();
+    paymentExecution.setPayerId(payerId);
+    Payment executedPayment = payment.execute(apiContext, paymentExecution);
 
-        // 2. Kiểm tra nếu trạng thái là "approved" (đã thanh toán)
-        if ("approved".equals(executedPayment.getState())) {
+    // 2. Kiểm tra nếu trạng thái là "approved" (đã thanh toán)
+    if ("approved".equals(executedPayment.getState())) {
 
-            // Lấy thông tin từ Session để lưu vào Database
-            CartBean cart = (CartBean) session.getAttribute("cart");
-            Integer customerId = (Integer) session.getAttribute("checkoutCustomerId");
-
-            if (cart == null || customerId == null) {
-                throw new RuntimeException("Phiên làm việc hết hạn hoặc giỏ hàng trống.");
-            }
-
-            // 3. GỌI CHECKOUT SERVICE ĐỂ LƯU ĐƠN HÀNG
-            Orders newOrder = checkOutService.finalizeOrder(customerId, cart);
-
-            // Xóa session giỏ hàng sau khi lưu thành công
-            session.removeAttribute("cart");
-            session.removeAttribute("checkoutCustomerId");
-
-            return newOrder;
-        } else {
-            throw new RuntimeException("Thanh toán PayPal chưa hoàn tất. Trạng thái: " + executedPayment.getState());
+        // Lấy thông tin từ Session để lưu vào Database
+        CartBean cart = (CartBean) session.getAttribute("cart");
+        Integer customerId = (Integer) session.getAttribute("checkoutCustomerId");
+        String shippingAddress = (String) session.getAttribute("checkoutAddress");
+        String note = (String) session.getAttribute("checkoutNote");
+        ShippingMethod shippingMethod = (ShippingMethod) session.getAttribute("checkoutShipping");
+        String couponCode = (String) session.getAttribute("checkoutCouponCode");
+        if (cart == null || customerId == null) {
+            throw new RuntimeException("Phiên làm việc hết hạn hoặc giỏ hàng trống.");
         }
+
+        // 3. GỌI finalizeOrderCOD giống VNPay/ZaloPay
+        Orders newOrder = checkOutService.finalizeOrderCOD(
+                customerId,
+                cart,
+                PaymentMethod.PAYPAL,  // Thanh toán online qua PayPal
+                shippingMethod,
+                shippingAddress,
+                note,
+                couponCode
+        );
+
+        // [TÙY CHỌN] Gửi email hóa đơn
+        try {
+            emailService.sendInvoiceEmailWithPdf(newOrder);
+        } catch (Exception ex) {
+            System.err.println("Gửi email hóa đơn thất bại: " + ex.getMessage());
+        }
+
+        // 4. Cleanup session
+        session.removeAttribute("cart");
+        session.removeAttribute("checkoutCustomerId");
+        session.removeAttribute("checkoutAddress");
+        session.removeAttribute("checkoutNote");
+        session.removeAttribute("checkoutShipping");
+
+        return newOrder;
+    } else {
+        throw new RuntimeException("Thanh toán PayPal chưa hoàn tất. Trạng thái: " + executedPayment.getState());
     }
+}
+
 }
