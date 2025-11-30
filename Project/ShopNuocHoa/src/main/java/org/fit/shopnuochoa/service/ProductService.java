@@ -70,4 +70,13 @@ public class ProductService {
         return allSimilar.stream().toList();
     }
 
+    public long countInStock() {
+        return productRepository.countByInStockTrue();
+    }
+
+    public long countOutOfStock() {
+        return productRepository.countByInStockFalse();
+    }
+
+
 }

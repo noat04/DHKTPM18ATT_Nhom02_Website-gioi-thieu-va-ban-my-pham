@@ -64,4 +64,13 @@ public class OrderService {
     public Page<Orders> searchByCustomerNameOrUsername(String keyword, Pageable pageable) {
         return ordersRepository.searchByCustomerNameOrUsername(keyword, pageable);
     }
+
+    public long countOrdersInWeek() {
+        return ordersRepository.countOrdersInCurrentWeek();
+    }
+
+    public long countOrdersInMonth() {
+        return ordersRepository.countOrdersInCurrentMonth();
+    }
+
 }

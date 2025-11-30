@@ -26,4 +26,10 @@ public interface OrdersRepository extends JpaRepository<Orders, Integer> {
 """)
     Page<Orders> searchByCustomerNameOrUsername(String keyword, Pageable pageable);
 
+    @Query("SELECT COUNT(o) FROM Orders o WHERE FUNCTION('YEARWEEK', o.date) = FUNCTION('YEARWEEK', CURRENT_DATE)")
+    long countOrdersInCurrentWeek();
+
+    @Query("SELECT COUNT(o) FROM Orders o WHERE MONTH(o.date) = MONTH(CURRENT_DATE) AND YEAR(o.date) = YEAR(CURRENT_DATE)")
+    long countOrdersInCurrentMonth();
+
 }
