@@ -71,4 +71,30 @@ public class CommentController {
         // Chuyển hướng trở lại trang chi tiết sản phẩm
         return "redirect:/api/products/detail/" + productId;
     }
+
+    /**
+     * Hiển thị danh sách bình luận cho ADMIN
+     */
+    @GetMapping("/admin")
+    public String showAdminCommentList(@RequestParam(defaultValue = "0") int page,
+                                       @RequestParam(defaultValue = "10") int size,
+                                       @RequestParam(value = "action", required = false) String action,
+                                       @RequestParam(value = "id", required = false) Integer id,
+                                       Model model) {
+
+        // Xử lý xóa (cho phía admin)
+        if ("delete".equals(action) && id != null) {
+            commentService.deleteComment(id);
+            return "redirect:/api/comments/admin";
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Comment> commentPage = commentService.getAll(pageable);
+
+        model.addAttribute("commentPage", commentPage);
+
+        // Trả về file admin-comment.html
+        return "screen/admin/admin-comment";
+    }
+
 }

@@ -101,11 +101,48 @@
                             <td th:text="${order.customer.name}"></td>
                             <td th:text="${#temporals.format(order.date, 'dd/MM/yyyy HH:mm')}"></td>
                             <td th:text="${#numbers.formatDecimal(order.total, 0, 'COMMA', 2, 'POINT')} + ' đ'"></td>
+                            <td>
+                                <span class="badge bg-success">Thành công</span>
+                            </td>
                         </tr>
                         </tbody>
                     </table>
+
+                    <!-- PAGINATION -->
+                    <nav>
+                        <ul class="pagination justify-content-center">
+                            <!-- Prev -->
+                            <li class="page-item" th:classappend="${ordersPage.hasPrevious()} ? '' : 'disabled'">
+                                <a class="page-link"
+                                   th:href="@{|/api/dashboard?page=${ordersPage.number - 1}|}">
+                                    Trước
+                                </a>
+                            </li>
+
+                            <!-- Page numbers -->
+                            <li class="page-item"
+                                th:each="i : ${#numbers.sequence(0, ordersPage.totalPages - 1)}"
+                                th:classappend="${i == ordersPage.number} ? 'active'">
+                                <a class="page-link"
+                                   th:href="@{|/api/dashboard?page=${i}|}"
+                                   th:text="${i + 1}">
+                                </a>
+                            </li>
+
+                            <!-- Next -->
+                            <li class="page-item" th:classappend="${ordersPage.hasNext()} ? '' : 'disabled'">
+                                <a class="page-link"
+                                   th:href="@{|/api/dashboard?page=${ordersPage.number + 1}|}">
+                                    Sau
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+
                 </div>
             </div>
+
+
         </div>
     </div>
 </div>
