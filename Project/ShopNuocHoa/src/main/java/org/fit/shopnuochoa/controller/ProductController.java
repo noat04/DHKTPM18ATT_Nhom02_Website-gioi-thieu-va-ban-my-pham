@@ -1,6 +1,7 @@
 package org.fit.shopnuochoa.controller;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -22,8 +23,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -190,21 +193,47 @@ public class ProductController {
 
     @PostMapping("/form")
     @PreAuthorize("hasAnyRole('ADMIN')")
-    public String handleEmployeeForm(@RequestParam("action") String action,
-                                     @RequestParam(value = "categoryId", required = false) Integer categoryId,
-                                     @RequestParam("imageFile") MultipartFile imageFile, // <-- THÊM NHẬN FILE
-                                     Product product) {
-        if ("add".equals(action)) {
-            // Gọi hàm create mới có tham số imageFile
-            productService.createProduct(product, categoryId, imageFile);
-        } else if ("edit".equals(action)) {
-            // Gọi hàm update mới có tham số imageFile
-            productService.updateProduct(product.getId(), product, categoryId, imageFile);
+    public String handleEmployeeForm(
+            @RequestParam(value = "action", required = false) String action,
+            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
+            @Valid @ModelAttribute("product") Product product,
+            BindingResult result,
+            RedirectAttributes ra,
+            Model model) {
+
+        // 1. Kiểm tra lỗi Validation (Dữ liệu nhập vào form)
+        if (result.hasErrors()) {
+            // Load lại danh sách Category để dropdown không bị lỗi
+            model.addAttribute("categories", categoryService.getAll());
+            return "screen/admin/admin-product-form"; // Trả về form để hiện lỗi
         }
+
+        try {
+            // Lấy categoryId từ object product (do form đã binding vào category.id)
+            // Nếu product.getCategory() null (do lỗi binding), nó sẽ bị bắt ở catch
+            Integer categoryId = (product.getCategory() != null) ? product.getCategory().getId() : null;
+
+            if ("add".equals(action)) {
+                // Thêm mới
+                productService.createProduct(product, categoryId, imageFile);
+                ra.addFlashAttribute("successMessage", "Thêm sản phẩm thành công!");
+            } else {
+                // Cập nhật
+                productService.updateProduct(product.getId(), product, categoryId, imageFile);
+                ra.addFlashAttribute("successMessage", "Cập nhật sản phẩm thành công!");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            // 2. Bắt lỗi Logic/Hệ thống (Lỗi upload ảnh, lỗi DB...)
+            model.addAttribute("errorMessage", "Lỗi hệ thống: " + e.getMessage());
+            model.addAttribute("categories", categoryService.getAll()); // Đừng quên load lại category
+            return "screen/admin/admin-product-form";
+        }
+
         return "redirect:/api/products/list";
     }
 
-    // Trong file: ProductController.java
 
 // (Hãy chắc chắn bạn đã inject các service này trong Constructor)
 // private final UserService userService;

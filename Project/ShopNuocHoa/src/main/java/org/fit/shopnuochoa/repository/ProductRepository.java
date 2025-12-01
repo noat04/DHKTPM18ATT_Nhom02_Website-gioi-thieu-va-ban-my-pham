@@ -73,4 +73,8 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
         AND c.rating > 0
    \s""")
     RatingStats getRatingStatsByProductId(Integer productId);
+
+//    long countByInStockTrue();   // Đếm sản phẩm còn hàng
+//    long countByInStockFalse();
+//    long count();// Đếm sản phẩm hết hàng
 }

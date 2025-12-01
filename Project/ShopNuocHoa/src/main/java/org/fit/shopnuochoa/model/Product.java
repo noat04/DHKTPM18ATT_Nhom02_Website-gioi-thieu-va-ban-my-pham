@@ -2,11 +2,11 @@ package org.fit.shopnuochoa.model;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*; // [IMPORT QUAN TRỌNG]
 import lombok.*;
 import org.fit.shopnuochoa.Enum.Gender;
 import org.fit.shopnuochoa.Enum.Volume;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
@@ -23,58 +23,67 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    // 1. Validate Tên: Không được rỗng, độ dài vừa phải
     @Column(nullable = false)
+    @NotBlank(message = "Tên sản phẩm không được để trống")
+    @Size(max = 255, message = "Tên sản phẩm không được vượt quá 255 ký tự")
     private String name;
 
+    // 2. Validate Giá: Không null, không âm (Giữ nguyên Double)
     @Column(nullable = false)
+    @NotNull(message = "Giá sản phẩm không được để trống")
+    @Min(value = 0, message = "Giá sản phẩm không được âm")
     private Double price;
 
+    // 3. Validate Rating: Từ 0 đến 5 (Giữ nguyên Double)
     @Column(name = "average_rating")
+    @Min(value = 0, message = "Điểm đánh giá thấp nhất là 0")
+    @Max(value = 5, message = "Điểm đánh giá cao nhất là 5")
     private Double averageRating = 0.0;
 
     @Column(name = "hot_trend")
     private Boolean hotTrend = false;
 
     @Column(name = "rating_count")
+    @Min(value = 0, message = "Lượt đánh giá không được âm")
     private Integer ratingCount;
 
+    // 4. Validate Số lượng: Không null, không âm (Giữ nguyên Integer)
     @Column(name = "quantity")
+    @NotNull(message = "Số lượng không được để trống")
+    @Min(value = 0, message = "Số lượng tồn kho không được âm")
     private Integer quantity = 0;
 
+    // 5. Validate Ảnh: Giới hạn độ dài URL
     @Column(name = "image_url", length = 512)
+    @Size(max = 512, message = "Đường dẫn ảnh quá dài (tối đa 512 ký tự)")
     private String imageUrl;
 
     @Transient
     public String getImagePath() {
-        // 1. Nếu chưa có ảnh -> Trả về ảnh mặc định
         if (imageUrl == null || imageUrl.isEmpty()) {
-            return "/images/default-product.jpg"; // Bạn nhớ tạo file này trong static/images
+            return "/images/default-product.jpg";
         }
-        // 2. Nếu là ảnh Cloudinary (bắt đầu bằng http) hoặc đường dẫn hợp lệ -> Trả về nguyên gốc
         return imageUrl;
     }
 
-    /**
-     * Ánh xạ tới cột 'volume' trong DB.
-     * Lưu dưới dạng String (VD: "ML_50", "ML_100")
-     * thay vì số (0, 1) để an toàn khi thay đổi enum.
-     */
+    // 6. Validate Enum Volume: Bắt buộc chọn
     @Enumerated(EnumType.STRING)
     @Column(name = "volume")
+    @NotNull(message = "Vui lòng chọn dung tích")
     private Volume volume;
 
-    /**
-     * Ánh xạ tới cột 'gender' trong DB.
-     * Lưu dưới dạng String (VD: "NAM", "NU", "UNISEX")
-     */
+    // 7. Validate Enum Gender: Bắt buộc chọn
     @Enumerated(EnumType.STRING)
     @Column(name = "gender")
+    @NotNull(message = "Vui lòng chọn giới tính phù hợp")
     private Gender gender;
 
-    // Nhiều sản phẩm thuộc 1 danh mục
+    // 8. Validate Category: Bắt buộc chọn danh mục
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     @ToString.Exclude
+    @NotNull(message = "Vui lòng chọn danh mục cho sản phẩm")
     private Category category;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -88,11 +97,10 @@ public class Product {
 
     @Transient
     public boolean isInStock() {
-        return this.quantity > 0;
+        // Kiểm tra null an toàn vì quantity là Integer (Wrapper class)
+        return this.quantity != null && this.quantity > 0;
     }
 
-    @Transient // Không lưu vào database
+    @Transient
     private boolean isFavorite;
-
 }
-

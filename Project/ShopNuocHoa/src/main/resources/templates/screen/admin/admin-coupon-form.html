@@ -35,9 +35,15 @@
                     <i class="bi bi-ticket-detailed me-2"></i>
                     <span th:text="${coupon.id == null ? 'Thêm Mới Mã Giảm Giá' : 'Cập Nhật Mã Giảm Giá'}"></span>
                 </h2>
-                <a href="/api/admin/coupons/list" class="btn btn-outline-secondary">
+                <a href="/api/coupons/list" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Quay lại
                 </a>
+            </div>
+
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
 
             <div class="card p-4">
@@ -58,23 +64,36 @@
 
                     <input type="hidden" th:field="*{id}">
 
+                    <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-warning shadow-sm">
+                        <ul class="mb-0 ps-3">
+                            <li th:each="err : ${#fields.globalErrors()}" th:text="${err}"></li>
+                        </ul>
+                    </div>
+
                     <div class="row g-4">
 
                         <div class="col-md-8">
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Mã Code <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control text-uppercase fw-bold" th:field="*{code}" placeholder="VD: SALE50" required>
+                                    <input type="text" class="form-control text-uppercase fw-bold" th:field="*{code}"
+                                           th:classappend="${#fields.hasErrors('code')} ? 'is-invalid' : ''"
+                                           placeholder="VD: SALE50">
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('code')}" th:errors="*{code}"></div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label">Số lượng</label>
-                                    <input type="number" class="form-control" th:field="*{quantity}" required min="1">
+                                    <input type="number" class="form-control" th:field="*{quantity}"
+                                           th:classappend="${#fields.hasErrors('quantity')} ? 'is-invalid' : ''" min="0">
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('quantity')}" th:errors="*{quantity}"></div>
                                 </div>
 
                                 <div class="col-12">
                                     <label class="form-label">Mô tả</label>
-                                    <textarea class="form-control" th:field="*{description}" rows="2"></textarea>
+                                    <textarea class="form-control" th:field="*{description}" rows="2"
+                                              th:classappend="${#fields.hasErrors('description')} ? 'is-invalid' : ''"></textarea>
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>
                                 </div>
                             </div>
                         </div>
@@ -99,22 +118,28 @@
 
                         <div class="col-md-4">
                             <label class="form-label">Giá trị giảm</label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" th:field="*{discountValue}" required min="0">
+                            <div class="input-group has-validation">
+                                <input type="number" class="form-control" th:field="*{discountValue}"
+                                       th:classappend="${#fields.hasErrors('discountValue')} ? 'is-invalid' : ''" min="0">
                                 <span class="input-group-text" id="unitLabel">VND</span>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('discountValue')}" th:errors="*{discountValue}"></div>
                             </div>
                         </div>
 
                         <div class="col-md-4" id="maxDiscountGroup" style="display: none;">
                             <label class="form-label">Giảm tối đa</label>
-                            <input type="number" class="form-control" th:field="*{maxDiscountAmount}">
+                            <input type="number" class="form-control" th:field="*{maxDiscountAmount}"
+                                   th:classappend="${#fields.hasErrors('maxDiscountAmount')} ? 'is-invalid' : ''">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('maxDiscountAmount')}" th:errors="*{maxDiscountAmount}"></div>
                         </div>
 
                         <div class="col-12" th:if="${type == 'ORDER_TOTAL'}">
                             <div class="card bg-light border-primary p-3">
                                 <label class="form-label text-primary">Đơn hàng tối thiểu:</label>
                                 <input type="number" class="form-control" name="minOrderAmount"
+                                       th:classappend="${#fields.hasErrors('minOrderAmount')} ? 'is-invalid' : ''"
                                        th:value="${coupon instanceof T(org.fit.shopnuochoa.model.OrderCoupon) ? coupon.minOrderAmount : 0}">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('minOrderAmount')}" th:errors="*{minOrderAmount}"></div>
                             </div>
                         </div>
 
@@ -141,12 +166,18 @@
 
                         <div class="col-md-4">
                             <label class="form-label">Ngày bắt đầu</label>
-                            <input type="date" class="form-control" th:field="*{startDate}">
+                            <input type="date" class="form-control" th:field="*{startDate}"
+                                   th:classappend="${#fields.hasErrors('startDate')} ? 'is-invalid' : ''">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}"></div>
                         </div>
+
                         <div class="col-md-4">
                             <label class="form-label">Ngày kết thúc</label>
-                            <input type="date" class="form-control" th:field="*{endDate}">
+                            <input type="date" class="form-control" th:field="*{endDate}"
+                                   th:classappend="${#fields.hasErrors('endDate')} ? 'is-invalid' : ''">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}"></div>
                         </div>
+
                         <div class="col-md-4 d-flex align-items-center pt-4">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="activeSwitch" th:field="*{active}">

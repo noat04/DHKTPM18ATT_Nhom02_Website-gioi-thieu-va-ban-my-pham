@@ -392,6 +392,7 @@
                 const value = parseFloat(this.value);
                 const maxDiscount = parseFloat(this.getAttribute('data-max')) || 0;
 
+                inputCoupon.value = code;
                 let discountAmount = 0;
 
                 if (isPercent) {
@@ -403,7 +404,6 @@
                     discountAmount = value;
                 }
 
-                inputCoupon.value = code;
                 hiddenCouponInput.value = code;
                 updateCartTotal(discountAmount);
 

@@ -1,6 +1,7 @@
 package org.fit.shopnuochoa.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*; // Import thư viện Validate
 import lombok.*;
 import org.fit.shopnuochoa.Enum.Gender;
 
@@ -20,37 +21,49 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    // 1. Tên bắt buộc phải có
     @Column(nullable = false)
+    @NotBlank(message = "Họ tên không được để trống")
+    @Size(min = 2, max = 100, message = "Họ tên phải từ 2 đến 100 ký tự")
     private String name;
 
     @Column(nullable = false)
     private LocalDate customerSince;
 
-    // [SỬA] Cho phép null (người dùng sẽ cập nhật sau)
+    // 2. Số điện thoại: Không bắt buộc (@NotNull), nhưng nếu nhập thì phải đúng định dạng VN
     @Column(nullable = true)
+    @Pattern(regexp = "^(0|\\+84)(\\s|\\.)?((3[2-9])|(5[689])|(7[06-9])|(8[1-689])|(9[0-46-9]))(\\d)(\\s|\\.)?(\\d{3})(\\s|\\.)?(\\d{3})$",
+            message = "Số điện thoại không hợp lệ (VD: 0912345678)")
     private String phoneNumber;
 
+    // 3. Giới tính: Optional
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender", nullable = true) // [SỬA] Cho phép null
+    @Column(name = "gender", nullable = true)
     private Gender gender;
 
-    // [SỬA] Cho phép null
+    // 4. Ngày sinh: Optional, nhưng nếu nhập thì phải là ngày trong quá khứ
     @Column(nullable = true)
+    @Past(message = "Ngày sinh không hợp lệ (phải là ngày trong quá khứ)")
     private LocalDate birthday;
 
-    // [SỬA] Cho phép null (để tránh lỗi khi đăng ký)
+    // 5. Địa chỉ: Optional, kiểm tra độ dài để tránh lỗi DB
     @Column(name = "province")
-    private String province; // Tỉnh/Thành phố (VD: Hà Nội)
+    @Size(max = 100, message = "Tên tỉnh/thành quá dài")
+    private String province;
 
     @Column(name = "district")
-    private String district; // Quận/Huyện (VD: Quận Cầu Giấy)
+    @Size(max = 100, message = "Tên quận/huyện quá dài")
+    private String district;
 
     @Column(name = "ward")
-    private String ward;     // Phường/Xã (VD: Phường Dịch Vọng)
+    @Size(max = 100, message = "Tên phường/xã quá dài")
+    private String ward;
 
     @Column(name = "street_detail")
-    private String streetDetail; // Số nhà, tên đường (VD: 123 Xuân Thủy)
+    @Size(max = 255, message = "Địa chỉ chi tiết quá dài")
+    private String streetDetail;
 
+    // Hàm tiện ích hiển thị địa chỉ
     // Hàm tiện ích để lấy địa chỉ đầy đủ hiển thị (khi in hóa đơn)
     @Transient
     public String getFullAddress() {
@@ -58,18 +71,24 @@ public class Customer {
         return String.format("%s, %s, %s, %s", streetDetail, ward, district, province);
     }
 
+
+    // 6. Email: Bắt buộc và phải đúng định dạng
     @Column(nullable = false)
+    @NotBlank(message = "Email không được để trống")
+    @Email(message = "Email không đúng định dạng")
     private String email;
 
-    // [SỬA] Cho phép null
+    // 7. CCCD: Optional, nhưng nếu nhập phải đủ độ dài
     @Column(nullable = true)
+    @Pattern(regexp = "^\\d{9}|\\d{12}$", message = "CCCD/CMND phải là 9 hoặc 12 chữ số")
     private String idCard;
 
-    // [SỬA] Cho phép null
+    // 8. Nickname: Optional
     @Column(nullable = true)
+    @Size(max = 50, message = "Biệt danh tối đa 50 ký tự")
     private String nickName;
 
-    // Quan hệ 1-N: 1 Customer có nhiều Order
+    // Quan hệ 1-N
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude
     private Set<Orders> orders;

@@ -123,4 +123,12 @@ public class UserService {
             return true;
         }).orElse(false);
     }
+
+    public long countByRole(Role role) {
+        return userRepository.countByRole(role);
+    }
+
+    public long count() {
+        return userRepository.count();
+    }
 }

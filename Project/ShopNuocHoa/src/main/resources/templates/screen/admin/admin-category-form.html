@@ -44,27 +44,33 @@
                                             <label for="name" class="form-label fw-semibold">
                                                 Tên nhà sản xuất <span class="text-danger">*</span>
                                             </label>
+
                                             <input type="text" id="name" th:field="*{name}"
                                                    class="form-control"
+                                                   th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
                                                    placeholder="VD: Dior, Chanel..."
-                                                   required>
+                                                   >
+
+                                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
                                         </div>
 
                                         <div class="col-md-5">
                                             <label for="country" class="form-label fw-semibold">Quốc gia</label>
+
                                             <input type="text" id="country" th:field="*{country}"
                                                    class="form-control"
+                                                   th:classappend="${#fields.hasErrors('country')} ? 'is-invalid' : ''"
                                                    placeholder="VD: Pháp, Ý, Mỹ">
+
+                                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('country')}" th:errors="*{country}"></div>
                                         </div>
                                     </div>
 
-                                    <!-- Row 2: Logo / Image -->
                                     <div class="row mb-4">
                                         <div class="col-12">
                                             <label class="form-label fw-semibold">Logo / Ảnh đại diện</label>
 
-                                            <!-- Hiển thị ảnh hiện tại nếu đang edit -->
-                                            <div th:if="${category.id != null && category.imgURL != null}"
+                                            <div th:if="${category.id != null}"
                                                  class="mb-3 p-3 bg-light rounded text-center">
                                                 <p class="text-muted small mb-2">Ảnh hiện tại:</p>
                                                 <img th:src="${category.getImagePath()}"
@@ -74,7 +80,11 @@
                                             </div>
 
                                             <input type="file" name="imageFile" accept="image/*"
-                                                   class="form-control">
+                                                   class="form-control"
+                                                   th:classappend="${#fields.hasErrors('imgURL')} ? 'is-invalid' : ''">
+
+                                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('imgURL')}" th:errors="*{imgURL}"></div>
+
                                             <small class="text-muted">
                                                 <i class="bi bi-info-circle"></i>
                                                 Chấp nhận: JPG, PNG, GIF. Kích thước tối đa: 5MB

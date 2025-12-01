@@ -91,11 +91,13 @@
                                 </td>
 
                                 <td>
-                                        <span th:if="${coupon instanceof T(org.fit.shopnuochoa.model.OrderCoupon)}"
-                                              class="badge bg-primary">Hóa đơn</span>
-                                    <span th:if="${coupon instanceof T(org.fit.shopnuochoa.model.CategoryCoupon)}"
+                                    <span th:if="${coupon.couponTypeLabel == 'ORDER'}"
+                                          class="badge bg-primary">Hóa đơn</span>
+
+                                    <span th:if="${coupon.couponTypeLabel == 'CATEGORY'}"
                                           class="badge bg-success">Thương hiệu</span>
-                                    <span th:if="${coupon instanceof T(org.fit.shopnuochoa.model.WelcomeCoupon)}"
+
+                                    <span th:if="${coupon.couponTypeLabel == 'WELCOME'}"
                                           class="badge bg-warning text-dark">Khách mới</span>
                                 </td>
 

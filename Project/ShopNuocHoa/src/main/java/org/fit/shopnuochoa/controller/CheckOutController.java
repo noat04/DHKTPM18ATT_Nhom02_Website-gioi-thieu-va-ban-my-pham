@@ -46,7 +46,7 @@ public class CheckOutController {
             @RequestParam(value = "couponCode", required = false) String couponCode, // <-- Nhận mã từ Cart
             HttpSession session, RedirectAttributes redirectAttributes) {
         CartBean cart = (CartBean) session.getAttribute("cart");
-
+        System.out.println("POST /api/checkout/confirm - received couponCode = " + couponCode);
         // 1. Validate
         List<String> errors = checkoutService.validateCart(cart);
         if (!errors.isEmpty()) {

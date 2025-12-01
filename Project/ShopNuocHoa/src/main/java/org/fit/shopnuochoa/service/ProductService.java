@@ -426,4 +426,16 @@ public class ProductService {
         product.setQuantity(currentStock - quantityToReduce);
         productRepository.save(product);
     }
+
+//    public long countInStock() {
+//        return productRepository.countByInStockTrue();
+//    }
+//
+//    public long countOutOfStock() {
+//        return productRepository.countByInStockFalse();
+//    }
+//
+//    public long count(){
+//        return productRepository.count();
+//    }
 }

@@ -32,11 +32,18 @@ public interface OrdersRepository extends JpaRepository<Orders, Integer> {
     WHERE LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
        OR LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%'))
     """)
-
     Page<Orders> searchByCustomerNameOrUsername(String keyword, Pageable pageable);
 
     List<Orders> findByStatus(OrderStatus status);
 
     @Query("SELECT o FROM Orders o JOIN FETCH o.orderLines WHERE o.id = :id")
     Orders findFullOrderWithLines(@Param("id") Integer id);
+
+    long countByCustomerId(Integer customerId);
+
+    @Query("SELECT COUNT(o) FROM Orders o WHERE FUNCTION('YEARWEEK', o.date) = FUNCTION('YEARWEEK', CURRENT_DATE)")
+    long countOrdersInCurrentWeek();
+
+    @Query("SELECT COUNT(o) FROM Orders o WHERE MONTH(o.date) = MONTH(CURRENT_DATE) AND YEAR(o.date) = YEAR(CURRENT_DATE)")
+    long countOrdersInCurrentMonth();
 }

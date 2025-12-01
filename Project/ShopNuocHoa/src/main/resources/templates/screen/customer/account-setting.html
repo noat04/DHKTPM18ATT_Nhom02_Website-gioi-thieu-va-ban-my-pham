@@ -2,118 +2,26 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{screen/customer/header :: html-head}"></head>
 <style>
-    /* 1. Nền và Card */
-    body {
-        background-color: #f4f7f6; /* Màu nền xám xanh nhẹ dịu mắt */
-    }
-    .profile-card {
-        border: none;
-        border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        background: white;
-        overflow: hidden;
-        transition: transform 0.3s ease;
-    }
-    .profile-card:hover {
-        transform: translateY(-5px); /* Hiệu ứng nổi nhẹ khi hover */
-    }
-
-    /* 2. Cột Trái (Avatar) */
-    .avatar-section {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* Gradient tím xanh sang trọng */
-        color: white;
-        padding: 40px 20px;
-        text-align: center;
-    }
-    .avatar-img {
-        width: 140px;
-        height: 140px;
-        border-radius: 50%;
-        border: 5px solid rgba(255,255,255,0.3); /* Viền mờ sang trọng */
-        object-fit: cover;
-        margin-bottom: 15px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    }
+    /* ... (Giữ nguyên style cũ) ... */
+    body { background-color: #f4f7f6; }
+    .profile-card { border: none; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); background: white; overflow: hidden; transition: transform 0.3s ease; }
+    .profile-card:hover { transform: translateY(-5px); }
+    .avatar-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 20px; text-align: center; }
+    .avatar-img { width: 140px; height: 140px; border-radius: 50%; border: 5px solid rgba(255,255,255,0.3); object-fit: cover; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
     .user-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 5px; }
     .user-role { font-size: 0.9rem; opacity: 0.8; letter-spacing: 1px; text-transform: uppercase; }
-
-    .upload-btn-wrapper {
-        position: relative;
-        overflow: hidden;
-        display: inline-block;
-        margin-top: 15px;
-    }
-    .btn-upload {
-        border: 1px solid rgba(255,255,255,0.6);
-        color: white;
-        background-color: rgba(255,255,255,0.1);
-        padding: 6px 20px;
-        border-radius: 25px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        transition: all 0.3s;
-    }
-    .btn-upload:hover {
-        background-color: white;
-        color: #764ba2;
-    }
-
-    /* 3. Cột Phải (Thông tin & Tabs) */
-    .nav-pills .nav-link {
-        color: #555;
-        font-weight: 600;
-        border-radius: 30px;
-        padding: 10px 25px;
-        margin-right: 10px;
-        transition: all 0.3s;
-    }
-    .nav-pills .nav-link.active {
-        background-color: #667eea;
-        color: white;
-        box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4);
-    }
-
-    /* 4. Form & Data Row */
-    .info-row {
-        padding: 12px 0;
-        border-bottom: 1px solid #f0f0f0;
-        display: flex;
-        align-items: center;
-    }
+    .upload-btn-wrapper { position: relative; overflow: hidden; display: inline-block; margin-top: 15px; }
+    .btn-upload { border: 1px solid rgba(255,255,255,0.6); color: white; background-color: rgba(255,255,255,0.1); padding: 6px 20px; border-radius: 25px; font-size: 0.85rem; font-weight: 600; transition: all 0.3s; }
+    .btn-upload:hover { background-color: white; color: #764ba2; }
+    .nav-pills .nav-link { color: #555; font-weight: 600; border-radius: 30px; padding: 10px 25px; margin-right: 10px; transition: all 0.3s; }
+    .nav-pills .nav-link.active { background-color: #667eea; color: white; box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4); }
+    .info-row { padding: 12px 0; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; }
     .info-row:last-child { border-bottom: none; }
-    .info-label {
-        font-weight: 600;
-        color: #666;
-        width: 140px;
-    }
-    .info-value {
-        color: #333;
-        font-weight: 500;
-    }
-
-    .form-control {
-        border-radius: 8px;
-        padding: 10px 15px;
-        border: 1px solid #e0e0e0;
-        background-color: #fcfcfc;
-    }
-    .form-control:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
-        background-color: white;
-    }
+    .info-label { font-weight: 600; color: #666; width: 140px; }
+    .info-value { color: #333; font-weight: 500; }
+    .form-control, .form-select { border-radius: 8px; padding: 10px 15px; border: 1px solid #e0e0e0; background-color: #fcfcfc; }
+    .form-control:focus, .form-select:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15); background-color: white; }
     .form-label { font-weight: 600; color: #444; font-size: 0.9rem; }
-    /* Thêm CSS cho select box đẹp hơn */
-    .form-select {
-        border-radius: 8px;
-        padding: 10px 15px;
-        border: 1px solid #e0e0e0;
-        background-color: #fcfcfc;
-    }
-    .form-select:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
-    }
 </style>
 <body class="d-flex flex-column min-vh-100">
 
@@ -124,10 +32,10 @@
     <div th:if="${successMessage}" class="alert alert-success border-0 shadow-sm mb-4 rounded-3">
         <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${successMessage}"></span>
     </div>
+
     <div th:if="${errorMessage}" class="alert alert-danger border-0 shadow-sm mb-4 rounded-3">
         <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}"></span>
     </div>
-
     <div class="row g-4">
 
         <div class="col-lg-4">
@@ -135,7 +43,6 @@
                 <div class="avatar-section">
                     <div class="position-relative d-inline-block">
                         <img th:src="${user.getAvatarPath()}" alt="Avatar" class="avatar-img">
-
                         <form th:if="${user.avatar != null and user.avatar.startsWith('http')}"
                               th:action="@{/api/delete-avatar}" method="post"
                               class="position-absolute bottom-0 end-0"
@@ -146,10 +53,8 @@
                             </button>
                         </form>
                     </div>
-
                     <h3 class="user-name" th:text="${user.full_name}">User Name</h3>
                     <p class="user-role" th:text="${customer.nickName ?: '---'}"></p>
-
                     <form th:action="@{/api/upload-avatar}" method="post" enctype="multipart/form-data" class="mt-3">
                         <label class="btn-upload cursor-pointer">
                             <i class="bi bi-camera me-1"></i> Đổi ảnh đại diện
@@ -157,22 +62,15 @@
                         </label>
                     </form>
                 </div>
-
                 <div class="p-4">
                     <h6 class="fw-bold text-secondary text-uppercase small mb-3">Liên kết tài khoản</h6>
                     <div class="d-flex align-items-center mb-3">
                         <i class="bi bi-envelope fs-4 text-primary me-3"></i>
-                        <div>
-                            <small class="text-muted d-block">Email đăng ký</small>
-                            <span class="fw-bold text-dark" th:text="${user.email}">email@example.com</span>
-                        </div>
+                        <div><small class="text-muted d-block">Email đăng ký</small><span class="fw-bold text-dark" th:text="${user.email}"></span></div>
                     </div>
                     <div class="d-flex align-items-center">
                         <i class="bi bi-person-badge fs-4 text-success me-3"></i>
-                        <div>
-                            <small class="text-muted d-block">Tên đăng nhập</small>
-                            <span class="fw-bold text-dark" th:text="${user.username}">username</span>
-                        </div>
+                        <div><small class="text-muted d-block">Tên đăng nhập</small><span class="fw-bold text-dark" th:text="${user.username}"></span></div>
                     </div>
                 </div>
             </div>
@@ -182,99 +80,76 @@
             <div class="profile-card h-100 p-4">
 
                 <ul class="nav nav-pills mb-4" id="profileTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="info-tab" data-bs-toggle="pill" data-bs-target="#info" type="button" role="tab">
-                            <i class="bi bi-person-vcard me-2"></i>Thông tin cá nhân
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="edit-tab" data-bs-toggle="pill" data-bs-target="#edit" type="button" role="tab">
-                            <i class="bi bi-pencil-square me-2"></i>Chỉnh sửa
-                        </button>
-                    </li>
-                    <li class="nav-item ms-auto">
-                        <a class="btn btn-outline-danger rounded-pill px-3" th:href="@{/api/logout}">
-                            <i class="bi bi-box-arrow-right me-1"></i> Đăng xuất
-                        </a>
-                    </li>
+                    <li class="nav-item"><button class="nav-link active" id="info-tab" data-bs-toggle="pill" data-bs-target="#info" type="button"><i class="bi bi-person-vcard me-2"></i>Thông tin cá nhân</button></li>
+                    <li class="nav-item"><button class="nav-link" id="edit-tab" data-bs-toggle="pill" data-bs-target="#edit" type="button"><i class="bi bi-pencil-square me-2"></i>Chỉnh sửa</button></li>
+                    <li class="nav-item ms-auto"><a class="btn btn-outline-danger rounded-pill px-3" th:href="@{/api/logout}"><i class="bi bi-box-arrow-right me-1"></i> Đăng xuất</a></li>
                 </ul>
 
                 <div class="tab-content" id="profileTabsContent">
 
                     <div class="tab-pane fade show active" id="info" role="tabpanel">
                         <h5 class="fw-bold text-dark mb-4 ps-2 border-start border-4 border-primary">Chi tiết hồ sơ</h5>
-
-                        <div class="info-row">
-                            <div class="info-label">Họ và tên</div>
-                            <div class="info-value" th:text="${customer.name ?: '---'}"></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Biệt danh</div>
-                            <div class="info-value fst-italic text-muted" th:text="${customer.nickName ?: '---'}"></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Số điện thoại</div>
-                            <div class="info-value" th:text="${customer.phoneNumber ?: '---'}"></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Ngày sinh</div>
-                            <div class="info-value" th:text="${customer.birthday != null ? #temporals.format(customer.birthday, 'dd/MM/yyyy') : '---'}"></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Giới tính</div>
-                            <div class="info-value">
-                                <span th:if="${customer.gender != null}"
-                                      class="badge bg-light text-dark border px-3 py-2"
-                                      th:text="${customer.gender}"></span>
-                                <span th:if="${customer.gender == null}">---</span>
-                            </div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">CMND/CCCD</div>
-                            <div class="info-value" th:text="${customer.idCard ?: '---'}"></div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Địa chỉ</div>
-                            <div class="info-value" th:text="${customer.getFullAddress() ?: '---'}"></div>
-                        </div>
-
-                        <div class="mt-4 pt-3 border-top text-end">
-                            <button class="btn btn-primary px-4 rounded-pill" onclick="document.getElementById('edit-tab').click()">
-                                Cập nhật thông tin ngay
-                            </button>
-                        </div>
+                        <div class="info-row"><div class="info-label">Họ và tên</div><div class="info-value" th:text="${customer.name ?: '---'}"></div></div>
+                        <div class="info-row"><div class="info-label">Biệt danh</div><div class="info-value fst-italic text-muted" th:text="${customer.nickName ?: '---'}"></div></div>
+                        <div class="info-row"><div class="info-label">Số điện thoại</div><div class="info-value" th:text="${customer.phoneNumber ?: '---'}"></div></div>
+                        <div class="info-row"><div class="info-label">Ngày sinh</div><div class="info-value" th:text="${customer.birthday != null ? #temporals.format(customer.birthday, 'dd/MM/yyyy') : '---'}"></div></div>
+                        <div class="info-row"><div class="info-label">Giới tính</div><div class="info-value"><span th:if="${customer.gender != null}" class="badge bg-light text-dark border px-3 py-2" th:text="${customer.gender}"></span><span th:if="${customer.gender == null}">---</span></div></div>
+                        <div class="info-row"><div class="info-label">CMND/CCCD</div><div class="info-value" th:text="${customer.idCard ?: '---'}"></div></div>
+                        <div class="info-row"><div class="info-label">Địa chỉ</div><div class="info-value" th:text="${customer.getFullAddress() ?: '---'}"></div></div>
+                        <div class="mt-4 pt-3 border-top text-end"><button class="btn btn-primary px-4 rounded-pill" onclick="document.getElementById('edit-tab').click()">Cập nhật thông tin ngay</button></div>
                     </div>
 
                     <div class="tab-pane fade" id="edit" role="tabpanel">
                         <h5 class="fw-bold text-dark mb-4 ps-2 border-start border-4 border-warning">Cập nhật thông tin</h5>
 
                         <form th:action="@{/api/profile/edit}" method="post" th:object="${customer}">
+
+                            <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-warning border-0 shadow-sm mb-4 rounded-3">
+                                <ul class="mb-0 ps-3">
+                                    <li th:each="err : ${#fields.globalErrors()}" th:text="${err}"></li>
+                                </ul>
+                            </div>
+
                             <div class="row g-3">
+
                                 <div class="col-md-6">
                                     <label class="form-label">Họ và tên <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" th:field="*{name}" required>
+                                    <input type="text" class="form-control" th:field="*{name}" required
+                                           th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''">
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
                                 </div>
+
                                 <div class="col-md-6">
                                     <label class="form-label">Biệt danh</label>
-                                    <input type="text" class="form-control" th:field="*{nickName}" placeholder="Ví dụ: Mẹ Bắp">
+                                    <input type="text" class="form-control" th:field="*{nickName}" placeholder="Ví dụ: Mẹ Bắp"
+                                           th:classappend="${#fields.hasErrors('nickName')} ? 'is-invalid' : ''">
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('nickName')}" th:errors="*{nickName}"></div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label">Số điện thoại</label>
-                                    <div class="input-group">
+                                    <div class="input-group has-validation">
                                         <span class="input-group-text bg-light"><i class="bi bi-telephone"></i></span>
-                                        <input type="text" class="form-control" th:field="*{phoneNumber}">
+                                        <input type="text" class="form-control" th:field="*{phoneNumber}"
+                                               th:classappend="${#fields.hasErrors('phoneNumber')} ? 'is-invalid' : ''">
+                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></div>
                                     </div>
                                 </div>
+
                                 <div class="col-md-6">
                                     <label class="form-label">CMND/CCCD</label>
-                                    <input type="text" class="form-control" th:field="*{idCard}">
+                                    <input type="text" class="form-control" th:field="*{idCard}"
+                                           th:classappend="${#fields.hasErrors('idCard')} ? 'is-invalid' : ''">
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('idCard')}" th:errors="*{idCard}"></div>
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label">Ngày sinh</label>
-                                    <input type="date" class="form-control" th:field="*{birthday}">
+                                    <input type="date" class="form-control" th:field="*{birthday}"
+                                           th:classappend="${#fields.hasErrors('birthday')} ? 'is-invalid' : ''">
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('birthday')}" th:errors="*{birthday}"></div>
                                 </div>
+
                                 <div class="col-md-6">
                                     <label class="form-label d-block">Giới tính</label>
                                     <div class="btn-group w-100" role="group">
@@ -296,30 +171,38 @@
                                         <div class="row g-2">
                                             <div class="col-md-4">
                                                 <label class="small text-muted">Tỉnh/Thành phố</label>
-                                                <select class="form-select" id="province" th:field="*{province}">
+                                                <select class="form-select" id="province" th:field="*{province}"
+                                                        th:classappend="${#fields.hasErrors('province')} ? 'is-invalid' : ''">
                                                     <option value="">-- Chọn --</option>
                                                 </select>
+                                                <div class="invalid-feedback" th:if="${#fields.hasErrors('province')}" th:errors="*{province}"></div>
                                             </div>
 
                                             <div class="col-md-4">
                                                 <label class="small text-muted">Quận/Huyện</label>
-                                                <select class="form-select" id="district" th:field="*{district}" disabled>
+                                                <select class="form-select" id="district" th:field="*{district}" disabled
+                                                        th:classappend="${#fields.hasErrors('district')} ? 'is-invalid' : ''">
                                                     <option value="">-- Chọn --</option>
                                                 </select>
+                                                <div class="invalid-feedback" th:if="${#fields.hasErrors('district')}" th:errors="*{district}"></div>
                                             </div>
 
                                             <div class="col-md-4">
                                                 <label class="small text-muted">Phường/Xã</label>
-                                                <select class="form-select" id="ward" th:field="*{ward}" disabled>
+                                                <select class="form-select" id="ward" th:field="*{ward}" disabled
+                                                        th:classappend="${#fields.hasErrors('ward')} ? 'is-invalid' : ''">
                                                     <option value="">-- Chọn --</option>
                                                 </select>
+                                                <div class="invalid-feedback" th:if="${#fields.hasErrors('ward')}" th:errors="*{ward}"></div>
                                             </div>
 
                                             <div class="col-12">
                                                 <label class="small text-muted">Địa chỉ cụ thể</label>
                                                 <input type="text" class="form-control" id="streetDetail"
                                                        th:field="*{streetDetail}"
+                                                       th:classappend="${#fields.hasErrors('streetDetail')} ? 'is-invalid' : ''"
                                                        placeholder="Số nhà, tên đường, tòa nhà...">
+                                                <div class="invalid-feedback" th:if="${#fields.hasErrors('streetDetail')}" th:errors="*{streetDetail}"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -351,63 +234,43 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // API Hành chính
         const host = "https://provinces.open-api.vn/api/";
-
-        // Các element
         const provinceEl = document.getElementById("province");
         const districtEl = document.getElementById("district");
         const wardEl = document.getElementById("ward");
-
-        // Lấy dữ liệu cũ từ Server (để fill lại form nếu khách đã có địa chỉ)
         const dataEl = document.getElementById("address-data");
         const savedProvince = dataEl.dataset.province;
         const savedDistrict = dataEl.dataset.district;
         const savedWard = dataEl.dataset.ward;
 
-        // Hàm gọi API
         const callAPI = (api) => {
             return axios.get(api).then((response) => {
                 return response.data;
             });
         }
 
-        // Hàm render option
-        // SelectId: ID của thẻ select
-        // Data: Mảng dữ liệu từ API
-        // SelectedText: Tên địa danh cần chọn mặc định (dữ liệu cũ)
         const renderData = (selectId, data, selectedText) => {
             let selectBox = document.getElementById(selectId);
             let row = '<option value="">-- Chọn --</option>';
-            let selectedCode = null; // Mã code của mục được chọn (để load cấp con)
+            let selectedCode = null;
 
             data.forEach(element => {
-                // So sánh tên từ API với tên trong Database
                 let isSelected = (element.name === selectedText) ? "selected" : "";
-
-                if(isSelected) selectedCode = element.code; // Lưu lại mã code nếu trùng
-
-                // Value lưu TÊN (để lưu vào DB), data-code lưu MÃ (để gọi API)
+                if(isSelected) selectedCode = element.code;
                 row += `<option value="${element.name}" data-code="${element.code}" ${isSelected}>${element.name}</option>`;
             });
 
             selectBox.innerHTML = row;
-            return selectedCode; // Trả về mã code của mục vừa được chọn tự động
+            return selectedCode;
         }
 
-        // --- QUY TRÌNH LOAD DỮ LIỆU (Tuần tự) ---
-
-        // 1. Load Tỉnh
+        // Load Tỉnh
         callAPI(host + "?depth=1").then((data) => {
             const provinceCode = renderData("province", data, savedProvince);
-
-            // Nếu có tỉnh cũ -> Load Huyện
             if (provinceCode) {
                 districtEl.disabled = false;
                 callAPI(host + "p/" + provinceCode + "?depth=2").then((res) => {
                     const districtCode = renderData("district", res.districts, savedDistrict);
-
-                    // Nếu có huyện cũ -> Load Xã
                     if (districtCode) {
                         wardEl.disabled = false;
                         callAPI(host + "d/" + districtCode + "?depth=2").then((res) => {
@@ -418,18 +281,14 @@
             }
         });
 
-        // --- XỬ LÝ SỰ KIỆN KHI NGƯỜI DÙNG CHỌN LẠI ---
-
-        // Chọn Tỉnh -> Load Huyện mới
+        // Xử lý sự kiện
         provinceEl.addEventListener("change", () => {
             const selectedOption = provinceEl.options[provinceEl.selectedIndex];
             const code = selectedOption.dataset.code;
-
             districtEl.innerHTML = '<option value="">-- Chọn --</option>';
             wardEl.innerHTML = '<option value="">-- Chọn --</option>';
             districtEl.disabled = true;
             wardEl.disabled = true;
-
             if(code) {
                 callAPI(host + "p/" + code + "?depth=2").then((res) => {
                     renderData("district", res.districts, "");
@@ -438,14 +297,11 @@
             }
         });
 
-        // Chọn Huyện -> Load Xã mới
         districtEl.addEventListener("change", () => {
             const selectedOption = districtEl.options[districtEl.selectedIndex];
             const code = selectedOption.dataset.code;
-
             wardEl.innerHTML = '<option value="">-- Chọn --</option>';
             wardEl.disabled = true;
-
             if(code) {
                 callAPI(host + "d/" + code + "?depth=2").then((res) => {
                     renderData("ward", res.wards, "");

@@ -1,5 +1,6 @@
 package org.fit.shopnuochoa.repository;
 
+import org.fit.shopnuochoa.Enum.Role;
 import org.fit.shopnuochoa.model.Users;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,4 +22,7 @@ public interface UserRepository extends JpaRepository<Users, Integer> {
            OR LOWER(u.full_name) LIKE LOWER(CONCAT('%', :keyword, '%'))
     """)
     Page<Users> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    long countByRole(Role role);
+    long count();
 }

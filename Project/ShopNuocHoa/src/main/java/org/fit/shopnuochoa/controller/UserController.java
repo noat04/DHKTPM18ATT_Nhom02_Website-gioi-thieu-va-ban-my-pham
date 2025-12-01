@@ -447,27 +447,52 @@ public class UserController {
 
     // Xử lý cập nhật hồ sơ
     @PostMapping("/profile/edit")
-    public String updateProfile(@ModelAttribute("customer") Customer updatedCustomer,
+    public String updateProfile(@Valid @ModelAttribute("customer") Customer updatedCustomer, // [1] Kích hoạt Validate
+                                BindingResult result, // [2] Chứa kết quả lỗi
                                 Principal principal,
-                                RedirectAttributes redirectAttributes) {
+                                RedirectAttributes redirectAttributes,
+                                Model model) { // Cần Model để đẩy dữ liệu khi có lỗi
+
         if (principal == null) {
             return "redirect:/api/login";
         }
 
+        // Lấy thông tin User hiện tại (cần dùng cho cả trường hợp thành công và thất bại)
+        String username = principal.getName();
+        Users user = userService.getUserByUsername(username);
+
+        // 1. Kiểm tra lỗi Validation (SĐT sai, Tên trống...)
+        if (result.hasErrors()) {
+            // [QUAN TRỌNG] Khi có lỗi, trả về trang cũ chứ không redirect
+            // Để giữ lại thông báo lỗi và dữ liệu người dùng vừa nhập
+            model.addAttribute("user", user);
+            // Cần set lại User cho customer để hiển thị avatar/email (nếu giao diện cần)
+            updatedCustomer.setUser(user);
+
+            // Nếu giao diện profile cần danh sách đơn hàng hay gì khác, hãy load lại ở đây
+            // model.addAttribute("orders", ...);
+
+            return "screen/customer/account-setting"; // Tên file HTML trang cá nhân của bạn
+        }
+
         try {
-            String username = principal.getName();
-            Users user = userService.getUserByUsername(username);
+            // 2. Xử lý logic cập nhật
             Customer existingCustomer = customerService.getByUser(user.getId());
 
+            // Gọi hàm update (lưu ý: chỉ copy các field cho phép sửa)
             customerService.updateCustomer(existingCustomer.getId(), updatedCustomer);
 
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật hồ sơ thành công!");
+            return "redirect:/api/profile"; // Thành công thì Redirect để refresh
+
         } catch (Exception e) {
             e.printStackTrace();
-            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi cập nhật: " + e.getMessage());
+            // Lỗi hệ thống -> Trả về view để báo lỗi
+            model.addAttribute("user", user);
+            model.addAttribute("errorMessage", "Lỗi cập nhật: " + e.getMessage());
+            updatedCustomer.setUser(user); // Re-bind user
+            return "screen/customer/account-setting";
         }
-
-        return "redirect:/api/profile";
     }
 
 

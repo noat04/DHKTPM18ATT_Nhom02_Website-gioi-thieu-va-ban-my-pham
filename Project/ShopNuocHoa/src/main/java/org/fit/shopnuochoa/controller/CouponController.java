@@ -1,5 +1,6 @@
 package org.fit.shopnuochoa.controller;
 
+import jakarta.validation.Valid;
 import org.fit.shopnuochoa.model.*;
 import org.fit.shopnuochoa.service.CategoryService;
 import org.fit.shopnuochoa.service.CloudinaryService; // Import CloudinaryService
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile; // Import MultipartFile
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -81,11 +83,21 @@ public class CouponController {
 
     // --- Xử lý OrderCoupon ---
     @PostMapping("/save/order")
-    public String saveOrderCoupon(@ModelAttribute OrderCoupon coupon,
-                                  @RequestParam("imageFile") MultipartFile imageFile, // Nhận file
-                                  RedirectAttributes ra) {
+    public String saveOrderCoupon(@Valid @ModelAttribute("coupon") OrderCoupon coupon, // [1] @Valid
+                                  BindingResult result, // [2] BindingResult
+                                  @RequestParam("imageFile") MultipartFile imageFile,
+                                  RedirectAttributes ra,
+                                  Model model) {
+
+        // [3] Check lỗi Validate
+        if (result.hasErrors()) {
+            model.addAttribute("type", "ORDER_TOTAL");
+            model.addAttribute("categories", categoryService.getAll()); // Load lại danh mục để form không bị lỗi
+            return "screen/admin/admin-coupon-form"; // Trả về form để hiện lỗi
+        }
+
         try {
-            handleImageUpload(coupon, imageFile); // Xử lý ảnh
+            handleImageUpload(coupon, imageFile);
 
             if (coupon.getId() != null) {
                 couponService.update(coupon.getId(), coupon);
@@ -95,16 +107,30 @@ public class CouponController {
                 ra.addFlashAttribute("successMessage", "Thêm mới mã giảm giá thành công!");
             }
         } catch (Exception e) {
-            ra.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            e.printStackTrace();
+            // Lỗi logic thì trả về form báo lỗi
+            model.addAttribute("errorMessage", "Lỗi hệ thống: " + e.getMessage());
+            model.addAttribute("type", "ORDER_TOTAL");
+            model.addAttribute("categories", categoryService.getAll());
+            return "screen/admin/admin-coupon-form";
         }
         return "redirect:/api/coupons/list";
     }
 
     // --- Xử lý CategoryCoupon ---
     @PostMapping("/save/category")
-    public String saveCategoryCoupon(@ModelAttribute CategoryCoupon coupon,
+    public String saveCategoryCoupon(@Valid @ModelAttribute("coupon") CategoryCoupon coupon,
+                                     BindingResult result,
                                      @RequestParam("imageFile") MultipartFile imageFile,
-                                     RedirectAttributes ra) {
+                                     RedirectAttributes ra,
+                                     Model model) {
+
+        if (result.hasErrors()) {
+            model.addAttribute("type", "CATEGORY_SPECIFIC");
+            model.addAttribute("categories", categoryService.getAll());
+            return "screen/admin/admin-coupon-form";
+        }
+
         try {
             handleImageUpload(coupon, imageFile);
 
@@ -116,16 +142,29 @@ public class CouponController {
                 ra.addFlashAttribute("successMessage", "Thêm mới mã giảm giá thành công!");
             }
         } catch (Exception e) {
-            ra.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            e.printStackTrace();
+            model.addAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            model.addAttribute("type", "CATEGORY_SPECIFIC");
+            model.addAttribute("categories", categoryService.getAll());
+            return "screen/admin/admin-coupon-form";
         }
         return "redirect:/api/coupons/list";
     }
 
     // --- Xử lý WelcomeCoupon ---
     @PostMapping("/save/welcome")
-    public String saveWelcomeCoupon(@ModelAttribute WelcomeCoupon coupon,
+    public String saveWelcomeCoupon(@Valid @ModelAttribute("coupon") WelcomeCoupon coupon,
+                                    BindingResult result,
                                     @RequestParam("imageFile") MultipartFile imageFile,
-                                    RedirectAttributes ra) {
+                                    RedirectAttributes ra,
+                                    Model model) {
+
+        if (result.hasErrors()) {
+            model.addAttribute("type", "WELCOME");
+            model.addAttribute("categories", categoryService.getAll());
+            return "screen/admin/admin-coupon-form";
+        }
+
         try {
             handleImageUpload(coupon, imageFile);
 
@@ -137,7 +176,11 @@ public class CouponController {
                 ra.addFlashAttribute("successMessage", "Thêm mới mã giảm giá thành công!");
             }
         } catch (Exception e) {
-            ra.addFlashAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            e.printStackTrace();
+            model.addAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            model.addAttribute("type", "WELCOME");
+            model.addAttribute("categories", categoryService.getAll());
+            return "screen/admin/admin-coupon-form";
         }
         return "redirect:/api/coupons/list";
     }
@@ -153,7 +196,7 @@ public class CouponController {
             // Xóa ảnh trên Cloudinary trước khi xóa DB (Tùy chọn, để tiết kiệm dung lượng)
             if(coupon.getImageUrl() != null && coupon.getImageUrl().startsWith("http")) {
                 // Cần thêm hàm xóa public vào CloudinaryService nếu muốn dùng ở đây
-                // cloudinaryService.deleteImageByUrl(coupon.getImageUrl());
+                 cloudinaryService.deleteImageByUrl(coupon.getImageUrl());
             }
 
             couponService.delete(id);

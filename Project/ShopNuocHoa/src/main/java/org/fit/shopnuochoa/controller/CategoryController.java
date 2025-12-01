@@ -1,5 +1,6 @@
 package org.fit.shopnuochoa.controller;
 
+import jakarta.validation.Valid;
 import org.fit.shopnuochoa.component.SecurityUtils;
 import org.fit.shopnuochoa.model.Category;
 import org.fit.shopnuochoa.service.CategoryService;
@@ -10,11 +11,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
@@ -103,15 +103,39 @@ public class CategoryController {
     @PreAuthorize("hasAnyRole('ADMIN')")
     public String handleDepartmentForm(@RequestParam("action") String action,
                                        @RequestParam("imageFile") MultipartFile imageFile, // <-- THÊM NHẬN FILE,
-                                       Category category) { // Spring tự động binding dữ liệu từ form vào đối tượng
+                                       @Valid @ModelAttribute("category") Category category, // [QUAN TRỌNG] Thêm @Valid
+                                       BindingResult result, // [QUAN TRỌNG] Chứa kết quả kiểm tra lỗi
+                                       RedirectAttributes redirectAttributes, // Để gửi thông báo thành công sau khi redirect
+                                       Model model) { // Spring tự động binding dữ liệu từ form vào đối tượng
 
-        if ("add".equals(action)) {
-            categoryService.createCategory(category, imageFile);
-        } else if ("edit".equals(action)) {
-            categoryService.updateCategory(category.getId(), category, imageFile);
+        // 1. Kiểm tra lỗi Validation (Annotation trong Entity)
+        if (result.hasErrors()) {
+            // Nếu có lỗi, trả về trang form để hiển thị lỗi ngay lập tức
+            // (Không redirect, giữ nguyên dữ liệu người dùng đã nhập)
+            return "screen/admin/admin-category-form";
         }
 
-        return "redirect:/api/categories/list"; // Chuyển hướng về trang danh sách sau khi xử lý
+        try {
+            // 2. Xử lý logic nghiệp vụ
+            if ("edit".equals(action) || (category.getId() != null && category.getId() > 0)) {
+                // Logic cập nhật
+                categoryService.updateCategory(category.getId(), category, imageFile);
+                redirectAttributes.addFlashAttribute("successMessage", "Cập nhật danh mục thành công!");
+            } else {
+                // Logic thêm mới
+                categoryService.createCategory(category, imageFile);
+                redirectAttributes.addFlashAttribute("successMessage", "Thêm mới danh mục thành công!");
+            }
+
+        } catch (Exception e) {
+            // 3. Bắt lỗi logic (Ví dụ: Trùng tên danh mục, lỗi lưu file ảnh)
+            e.printStackTrace();
+            model.addAttribute("errorMessage", "Lỗi: " + e.getMessage());
+            return "screen/admin/admin-category-form"; // Trả về form để báo lỗi
+        }
+
+        // 4. Thành công -> Chuyển hướng về danh sách
+        return "redirect:/api/categories/list";
     }
 
 }

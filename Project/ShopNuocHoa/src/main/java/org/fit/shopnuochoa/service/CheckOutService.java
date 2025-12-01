@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Function;
 
 @Service
 public class CheckOutService {
@@ -426,20 +427,21 @@ public class CheckOutService {
         }
 
         // --- TRƯỜNG HỢP C: KHÁCH HÀNG MỚI (WelcomeCoupon) ---
-//        else if (coupon instanceof WelcomeCoupon) {
-//            // Kiểm tra xem khách đã từng mua đơn nào thành công chưa
-//            // (Cần inject OrdersRepository vào Service này)
-//            long count = ordersRepository.countByCustomerIdAndStatus(customerId, OrderStatus.COMPLETED);
-//            if (count > 0) {
-//                throw new RuntimeException("Mã này chỉ dành cho khách hàng mới mua lần đầu.");
-//            }
-//
-//            discount = calculateBaseDiscount(cartTotal, coupon);
-//        }
+        else if (coupon instanceof WelcomeCoupon) {
+            // Kiểm tra xem khách đã từng mua đơn nào thành công chưa
+            // (Cần inject OrdersRepository vào Service này)
+            long count = ordersRepository.countByCustomerId(customerId);
+            if (count > 0) {
+                throw new RuntimeException("Mã này chỉ dành cho khách hàng mới mua lần đầu.");
+            }
+
+            discount = calculateBaseDiscount(cartTotal, coupon);
+        }
 
         // Đảm bảo không giảm quá tổng tiền đơn hàng
         return discount.min(cartTotal);
     }
+
 
     /**
      * Hàm phụ trợ tính toán (Tiền/Phần trăm)
@@ -467,6 +469,7 @@ public class CheckOutService {
     public List<Coupon> getApplicableCoupons(CartBean cart, Integer customerId) {
         // Nên dùng hàm tìm kiếm có điều kiện trong Repo để tối ưu, thay vì getAll()
         // Ví dụ: couponRepository.findAllByActiveTrueAndQuantityGreaterThan(0);
+//        Function<Integer, Long> orderHistoryProvider = orderService.countByCustomerId(customerId)
         List<Coupon> allCoupons = couponService.getAll();
         List<Coupon> validCoupons = new ArrayList<>();
 
@@ -479,7 +482,7 @@ public class CheckOutService {
 
                 // 2. Check điều kiện logic (isApplicable được viết trong Entity)
                 // Hàm này trả về true/false chứ không ném exception
-                if (coupon.isApplicable(cart, customerId)) {
+                if (coupon.isApplicable(cart, customerId, orderService)) {
                     validCoupons.add(coupon);
                 }
             } catch (Exception e) {
