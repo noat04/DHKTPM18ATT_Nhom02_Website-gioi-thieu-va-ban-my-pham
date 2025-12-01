@@ -31,3 +31,20 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Google Cloud & API Keys ###
+# Google Cloud service account keys
+*-key.json
+*-credentials.json
+service-account*.json
+
+# Environment files with sensitive data
+.env
+.env.local
+.env.production
+
+# Application properties with real API keys (optional - be careful)
+# Uncomment if you want to ignore local configs
+# application-local.properties
+# application-dev.properties
+

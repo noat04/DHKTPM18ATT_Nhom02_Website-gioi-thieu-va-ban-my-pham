@@ -1,83 +1,761 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{screen/customer/header :: html-head}"></head>
-<body>
-<div th:replace="~{screen/customer/header:: main-header}"></div>
-<main class="container my-5">
-    <h2 class="text-center mb-4">Danh sách sản phẩm</h2>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{screen/customer/header :: html-head}">
+</head>
 
-    <form th:action="@{/api/products/list}" method="get" class="row g-3 justify-content-center align-items-center mb-4 p-3 bg-light rounded shadow-sm">
-        <div class="col-auto">
-            <label for="categoryId" class="form-label">Nhà sản xuất:</label>
-            <select name="categoryId" id="categoryId" class="form-select">
-                <option value="">-- Tất cả --</option>
-                <th:block th:each="cat : ${categories}">
-                    <option th:value="${cat.id}" th:text="${cat.name}" th:selected="${cat.id == categoryId}"></option>
-                </th:block>
-            </select>
-        </div>
-        <div class="col-auto">
-            <label for="price" class="form-label">Giá lớn hơn:</label>
-            <input type="number" name="price" id="price" class="form-control" placeholder="VD: 500000" th:value="${price}">
-        </div>
-        <div class="col-auto align-self-end">
-            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
-        </div>
-    </form>
+<style>
+    :root {
+        --primary-color: #FF5722;
+        --bg-light: #f5f5f5;
+        --border-color: #e8e8e8;
+        --text-heading: #333;
+        --text-body: #555;
+    }
 
-<!--    <div class="d-flex justify-content-end mb-3">-->
-<!--        <a th:href="@{/api/products/form(action='add')}" class="btn btn-success">-->
-<!--            <i class="bi bi-plus-circle-fill"></i> Thêm mới sản phẩm-->
-<!--        </a>-->
-<!--    </div>-->
+    body { background-color: var(--bg-light); font-family: 'Inter', sans-serif; }
 
-    <table class="table table-bordered table-hover">
-        <thead class="table-dark">
-        <tr>
-            <th>ID</th><th>Tên</th><th>Giá</th><th>NSX</th><th>Tồn kho</th><th>Mua sắm</th><th>Hành động</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="product : ${productPage.content}">
-            <td th:text="${product.id}"></td>
-            <td th:text="${product.name}"></td>
-            <td th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
-            <td th:text="${product.category.name}"></td>
-            <td>
-                <span th:if="${product.inStock}" class="badge bg-success">Còn hàng</span>
-                <span th:unless="${product.inStock}" class="badge bg-danger">Hết hàng</span>
-            </td>
-            <td>
-                <form th:action="@{/api/cart}" method="post" th:if="${product.inStock}">
-                    <input type="hidden" name="action" value="add"><input type="hidden" name="productId" th:value="${product.id}">
-                    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-cart-plus" ></i></button>
+    /* === 1. SIDEBAR BỘ LỌC ACCORDION === */
+    .filter-sidebar {
+        background: #fff;
+        border-radius: 4px;
+        box-shadow: 0 1px 1px 0 rgba(0,0,0,.05);
+    }
+
+    .filter-header-main {
+        padding: 16px;
+        font-weight: 800;
+        font-size: 1.1rem;
+        display: flex; align-items: center; gap: 10px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    /* Accordion Item Styling */
+    .filter-group { border-bottom: 1px solid var(--border-color); }
+    .filter-group:last-child { border-bottom: none; }
+
+    .filter-group-btn {
+        width: 100%;
+        background: none;
+        border: none;
+        padding: 16px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-heading);
+        display: flex; justify-content: space-between; align-items: center;
+        transition: background 0.2s;
+    }
+    .filter-group-btn:hover { background-color: #fafafa; }
+
+    /* Icon xoay khi đóng mở */
+    .filter-group-btn::after {
+        content: '\F282'; /* Bootstrap icon chevron-down */
+        font-family: 'bootstrap-icons';
+        font-size: 12px;
+        transition: transform 0.3s;
+    }
+    .filter-group-btn.collapsed::after { transform: rotate(-90deg); }
+
+    .filter-group-body {
+        padding: 0 16px 16px 16px;
+        font-size: 14px;
+        color: var(--text-body);
+    }
+
+    /* Custom Checkbox & Radio Colors */
+    .form-check-input:checked { background-color: var(--primary-color); border-color: var(--primary-color); }
+    .form-check-input:focus { box-shadow: 0 0 0 0.25rem rgba(255, 87, 34, 0.25); border-color: var(--primary-color); }
+
+    /* === 2. LOADING OVERLAY (Hiệu ứng AJAX) === */
+    .product-list-wrapper { position: relative; min-height: 300px; }
+
+    .loading-overlay {
+        position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(255, 255, 255, 0.7);
+        z-index: 10;
+        display: none; justify-content: center; padding-top: 100px;
+        backdrop-filter: blur(1px);
+    }
+    .loading-overlay.active { display: flex; }
+
+    /* === 3. SORT BAR === */
+    .sort-bar-custom {
+        background: #ededed; padding: 10px 20px; border-radius: 4px;
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 15px;
+    }
+    .btn-sort-custom {
+        background: #fff; border: 1px solid rgba(0,0,0,.09);
+        color: #333; padding: 5px 15px; font-size: 14px;
+        margin-right: 5px; border-radius: 2px; text-decoration: none;
+    }
+    .btn-sort-custom:hover { background: #fdfdfd; color: #333; }
+    .btn-sort-custom.active {
+        background: var(--primary-color); color: #fff; border-color: var(--primary-color);
+    }
+
+    /* === 4. RESPONSIVE === */
+    .mobile-filter-btn { display: none; }
+    @media (max-width: 992px) {
+        .desktop-filter-col { display: none; }
+        .mobile-filter-btn { display: block; width: 100%; margin-bottom: 15px; }
+    }
+
+    /* =================================
+       ENHANCED CHAT BOX STYLES
+    ================================= */
+    .chat-launcher {
+        position: fixed; bottom: 20px; right: 20px; height: 60px; width: 60px;
+        background: linear-gradient(135deg, #FF5722 0%, #FF7043 100%);
+        border-radius: 30px; box-shadow: 0 4px 20px rgba(255, 87, 34, 0.4);
+        cursor: pointer; z-index: 99999; display: flex; align-items: center;
+        overflow: hidden; transition: width 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55), transform 0.3s;
+    }
+    .chat-launcher:hover { width: 190px; box-shadow: 0 6px 30px rgba(255, 87, 34, 0.5); }
+    .launcher-icon { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .launcher-icon i { font-size: 24px; color: white; }
+    .launcher-text { color: white; font-weight: 600; font-size: 15px; white-space: nowrap; opacity: 0; transition: opacity 0.3s ease 0.1s; padding-right: 20px; }
+    .chat-launcher:hover .launcher-text { opacity: 1; }
+    .chat-launcher.hidden { transform: scale(0) rotate(180deg); pointer-events: none; }
+
+    .chat-window {
+        position: fixed; bottom: 20px; right: 20px; width: 400px; height: 600px;
+        background: white; border-radius: 20px; box-shadow: 0 8px 40px rgba(0, 0, 0, 0.2);
+        z-index: 999999; display: flex; flex-direction: column; overflow: hidden;
+        opacity: 0; transform: translateY(20px) scale(0.95); pointer-events: none;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); transform-origin: bottom right;
+    }
+    .chat-window.active { opacity: 1; transform: translateY(0) scale(1); pointer-events: all; }
+
+    .chat-header {
+        background: linear-gradient(135deg, #FF5722 0%, #FF7043 100%);
+        color: white; padding: 20px; display: flex; align-items: center;
+        justify-content: space-between; font-weight: 600;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .chat-header-info { display: flex; align-items: center; gap: 12px; }
+    .chat-header-icon {
+        width: 40px; height: 40px; background: rgba(255,255,255,0.2);
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    }
+    .chat-header-text { display: flex; flex-direction: column; }
+    .chat-header-title { font-size: 16px; font-weight: 700; }
+    .chat-header-status { font-size: 12px; opacity: 0.9; }
+
+    .close-btn-area {
+        cursor: pointer; width: 36px; height: 36px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 50%; transition: 0.2s;
+    }
+    .close-btn-area:hover { background: rgba(255,255,255,0.2); transform: rotate(90deg); }
+
+    .chat-body {
+        flex: 1; overflow-y: auto; padding: 20px;
+        background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
+        display: flex; flex-direction: column;
+    }
+
+    /* Scrollbar styling */
+    .chat-body::-webkit-scrollbar { width: 6px; }
+    .chat-body::-webkit-scrollbar-track { background: transparent; }
+    .chat-body::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
+    .chat-body::-webkit-scrollbar-thumb:hover { background: #bbb; }
+
+    .message {
+        margin-bottom: 16px; padding: 12px 16px; border-radius: 16px;
+        max-width: 85%; word-wrap: break-word; animation: slideIn 0.3s ease-out;
+        font-size: 14px; line-height: 1.5; position: relative;
+        display: inline-block;
+    }
+
+    .user-message {
+        background: linear-gradient(135deg, #FF5722 0%, #FF7043 100%);
+        color: white; margin-left: auto; text-align: left;
+        border-bottom-right-radius: 4px;
+        box-shadow: 0 2px 8px rgba(255, 87, 34, 0.3);
+        align-self: flex-end;
+    }
+
+    .bot-message {
+        background: white; color: #333;
+        border: 1px solid #e8e8e8; border-top-left-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        align-self: flex-start;
+        position: relative;
+    }
+
+    /* Markdown styling trong bot message */
+    .bot-message p { margin: 0 0 8px 0; }
+    .bot-message p:last-child { margin-bottom: 0; }
+    .bot-message strong { color: #FF5722; font-weight: 600; }
+    .bot-message em { font-style: italic; color: #666; }
+    .bot-message code {
+        background: #f5f5f5; padding: 2px 6px; border-radius: 4px;
+        font-family: 'Courier New', monospace; font-size: 13px;
+        color: #e91e63;
+    }
+    .bot-message ul, .bot-message ol {
+        margin: 8px 0; padding-left: 20px;
+    }
+    .bot-message li { margin: 4px 0; }
+
+    /* Copy button */
+    .copy-btn {
+        position: absolute; top: 8px; right: 8px;
+        background: rgba(0,0,0,0.05); border: none;
+        padding: 4px 8px; border-radius: 4px;
+        cursor: pointer; opacity: 0; transition: 0.2s;
+        font-size: 11px; color: #666;
+    }
+    .bot-message:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: rgba(0,0,0,0.1); }
+    .copy-btn.copied { background: #4CAF50; color: white; }
+
+    /* Typing indicator */
+    .typing-indicator {
+        display: flex; align-items: center; gap: 4px;
+        padding: 16px;
+    }
+    .typing-indicator span {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #FF5722; animation: bounce 1.4s infinite;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-10px); }
+    }
+
+    .chat-input-area {
+        padding: 16px; background: white;
+        border-top: 1px solid #e8e8e8;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+
+    .chat-input-container {
+        display: flex; align-items: flex-end; gap: 8px;
+        padding: 8px; background: #f8f9fa; border-radius: 24px;
+    }
+
+    .chat-input {
+        flex: 1; border: none; outline: none;
+        padding: 10px 16px; font-size: 14px;
+        background: transparent; resize: none;
+        max-height: 100px; line-height: 1.5;
+        font-family: inherit;
+    }
+    .chat-input:focus { background: transparent; }
+
+    .chat-send-btn {
+        background: linear-gradient(135deg, #FF5722 0%, #FF7043 100%);
+        color: white; border: none; border-radius: 50%;
+        width: 40px; height: 40px; flex-shrink: 0;
+        cursor: pointer; display: flex; align-items: center;
+        justify-content: center; transition: 0.3s;
+        box-shadow: 0 2px 8px rgba(255, 87, 34, 0.3);
+    }
+    .chat-send-btn:hover { transform: scale(1.1); box-shadow: 0 4px 12px rgba(255, 87, 34, 0.4); }
+    .chat-send-btn:active { transform: scale(0.95); }
+    .chat-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+        .chat-window {
+            width: calc(100% - 20px); height: 500px;
+            bottom: 10px; right: 10px; border-radius: 16px;
+        }
+        .chat-launcher { bottom: 10px; right: 10px; }
+    }
+
+</style>
+
+<body class="d-flex flex-column min-vh-100 bg-light">
+<div th:replace="~{screen/customer/header :: main-header}"></div>
+
+<main class="container my-4">
+
+    <button class="btn btn-primary mobile-filter-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFilter">
+        <i class="bi bi-funnel-fill me-2"></i> Bộ lọc tìm kiếm
+    </button>
+
+    <div class="row">
+        <div class="col-lg-3 desktop-filter-col">
+
+            <div th:fragment="filter-content" class="filter-sidebar h-100">
+                <div class="filter-header-main d-none d-lg-flex">
+                    <i class="bi bi-filter-square-fill text-primary"></i> BỘ LỌC TÌM KIẾM
+                </div>
+
+                <form id="filterForm" th:action="@{/api/products/list}" method="get">
+
+                    <div class="filter-group">
+                        <button type="button" class="filter-group-btn" data-bs-toggle="collapse" data-bs-target="#collapseSearch" aria-expanded="true">
+                            Tìm kiếm
+                        </button>
+                        <div id="collapseSearch" class="collapse show filter-group-body">
+                            <div class="input-group">
+                                <input type="text" name="keyword" id="keyword" class="form-control" placeholder="Tên sản phẩm..." th:value="${keyword}">
+                                <button class="btn btn-primary" type="button" id="btnSearchTrigger"><i class="bi bi-search"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <button type="button" class="filter-group-btn" data-bs-toggle="collapse" data-bs-target="#collapsePrice" aria-expanded="true">
+                            Khoảng giá
+                        </button>
+                        <div id="collapsePrice" class="collapse show filter-group-body">
+                            <div class="d-flex align-items-center gap-1 mb-2">
+                                <input type="number" name="price" id="price" class="form-control form-control-sm" placeholder="₫ TỪ" th:value="${price}">
+                                <span>-</span>
+                                <input type="number" name="maxPrice" id="priceRange" class="form-control form-control-sm" placeholder="₫ ĐẾN">
+                            </div>
+                            <button type="button" class="btn btn-primary btn-sm w-100 fw-bold" id="btnPriceTrigger">ÁP DỤNG</button>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <button type="button" class="filter-group-btn" data-bs-toggle="collapse" data-bs-target="#collapseBrand" aria-expanded="true">
+                            Thương hiệu
+                        </button>
+                        <div id="collapseBrand" class="collapse show filter-group-body" style="max-height: 200px; overflow-y: auto;">
+                            <select name="categoryId" id="categoryId" class="form-select">
+                                <option value="">-- Tất cả --</option>
+                                <th:block th:each="cat : ${categories}">
+                                    <option th:value="${cat.id}" th:text="${cat.name}" th:selected="${cat.id == categoryId}"></option>
+                                </th:block>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <button type="button" class="filter-group-btn" data-bs-toggle="collapse" data-bs-target="#collapseGender" aria-expanded="true">
+                            Giới tính
+                        </button>
+                        <div id="collapseGender" class="collapse show filter-group-body">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="gender" id="gAll" value="" th:checked="${gender == null or gender == ''}">
+                                <label class="form-check-label" for="gAll">Tất cả</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="gender" id="gMale" value="NAM" th:checked="${gender == 'NAM'}">
+                                <label class="form-check-label" for="gMale">Nam</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="gender" id="gFemale" value="NU" th:checked="${gender == 'NU'}">
+                                <label class="form-check-label" for="gFemale">Nữ</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="gender" id="gUnisex" value="UNISEX" th:checked="${gender == 'UNISEX'}">
+                                <label class="form-check-label" for="gUnisex">Unisex</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <button type="button" class="filter-group-btn" data-bs-toggle="collapse" data-bs-target="#collapseRating" aria-expanded="true">
+                            Đánh giá
+                        </button>
+                        <div id="collapseRating" class="collapse show filter-group-body">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="rating" value="" id="rAll" th:checked="${rating == null}">
+                                <label class="form-check-label" for="rAll">Tất cả</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="rating" value="4" id="r4" th:checked="${rating == 4.0}">
+                                <label class="form-check-label" for="r4">
+                                    <span class="text-warning"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></span> trở lên
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 border-top">
+                        <a th:href="@{/api/products/list}" class="btn btn-outline-secondary w-100">Xóa tất cả</a>
+                    </div>
                 </form>
-            </td>
-            <td>
-                <a th:href="@{/api/products/detail/{id}(id=${product.id})}" class="btn btn-info btn-sm" title="Xem chi tiết">
-                    <i class="bi bi-eye-fill"></i>
-                </a>
-<!--                <a th:href="@{/api/products/form(action='edit', id=${product.id})}" class="btn btn-warning btn-sm">Sửa</a>-->
-<!--                <a th:href="@{/api/products/list(action='delete', id=${product.id})}" class="btn btn-danger btn-sm" onclick="return confirm('Bạn chắc chắn muốn xóa?')">Xóa️</a>-->
-            </td>
-        </tr>
-        </tbody>
-    </table>
+            </div>
+        </div>
 
-    <nav aria-label="Page navigation" th:if="${productPage.totalPages > 1}">
-        <ul class="pagination justify-content-center">
-            <li class="page-item" th:classappend="${productPage.first ? 'disabled' : ''}">
-                <a class="page-link" th:href="@{/api/products/list(page=${productPage.number - 1}, categoryId=${categoryId}, price=${price})}">Trang trước</a>
-            </li>
-            <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, productPage.totalPages - 1)}" th:classappend="${pageNumber == productPage.number ? 'active' : ''}">
-                <a class="page-link" th:href="@{/api/products/list(page=${pageNumber}, categoryId=${categoryId}, price=${price})}" th:text="${pageNumber + 1}"></a>
-            </li>
-            <li class="page-item" th:classappend="${productPage.last ? 'disabled' : ''}">
-                <a class="page-link" th:href="@{/api/products/list(page=${productPage.number + 1}, categoryId=${categoryId}, price=${price})}">Trang sau</a>
-            </li>
-        </ul>
-    </nav>
+        <div class="col-lg-9">
+
+            <div class="sort-bar-custom">
+                <div class="d-flex align-items-center">
+                    <span class="me-3 small text-muted">Sắp xếp theo</span>
+                    <a href="#" class="btn-sort-custom sort-btn active" data-sort="newest">Mới nhất</a>
+                    <a href="#" class="btn-sort-custom sort-btn" data-sort="bestseller">Bán chạy</a>
+                    <a href="#" class="btn-sort-custom sort-btn" data-sort="priceAsc">Giá thấp</a>
+                    <a href="#" class="btn-sort-custom sort-btn" data-sort="priceDesc">Giá cao</a>
+                </div>
+                <select id="pageSizeSelect" class="form-select form-select-sm w-auto border-0">
+                    <option value="6" selected>6 / trang</option>
+                    <option value="9">9 / trang</option>
+                    <option value="12">12 / trang</option>
+                </select>
+            </div>
+
+            <div class="product-list-wrapper">
+
+                <div id="loadingOverlay" class="loading-overlay">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+
+                <div id="product-list-area">
+                    <div id="productListContainer">
+                        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-3 g-3">
+                            <div class="col" th:each="product : ${productPage.content}">
+                                <div th:replace="~{fragment/product-card-fragment :: card(product=${product})}"></div>
+                            </div>
+                        </div>
+                        <div th:if="${productPage.content.isEmpty()}" class="text-center py-5">
+                            <img src="https://deo.shopeemobile.com/shopee/shopee-pcmall-live-sg/search/a60759ad1dabe909c46a.png" width="100" alt="Empty">
+                            <p class="text-muted mt-3">Không tìm thấy sản phẩm phù hợp</p>
+                        </div>
+                    </div>
+
+                    <nav aria-label="Page navigation" th:if="${productPage != null and productPage.totalPages > 1}" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item" th:classappend="${productPage.first ? 'disabled' : ''}">
+                                <a class="page-link" href="#" th:data-page="${productPage.number - 1}">Trước</a>
+                            </li>
+                            <li class="page-item" th:each="pageNumber : ${#numbers.sequence(0, productPage.totalPages - 1)}"
+                                th:classappend="${pageNumber == productPage.number ? 'active' : ''}">
+                                <a class="page-link" href="#" th:data-page="${pageNumber}" th:text="${pageNumber + 1}"></a>
+                            </li>
+                            <li class="page-item" th:classappend="${productPage.last ? 'disabled' : ''}">
+                                <a class="page-link" href="#" th:data-page="${productPage.number + 1}">Sau</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
+
+<div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasFilter">
+    <div class="offcanvas-header bg-light">
+        <h5 class="offcanvas-title fw-bold"><i class="bi bi-funnel-fill"></i> Bộ lọc</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+        <div th:replace="~{:: filter-content}"></div>
+    </div>
+</div>
+
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
+
+<div id="chatLauncher" class="chat-launcher" onclick="openChat()">
+    <div class="launcher-icon"><i class="bi bi-chat-quote-fill"></i></div>
+    <span class="launcher-text">Tư vấn viên AI</span>
+</div>
+
+<div id="chatWindow" class="chat-window">
+    <div class="chat-header">
+        <div class="chat-header-info">
+            <div class="chat-header-icon">
+                <i class="bi bi-robot"></i>
+            </div>
+            <div class="chat-header-text">
+                <div class="chat-header-title">Tư vấn viên AI</div>
+                <div class="chat-header-status">● Online</div>
+            </div>
+        </div>
+        <div class="close-btn-area" onclick="closeChat()">
+            <span style="font-size: 28px; font-weight: 300; line-height: 20px;">&times;</span>
+        </div>
+    </div>
+    <div class="chat-body" id="chatMessages">
+        <div class="message bot-message">
+            <strong>Xin chào!</strong> 👋<br>
+            Tôi là trợ lý AI tư vấn nước hoa.<br>
+            Tôi có thể giúp gì cho bạn?
+        </div>
+    </div>
+    <div class="chat-input-area">
+        <div class="chat-input-container">
+            <textarea
+                id="chatInput"
+                class="chat-input"
+                placeholder="Nhập câu hỏi của bạn..."
+                rows="1"
+                onkeydown="handleKeyDown(event)"
+                oninput="autoResize(this)"></textarea>
+            <button class="chat-send-btn" onclick="sendMessage()" id="sendBtn">
+                <i class="bi bi-send-fill"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    // 1. ENHANCED CHATBOX LOGIC
+    function openChat() {
+        document.getElementById('chatLauncher').classList.add('hidden');
+        document.getElementById('chatWindow').classList.add('active');
+        setTimeout(() => {
+            document.getElementById('chatInput').focus();
+        }, 300);
+    }
+
+    function closeChat() {
+        document.getElementById('chatWindow').classList.remove('active');
+        document.getElementById('chatLauncher').classList.remove('hidden');
+    }
+
+    function handleKeyDown(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendMessage();
+        }
+    }
+
+    function autoResize(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+    }
+
+    function scrollToBottom() {
+        const chatMessages = document.getElementById('chatMessages');
+        chatMessages.scrollTo({
+            top: chatMessages.scrollHeight,
+            behavior: 'smooth'
+        });
+    }
+
+    // Simple markdown to HTML converter
+    function markdownToHtml(text) {
+        if (!text) return '';
+
+        // Escape HTML
+        text = text.replace(/&/g, '&amp;')
+                   .replace(/</g, '&lt;')
+                   .replace(/>/g, '&gt;');
+
+        // Convert markdown
+        text = text
+            // Bold: **text** or __text__
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/__(.*?)__/g, '<strong>$1</strong>')
+            // Italic: *text* or _text_
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/_(.*?)_/g, '<em>$1</em>')
+            // Code: `code`
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            // Line breaks
+            .replace(/\n/g, '<br>');
+
+        // Numbered lists: 1. item
+        text = text.replace(/^(\d+)\.\s(.+)$/gm, '<li>$2</li>');
+        if (text.includes('<li>')) {
+            text = '<ol>' + text + '</ol>';
+            text = text.replace(/<\/li><br>/g, '</li>');
+        }
+
+        // Bullet lists: - item or • item
+        text = text.replace(/^[-•]\s(.+)$/gm, '<li>$1</li>');
+        if (text.includes('<li>') && !text.includes('<ol>')) {
+            text = '<ul>' + text + '</ul>';
+            text = text.replace(/<\/li><br>/g, '</li>');
+        }
+
+        return text;
+    }
+
+    function addMessage(text, className, isBot = false) {
+        const chatMessages = document.getElementById('chatMessages');
+        const msg = document.createElement('div');
+        msg.className = 'message ' + className;
+
+        if (isBot) {
+            const formattedText = markdownToHtml(text);
+            msg.innerHTML = formattedText;
+
+            // Add copy button for bot messages
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+            copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+            copyBtn.title = 'Copy';
+            copyBtn.onclick = function() {
+                navigator.clipboard.writeText(text).then(() => {
+                    copyBtn.innerHTML = '<i class="bi bi-check"></i>';
+                    copyBtn.classList.add('copied');
+                    setTimeout(() => {
+                        copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
+                });
+            };
+            msg.appendChild(copyBtn);
+        } else {
+            msg.textContent = text;
+        }
+
+        chatMessages.appendChild(msg);
+        scrollToBottom();
+    }
+
+    function showTypingIndicator() {
+        const chatMessages = document.getElementById('chatMessages');
+        const typing = document.createElement('div');
+        typing.className = 'message bot-message typing-indicator';
+        typing.id = 'typingIndicator';
+        typing.innerHTML = '<span></span><span></span><span></span>';
+        chatMessages.appendChild(typing);
+        scrollToBottom();
+    }
+
+    function hideTypingIndicator() {
+        const indicator = document.getElementById('typingIndicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const message = input.value.trim();
+
+        if (!message) return;
+
+        // Add user message
+        addMessage(message, 'user-message', false);
+        input.value = '';
+        input.style.height = 'auto';
+
+        // Disable send button
+        sendBtn.disabled = true;
+
+        // Show typing indicator
+        showTypingIndicator();
+
+        fetch('/api/consultant/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: message })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideTypingIndicator();
+
+            if (data && data.response) {
+                addMessage(data.response, 'bot-message', true);
+            } else {
+                addMessage('Xin lỗi, tôi không nhận được câu trả lời. Vui lòng thử lại.', 'bot-message', true);
+            }
+        })
+        .catch(error => {
+            hideTypingIndicator();
+            console.error('Chat error:', error);
+            addMessage('❌ Lỗi kết nối. Vui lòng kiểm tra kết nối mạng và thử lại.', 'bot-message', true);
+        })
+        .finally(() => {
+            sendBtn.disabled = false;
+            input.focus();
+        });
+    }
+
+    // 2. LOGIC BỘ LỌC
+    document.addEventListener("DOMContentLoaded", function () {
+        const pageSizeSelect = document.getElementById("pageSizeSelect");
+        const sortButtons = document.querySelectorAll(".sort-btn");
+        const productListArea = document.getElementById("product-list-area");
+        const loadingOverlay = document.getElementById("loadingOverlay");
+
+        const btnSearchTrigger = document.getElementById("btnSearchTrigger");
+        const btnPriceTrigger = document.getElementById("btnPriceTrigger");
+
+        if(btnSearchTrigger) btnSearchTrigger.addEventListener("click", () => loadProducts(0, getCurrentState().size, getCurrentState().sort));
+        if(btnPriceTrigger) btnPriceTrigger.addEventListener("click", () => loadProducts(0, getCurrentState().size, getCurrentState().sort));
+
+        const filterInputs = document.querySelectorAll('#filterForm input[type="radio"], #filterForm select');
+        filterInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                loadProducts(0, getCurrentState().size, getCurrentState().sort);
+            });
+        });
+
+        function formatCurrency(number) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0 }).format(number);
+        }
+
+        function loadProducts(page, size, sort) {
+            if(loadingOverlay) loadingOverlay.classList.add('active');
+            productListArea.style.opacity = '0.5';
+
+            const filterForm = document.getElementById('filterForm');
+            const formData = new FormData(filterForm);
+            const params = new URLSearchParams(formData);
+
+            params.append('page', page);
+            params.append('size', size);
+            params.append('sort', sort);
+
+            const fetchUrl = `/api/products/list/fragment?${params.toString()}`;
+            console.log("Fetching:", fetchUrl);
+
+            fetch(fetchUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error("Lỗi mạng: " + response.statusText);
+                    return response.text();
+                })
+                .then(html => {
+                    productListArea.innerHTML = html;
+                    productListArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                })
+                .catch(error => console.error("Lỗi tải danh sách sản phẩm:", error))
+                .finally(() => {
+                    if(loadingOverlay) loadingOverlay.classList.remove('active');
+                    productListArea.style.opacity = '1';
+                });
+        }
+
+        function getCurrentState() {
+            const currentSort = document.querySelector(".sort-btn.active")?.dataset.sort || "newest";
+            const currentSize = pageSizeSelect ? pageSizeSelect.value : 6;
+            return { sort: currentSort, size: currentSize };
+        }
+
+        if(pageSizeSelect) {
+            pageSizeSelect.addEventListener("change", function () {
+                const size = this.value;
+                const state = getCurrentState();
+                loadProducts(0, size, state.sort);
+            });
+        }
+
+        sortButtons.forEach(btn => {
+            btn.addEventListener("click", function (e) {
+                e.preventDefault();
+                sortButtons.forEach(b => b.classList.remove("active"));
+                this.classList.add("active");
+                const sort = this.dataset.sort;
+                const state = getCurrentState();
+                loadProducts(0, state.size, sort);
+            });
+        });
+
+        productListArea.addEventListener("click", function(e) {
+            const paginationLink = e.target.closest('a.page-link[data-page]');
+            if (paginationLink) {
+                e.preventDefault();
+                if (paginationLink.closest('.page-item.disabled')) return;
+                const page = paginationLink.dataset.page;
+                const state = getCurrentState();
+                loadProducts(page, state.size, state.sort);
+            }
+        });
+    });
+</script>
 </body>
 </html>

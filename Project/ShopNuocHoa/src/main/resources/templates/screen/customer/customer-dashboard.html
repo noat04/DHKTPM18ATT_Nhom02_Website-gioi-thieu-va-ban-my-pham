@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{screen/customer/header :: html-head}"></head>
+
+<style>
+    .stat-card {
+        border: none;
+        border-radius: 15px;
+        padding: 20px;
+        color: white;
+        height: 100%;
+        transition: transform 0.3s;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .stat-card:hover { transform: translateY(-5px); }
+
+    .bg-gradient-primary { background: linear-gradient(45deg, #4e73df, #224abe); }
+    .bg-gradient-success { background: linear-gradient(45deg, #1cc88a, #13855c); }
+    .bg-gradient-warning { background: linear-gradient(45deg, #f6c23e, #dda20a); }
+
+    .stat-icon { font-size: 2.5rem; opacity: 0.8; }
+    .stat-value { font-size: 1.8rem; font-weight: 700; }
+    .stat-label { font-size: 0.9rem; text-transform: uppercase; opacity: 0.9; letter-spacing: 1px;}
+
+    .chart-container {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+</style>
+
+<body class="d-flex flex-column min-vh-100 bg-light">
+<div th:replace="~{screen/customer/header :: main-header}"></div>
+
+<main class="container my-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-dark">
+            <i class="bi bi-speedometer2 me-2 text-primary"></i>Thống kê cá nhân
+        </h3>
+        <span class="text-muted">Xin chào, <span class="fw-bold" th:text="${customer.name}">User</span></span>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="stat-card bg-gradient-success d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-label">Tổng chi tiêu</div>
+                    <div class="stat-value" th:text="${#numbers.formatDecimal(totalSpent, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
+                </div>
+                <i class="bi bi-wallet2 stat-icon"></i>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="stat-card bg-gradient-primary d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-label">Tổng đơn hàng</div>
+                    <div class="stat-value" th:text="${totalOrders}">0</div>
+                </div>
+                <i class="bi bi-bag-check-fill stat-icon"></i>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="stat-card bg-gradient-warning d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-label">Trung bình/Đơn</div>
+                    <div class="stat-value"
+                         th:text="${totalOrders > 0 ? #numbers.formatDecimal(totalSpent/totalOrders, 0, 'COMMA', 0, 'POINT') : 0} + ' ₫'">
+                        0 ₫
+                    </div>
+                </div>
+                <i class="bi bi-calculator stat-icon"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="chart-container">
+                <h5 class="fw-bold mb-4 text-secondary">Biểu đồ chi tiêu năm nay</h5>
+                <canvas id="spendingChart" style="max-height: 400px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a th:href="@{/api/orders/list}" class="btn btn-outline-primary rounded-pill px-4">Xem chi tiết lịch sử đơn hàng</a>
+    </div>
+
+</main>
+
+<div th:replace="~{screen/customer/footer :: main-footer}"></div>
+
+<script th:inline="javascript">
+    document.addEventListener("DOMContentLoaded", function() {
+        // Lấy dữ liệu từ Controller (Thymeleaf inject vào)
+        const labels = [1,2,3,4,5,6,7,8,9,10,11,12].map(m => "Tháng " + m);
+        const dataValues = /*[[${chartData}]]*/ [0,0,0,0,0,0,0,0,0,0,0,0]; // Dữ liệu mặc định nếu null
+
+        const ctx = document.getElementById('spendingChart').getContext('2d');
+
+        new Chart(ctx, {
+            type: 'line', // Dạng biểu đồ: line, bar, pie...
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Chi tiêu (VND)',
+                    data: dataValues,
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#4e73df',
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    fill: true,
+                    tension: 0.4 // Độ cong của đường
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { borderDash: [2, 4], color: "#f0f0f0" }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

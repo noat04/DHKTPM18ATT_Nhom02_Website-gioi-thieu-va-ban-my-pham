@@ -1,10 +1,8 @@
 package org.fit.shopnuochoa.service;
 
-import org.fit.shopnuochoa.model.Role;
+import org.fit.shopnuochoa.Enum.Role;
 import org.fit.shopnuochoa.model.Users;
 import org.fit.shopnuochoa.repository.UserRepository;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,19 +14,24 @@ import java.util.Optional;
 public class UserService {
     private UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
+
     public List<Users> getAll() {
         return userRepository.findAll();
     }
+
     public Users getUserById(int id) {
         return userRepository.findById(id).orElse(null);
     }
+
     public Users getUserByUsername(String username) {
         return userRepository.findByUsername(username);
     }
+
     public Users createUser(Users user) {
         // Băm mật khẩu trước khi lưu
         String hashedPassword = passwordEncoder.encode(user.getPassword());
@@ -38,22 +41,38 @@ public class UserService {
         user.setCreatedAt(LocalDateTime.now());
         return userRepository.save(user);
     }
+
+    public Optional<Users> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    /**
+     * Hàm này dùng để lưu lại thông tin User đã chỉnh sửa.
+     * Vì User đã có ID nên JPA sẽ tự hiểu là UPDATE.
+     */
+    public Users save(Users user) {
+        return userRepository.save(user);
+    }
+
+    /**
+     * (Tùy chọn) Cập nhật thêm trường Avatar vào hàm updateUser cũ nếu cần
+     */
     public Optional<Users> updateUser(int id, Users updatedUsers) {
         return userRepository.findById(id).map(user -> {
-
-            // ✅ Cập nhật các thông tin cơ bản
             user.setFull_name(updatedUsers.getFull_name());
             user.setEmail(updatedUsers.getEmail());
             user.setRole(updatedUsers.getRole());
             user.setActive(updatedUsers.isActive());
 
-            // ✅ Nếu có mật khẩu mới thì mã hóa và cập nhật
+            // ✅ BỔ SUNG: Cập nhật avatar nếu có
+            if (updatedUsers.getAvatar() != null) {
+                user.setAvatar(updatedUsers.getAvatar());
+            }
+
             if (updatedUsers.getPassword() != null && !updatedUsers.getPassword().isEmpty()) {
                 String hashedPassword = passwordEncoder.encode(updatedUsers.getPassword());
                 user.setPassword(hashedPassword);
             }
-
-            // ❌ Không ghi đè username vì field này readonly
             return userRepository.save(user);
         });
     }
@@ -78,9 +97,20 @@ public class UserService {
 
         return userRepository.save(user);
     }
+
+    public void updatePassword(String email, String newPassword) {
+        Users user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với email này"));
+
+        // Mã hóa mật khẩu mới trước khi lưu
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
     public boolean checkPassword(String rawPassword, String encodedPassword) {
         return passwordEncoder.matches(rawPassword, encodedPassword);
     }
+
     public boolean deleteUserById(int id) {
         return userRepository.findById(id).map(user -> {
             // Nếu user có liên kết tới Customer và Customer có Orders -> không xóa

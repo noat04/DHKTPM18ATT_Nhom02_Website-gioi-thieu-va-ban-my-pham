@@ -1,105 +1,403 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:fragment="html-head">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>My Shopping App</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-          rel="stylesheet"
-          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-          crossorigin="anonymous">
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-            crossorigin="anonymous"></script>
+    <title>TDDN - Thế giới mùi hương</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+
+    <style>
+        /* --- GLOBAL STYLES --- */
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        /* Font chữ sang trọng cho tiêu đề */
+        h1, h2, h3, .brand-font { font-family: 'Playfair Display', serif; }
+
+        /* --- 1. HEADER TOP BAR --- */
+        .top-header {
+            background-color: #1a1a1a; /* Đen xám sang trọng hơn bg-dark mặc định */
+            padding: 15px 0;
+            color: white;
+            border-bottom: 1px solid #333;
+        }
+        .top-header a {
+            color: #e0e0e0;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .top-header a:hover { color: #d4af37; /* Màu vàng kim loại */ }
+
+        /* Logo Text */
+        .logo-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            letter-spacing: 1px;
+            background: linear-gradient(45deg, #fff, #d4af37); /* Gradient chữ */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Search Box Tinh Tế */
+        .search-box .form-control {
+            border-radius: 30px 0 0 30px;
+            border: none;
+            padding-left: 20px;
+            background: #2c2c2c; /* Nền tối cho ô search */
+            color: white;
+        }
+        .search-box .form-control::placeholder { color: #aaa; }
+        .search-box .form-control:focus {
+            background: #fff;
+            color: #333;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+        }
+        .search-box .btn {
+            border-radius: 0 30px 30px 0;
+            background-color: #d4af37; /* Vàng kim */
+            border: none;
+            color: #000;
+            padding-left: 20px; padding-right: 20px;
+            font-weight: bold;
+        }
+        .search-box .btn:hover { background-color: #c5a028; }
+
+        /* --- 2. MENU NAVBAR --- */
+        .main-navbar {
+            background-color: #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+            padding: 0;
+        }
+        .main-navbar .nav-link {
+            font-weight: 600;
+            color: #151515 !important;
+            padding: 16px 20px !important;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            position: relative;
+        }
+        /* Hiệu ứng gạch chân khi hover */
+        .main-navbar .nav-link::after {
+            content: ''; position: absolute; bottom: 10px; left: 50%;
+            width: 0; height: 2px; background: #d4af37;
+            transition: all 0.3s;
+        }
+        .main-navbar .nav-link:hover::after {
+            width: 70%; left: 15%;
+        }
+        .main-navbar .nav-link:hover { color: #15130b !important; }
+
+        /* --- 3. TIỆN ÍCH KHÁC --- */
+        .cart-icon { position: relative; font-size: 1.6rem; }
+        .cart-badge {
+            position: absolute; top: -4px; right: -8px;
+            font-size: 0.65rem; padding: 4px 6px;
+            background: #d4af37; color: #000; border: 2px solid #1a1a1a;
+        }
+
+        .header-avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #d4af37;
+        }
+
+        .dropdown-menu {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            z-index: 9999 !important;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .dropdown-item {
+            padding: 8px 15px; font-size: 0.9rem; border-radius: 5px; font-weight: 500;
+        }
+        .dropdown-item:hover { background-color: #f8f9fa; color: #d4af37; }
+        .dropdown-item.text-danger:hover { background-color: #fff5f5; }
+
+        /* CSS Cũ của bạn (Hot, Hover, Comment...) Giữ nguyên bên dưới */
+        /* ... (Dán lại đoạn CSS action-overlay, hot-fire, comment-card cũ của bạn vào đây nếu cần) ... */
+        .product-card { position: relative; overflow: hidden; }
+        .img-wrapper { position: relative; overflow: hidden; }
+        .action-overlay {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 10px; background: rgba(255, 255, 255, 0.95);
+            opacity: 0; transform: translateY(100%);
+            transition: all 0.3s ease-in-out; z-index: 5;
+            display: flex; justify-content: center; gap: 10px;
+        }
+        .product-card:hover .action-overlay { opacity: 1; transform: translateY(0); }
+
+        .btn-action { border-radius: 20px; font-size: 0.85rem; padding: 6px 15px; font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .hot-fire {
+            position: absolute; top: 12px; right: 12px; z-index: 5;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #feada6 100%);
+            color: white; font-size: 0.7rem; font-weight: 700; padding: 5px 12px;
+            border-radius: 20px; text-transform: uppercase; letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4); overflow: hidden;
+        }
+        .hot-fire::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(120deg,transparent,rgba(255, 255, 255, 0.6),transparent);
+            animation: shine 3s infinite linear;
+        }
+        @keyframes shine { 0% { left: -100%; } 20% { left: 100%; } 100% { left: 100%; } }
+
+        /* === 2. CSS BANNER & CARD (Dùng cho Trang chủ) === */
+        .hero-banner {
+            background: url('https://cdn.s99.vn/ss1/prod/product/31f28fe233b2f606c542c62eb0af735d.jpg') no-repeat center center;
+            background-size: contain; height: 400px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .section-title { margin-bottom: 30px; }
+
+        /* === 3. CSS BRAND CARD === */
+        .brand-card {
+            display: flex; align-items: center; justify-content: center;
+            height: 150px; background-color: #fff;
+            border: 1px solid #e9ecef; border-radius: 8px; padding: 20px;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            text-decoration: none;
+        }
+        .brand-card:hover { transform: translateY(-5px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .brand-card img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        /* (Class cũ để tương thích) */
+        .brand-logo-card {
+            background-color: #fff; border: 1px solid #e9ecef; border-radius: 8px;
+            padding: 20px; display: flex; align-items: center; justify-content: center;
+            height: 120px; transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .brand-logo-card:hover { transform: translateY(-5px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .brand-logo-card img { max-width: 100%; max-height: 80%; object-fit: contain; }
+
+
+        /* === 4. CSS PRODUCT CARD & HOVER EFFECT === */
+        .product-card { position: relative; overflow: hidden; }
+        .product-card .card-title a { font-size: 0.95rem; }
+        .product-card .card-text { font-size: 1.1rem; }
+
+        .img-wrapper { position: relative; overflow: hidden; }
+
+        .action-overlay {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 10px; background: rgba(255, 255, 255, 0.9);
+            opacity: 0; transform: translateY(100%);
+            transition: all 0.3s ease-in-out; z-index: 5;
+            display: flex; justify-content: center; gap: 10px;
+        }
+        /* Hiện nút khi hover */
+        .product-card:hover .action-overlay { opacity: 1; transform: translateY(0); }
+
+        .btn-action {
+            border-radius: 20px; font-size: 0.85rem; padding: 6px 15px;
+            font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* === 5. CSS HOT FIRE (Hiệu ứng Mới) === */
+        .hot-fire {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 5;
+            /* Gradient hiện đại: Đỏ cam sang Hồng đậm (Rất hợp thời trang/mỹ phẩm) */
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #feada6 100%);
+            /* Hoặc dùng màu cam cháy mạnh mẽ hơn: */
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 20px; /* Bo tròn nhiều hơn */
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            /* Đổ bóng nhẹ tạo chiều sâu */
+            box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4);
+            /* Cần thiết cho hiệu ứng quét sáng */
+            overflow: hidden;
+        }
+        /* Tạo vệt sáng quét qua */
+        .hot-fire::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                    120deg,transparent,
+                    rgba(255, 255, 255, 0.6),transparent
+            );
+            animation: shine 3s infinite linear; /* Chạy mỗi 3 giây */
+        }
+        @keyframes shine {
+            0% { left: -100%; }
+            20% { left: 100%; } /* Chạy nhanh qua trong 20% thời gian đầu */
+            100% { left: 100%; } /* Nghỉ 80% thời gian còn lại */
+        }
+        /* === 6. CSS COMMENT LIST (Bong bóng chat) === */
+        .comment-card {
+            background-color: #fff; border: 1px solid #f0f0f0; border-radius: 12px;
+            padding: 20px; margin-bottom: 20px; transition: all 0.2s ease; position: relative;
+        }
+        .comment-card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-color: #e0e0e0; }
+
+        .avatar-initials {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1.2rem; text-transform: uppercase; flex-shrink: 0;
+        }
+
+        .comment-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .comment-author { font-weight: 600; color: #333; font-size: 1rem; }
+        .comment-date { font-size: 0.8rem; color: #999; }
+        .comment-rating { margin-bottom: 10px; }
+        .bi-star-fill.text-warning { color: #ffc107 !important; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1)); }
+
+        .comment-text {
+            color: #555; line-height: 1.6; font-size: 0.95rem;
+            background-color: #f9f9f9; padding: 12px 15px; border-radius: 8px;
+        }
+
+        .comment-actions-hover {
+            position: absolute; top: 15px; right: 15px; opacity: 0; transition: opacity 0.2s;
+            background: white; padding: 2px; border-radius: 4px;
+        }
+        .comment-card:hover .comment-actions-hover { opacity: 1; }
+        .action-icon-btn { border: none; background: none; color: #999; padding: 5px; transition: color 0.2s; }
+        .action-icon-btn:hover.edit { color: #3b82f6; }
+        .action-icon-btn:hover.delete { color: #ef4444; }
+
+        .rating-input input { display: none; }
+        .rating-input label { font-size: 2rem; color: #ddd; cursor: pointer; transition: all 0.2s; }
+        .rating-input input:checked ~ label, .rating-input label:hover, .rating-input label:hover ~ label {
+            color: #ffc107; transform: scale(1.1);
+        }
+    </style>
 </head>
+
 <body>
 
-<header th:fragment="main-header" class="mb-5">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" th:href="@{/api/home}">
-                <i class="bi bi-cart4"></i> Shopping App
-            </a>
+<div th:fragment="main-header">
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+    <div class="top-header">
+        <div class="container">
+            <div class="row align-items-center">
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" th:href="@{/api/home}">Trang chủ</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/api/products/list}">Sản phẩm</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/api/categories/list}">NSX</a>
-                    </li>
-<!--                    <li class="nav-item">-->
-<!--                        <a class="nav-link" th:href="@{/api/customers/list}">Khách hàng</a>-->
-<!--                    </li>-->
-                </ul>
+                <div class="col-md-3 col-6">
+                    <a class="text-decoration-none d-flex align-items-center gap-2" th:href="@{/api/home}">
+                        <i class="bi bi-gem fs-3 text-warning"></i>
+                        <span class="logo-text fw-bold">TDDN</span>
+                    </a>
+                </div>
 
-<!--                <form class="d-flex" role="search">-->
-<!--                    <input class="form-control me-2" type="search" placeholder="Tìm kiếm..." aria-label="Search">-->
-<!--                    <button class="btn btn-outline-success" type="submit">Tìm</button>-->
-<!--                </form>-->
+                <div class="col-md-5 d-none d-md-block">
+                    <form action="/api/products/list" method="get" class="input-group search-box">
+                        <input type="text" name="keyword" class="form-control"
+                               placeholder="Tìm kiếm nước hoa, thương hiệu..." aria-label="Search">
+                        <button class="btn" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </form>
+                </div>
 
-                <ul class="navbar-nav ms-lg-3 align-items-center">
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/api/cart}">
-                            <i class="bi bi-cart-fill" style="font-size: 1.2rem;"></i>
-                            Giỏ hàng
-                            <span th:if="${cart != null && cart.totalItems > 0}"
-                                  class="badge rounded-pill bg-danger ms-1"
-                                  th:text="${cart.getTotalItems}"></span>
+                <div class="col-md-4 col-6 text-end d-flex align-items-center justify-content-end gap-4">
+                    <a href="#" class="d-md-none fs-4"><i class="bi bi-search"></i></a>
+
+                    <a th:href="@{/api/cart}" class="icon-wrapper cart-icon" title="Giỏ hàng">
+                        <i class="bi bi-handbag"></i>
+                        <span class="badge rounded-pill cart-badge"
+                              th:if="${session.cart != null && session.cart.totalItems > 0}"
+                              th:text="${session.cart.totalItems}">0</span>
+                    </a>
+
+                    <div sec:authorize="!isAuthenticated()" class="d-flex gap-3 align-items-center small fw-bold">
+                        <a th:href="@{/api/login}" class="text-white">ĐĂNG NHẬP</a>
+                        <span class="opacity-50">|</span>
+                        <a th:href="@{/api/register}" class="text-white">ĐĂNG KÝ</a>
+                    </div>
+
+                    <div sec:authorize="isAuthenticated()" class="dropdown">
+                        <a class="d-flex align-items-center text-decoration-none dropdown-toggle"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+
+                            <img th:if="${currentUser != null}"
+                                 th:src="${currentUser.avatarPath}"
+                                 alt="Avt" class="header-avatar me-2">
+
+                            <i th:if="${currentUser == null}" class="bi bi-person-circle fs-3 me-2 text-warning"></i>
+
+                            <div class="text-start d-none d-lg-block lh-1">
+                                <span class="d-block" style="font-size: 0.7rem; color: #aaa;">Xin chào,</span>
+                                <span class="fw-bold text-white" style="font-size: 0.9rem;"
+                                      th:text="${currentUser != null ? currentUser.full_name : #authentication.name}">
+                                    User
+                                </span>
+                            </div>
                         </a>
-                    </li>
-                    <li class="nav-item" sec:authorize="!isAuthenticated()">
-                        <a class="nav-link" th:href="@{/api/login}">Đăng nhập</a>
-                    </li>
 
-                    <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
-                        <a class="nav-link dropdown-toggle"
-                           href="#"
-                           id="navbarDropdown"
-                           role="button"
-                           data-bs-toggle="dropdown"
-                           aria-expanded="false">
-                            Xin chào, <span sec:authentication="name"></span>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">Tài khoản của tôi</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item"  th:href="@{/api/orders/list}">Lịch sử mua hàng</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item"  th:href="@{/api/dashboard/test}">Thống kê mua sắm</a></li>
+                        <ul class="dropdown-menu dropdown-menu-end animate__animated animate__fadeIn">
+                            <li><a class="dropdown-item" th:href="@{/api/profile}"><i class="bi bi-person-gear me-2 text-primary"></i>Tài khoản</a></li>
+                            <li><a class="dropdown-item" th:href="@{/api/wishlist/list}"><i class="bi bi-heart me-2 text-danger"></i>Yêu thích</a></li>
+                            <li><a class="dropdown-item" th:href="@{/api/orders/list}"><i class="bi bi-bag-check me-2 text-success"></i>Đơn mua</a></li>
+                            <li><a class="dropdown-item" th:href="@{/api/dashboard/test}"><i class="bi bi-bar-chart-line me-2 text-info"></i>Thống kê</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <form th:action="@{/api/logout}" method="post">
-                                    <button type="submit" class="dropdown-item">Đăng xuất</button>
+                                <form th:action="@{/api/logout}" method="post" class="m-0">
+                                    <button type="submit" class="dropdown-item text-danger fw-bold">
+                                        <i class="bi bi-box-arrow-right me-2"></i>Đăng xuất
+                                    </button>
                                 </form>
                             </li>
                         </ul>
-                    </li>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="navbar navbar-expand-lg main-navbar sticky-top">
+        <div class="container">
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+                <span class="navbar-toggler-icon"></span> <span class="ms-1 fw-bold small">MENU</span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="mainNav">
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link" th:href="@{/api/home}">Trang chủ</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/api/products/list}">Cửa hàng</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/api/products/list(sort='bestseller')}">Bán chạy</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/api/products/list(gender='NAM')}">Nam</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/api/products/list(gender='NU')}">Nữ</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/api/products/list(gender='UNISEX')}">Unisex</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/api/categories/list}">Thương hiệu</a></li>
                 </ul>
             </div>
         </div>
     </nav>
-</header>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-        crossorigin="anonymous"></script>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>

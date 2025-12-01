@@ -1,5 +1,6 @@
 package org.fit.shopnuochoa.service;
 
+import org.fit.shopnuochoa.Enum.OrderStatus;
 import org.fit.shopnuochoa.model.Customer;
 import org.fit.shopnuochoa.model.Orders;
 import org.fit.shopnuochoa.repository.CustomerRepository;
@@ -7,6 +8,7 @@ import org.fit.shopnuochoa.repository.OrdersRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -21,7 +23,7 @@ public class OrderService {
         this.customerRepository = customerRepository;
     }
     public List<Orders> findAll() {return ordersRepository.findAll();}
-
+    public List<Orders> getByCustomer(Integer customerId) {return ordersRepository.findByCustomerId(customerId);}
     // ✅ Thêm hàm này
     public Page<Orders> findAll(Pageable pageable) {
         return ordersRepository.findAll(pageable);
@@ -54,6 +56,21 @@ public class OrderService {
     public Page<Orders> findByCustomer(int id, Pageable pageable) {
         return ordersRepository.findByCustomerId(id, pageable);
     }
+
+    @Transactional
+    public void confirmReceived(Integer orderId) {
+        Orders order = ordersRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng."));
+
+        // Chỉ cho phép xác nhận khi đơn đang ở trạng thái DELIVERED (Đã giao)
+        if (order.getStatus() != OrderStatus.DELIVERED) {
+            throw new RuntimeException("Đơn hàng chưa được giao xong hoặc trạng thái không hợp lệ.");
+        }
+
+        // Cập nhật trạng thái thành công
+        order.setStatus(OrderStatus.COMPLETED);
+        ordersRepository.save(order);
+    }
     public Page<Orders> findByDate(LocalDate currentDate, Pageable pageable) {
         return ordersRepository.findByDate(currentDate, pageable);
     }
@@ -64,13 +81,4 @@ public class OrderService {
     public Page<Orders> searchByCustomerNameOrUsername(String keyword, Pageable pageable) {
         return ordersRepository.searchByCustomerNameOrUsername(keyword, pageable);
     }
-
-    public long countOrdersInWeek() {
-        return ordersRepository.countOrdersInCurrentWeek();
-    }
-
-    public long countOrdersInMonth() {
-        return ordersRepository.countOrdersInCurrentMonth();
-    }
-
 }

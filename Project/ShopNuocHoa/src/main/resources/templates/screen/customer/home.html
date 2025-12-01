@@ -1,21 +1,57 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 
-<head th:replace="~{screen/customer/header:: html-head}"></head>
+<head th:replace="~{screen/customer/header:: html-head}">
+</head>
 
-<body class="d-flex flex-column min-vh-100">
-
+<body class="d-flex flex-column min-vh-100 bg-light">
 <div th:replace="~{screen/customer/header :: main-header}"></div>
 
-<main class="container d-flex flex-grow-1 align-items-center justify-content-center">
-    <div class="card">
-        <div class="card-body">
-            <h1>Welcome to Shopping App</h1>
-        </div>
+<main>
+    <div class="hero-banner mb-5">
+    </div>
+
+    <div class="container my-5">
+        <section class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="section-title fw-bold mb-0">Thương hiệu nổi tiếng</h2>
+                <a th:href="@{/api/categories/list}" class="btn btn-outline-primary rounded-pill">
+                    Xem thêm <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="row row-cols-3 row-cols-md-4 row-cols-lg-6 g-3">
+                <div class="col" th:each="category : ${featuredCategories}">
+                    <a th:href="@{/api/products/list(categoryId=${category.id})}" class="brand-logo-card">
+                        <img th:src="${category.imgURL != null ? category.imgURL : 'https://via.placeholder.com/150x80?text=' + category.name}"
+                             th:alt="${category.name}">
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="section-title fw-bold mb-0">Sản Phẩm Mới Nhất</h2>
+                <a th:href="@{/api/products/list(sort='newest')}" class="btn btn-outline-primary rounded-pill">
+                    Xem thêm <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div th:replace="~{fragment/product-list-carousel :: product-list(similarProducts=${newProducts}, carouselId='carouselNewProducts')}"></div>
+        </section>
+
+        <section>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="section-title fw-bold mb-0">Sản Phẩm Bán Chạy</h2>
+                <a th:href="@{/api/products/list(sort='bestseller')}" class="btn btn-outline-primary rounded-pill">
+                    Xem thêm <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div th:replace="~{fragment/product-list-carousel :: product-list(similarProducts=${bestSellingProducts}, carouselId='carouselBestSelling')}"></div>
+        </section>
+
     </div>
 </main>
 
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
-
 </body>
 </html>

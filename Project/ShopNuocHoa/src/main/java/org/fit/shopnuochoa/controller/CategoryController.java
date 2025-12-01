@@ -3,6 +3,9 @@ package org.fit.shopnuochoa.controller;
 import org.fit.shopnuochoa.component.SecurityUtils;
 import org.fit.shopnuochoa.model.Category;
 import org.fit.shopnuochoa.service.CategoryService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -11,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -29,6 +33,8 @@ public class CategoryController {
     public String showCategoryList(
             @RequestParam(value = "action", required = false) String action,
             @RequestParam(value = "id", required = false) Integer id,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "keyword", defaultValue = "") String keyword,
             Model model,
             Authentication authentication) {
 
@@ -38,19 +44,32 @@ public class CategoryController {
             return "redirect:/api/categories/list";
         }
 
-        // ✅ Lấy danh sách tất cả category
+        // ✅ Nếu là ADMIN → hiển thị admin view với phân trang
+        if (SecurityUtils.hasRole(authentication, "ADMIN")) {
+            Pageable pageable = PageRequest.of(page, 10); // 10 items per page
+            Page<Category> categoryPage;
+
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                // Tìm kiếm theo tên
+                categoryPage = categoryService.searchByName(keyword.trim(), pageable);
+            } else {
+                // Lấy tất cả
+                categoryPage = categoryService.getAllPaged(pageable);
+            }
+
+            model.addAttribute("categoryPage", categoryPage);
+            model.addAttribute("keyword", keyword);
+            return "screen/admin/admin-category-list";
+        }
+
+        // ✅ Nếu chưa đăng nhập hoặc là CUSTOMER → hiển thị customer view (không phân trang)
         List<Category> categories = categoryService.getAll();
         model.addAttribute("categories", categories);
 
-        // ✅ Nếu chưa đăng nhập hoặc là CUSTOMER → hiển thị customer view
         if (authentication == null || SecurityUtils.hasRole(authentication, "CUSTOMER")) {
             return "screen/customer/category-list";
         }
 
-        // ✅ Nếu là ADMIN → hiển thị admin view
-        if (SecurityUtils.hasRole(authentication, "ADMIN")) {
-            return "screen/admin/admin-category-list";
-        }
 
         // ✅ Mặc định (phòng lỗi)
         return "screen/customer/category-list";
@@ -83,12 +102,13 @@ public class CategoryController {
     @PostMapping("/form")
     @PreAuthorize("hasAnyRole('ADMIN')")
     public String handleDepartmentForm(@RequestParam("action") String action,
+                                       @RequestParam("imageFile") MultipartFile imageFile, // <-- THÊM NHẬN FILE,
                                        Category category) { // Spring tự động binding dữ liệu từ form vào đối tượng
 
         if ("add".equals(action)) {
-            categoryService.createCategory(category);
+            categoryService.createCategory(category, imageFile);
         } else if ("edit".equals(action)) {
-            categoryService.updateCategory(category.getId(), category);
+            categoryService.updateCategory(category.getId(), category, imageFile);
         }
 
         return "redirect:/api/categories/list"; // Chuyển hướng về trang danh sách sau khi xử lý

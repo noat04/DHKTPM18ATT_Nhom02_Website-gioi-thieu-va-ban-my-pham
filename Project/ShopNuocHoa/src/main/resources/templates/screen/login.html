@@ -2,48 +2,234 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{screen/customer/header :: html-head}"></head>
 
-<body class="d-flex flex-column min-vh-100 bg-light">
+<style>
+    body { background-color: #f0f2f5; }
+
+    .auth-container {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 0;
+    }
+
+    .auth-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        overflow: hidden;
+        width: 100%;
+        max-width: 900px;
+        display: flex;
+    }
+
+    /* Banner bên trái */
+    .auth-banner {
+        flex: 1;
+        background: url('https://images.unsplash.com/photo-1615526675159-e248c3021d3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80') no-repeat center center;
+        background-size: cover;
+        position: relative;
+        display: none;
+    }
+    .auth-banner::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.5));
+    }
+    .auth-banner-text {
+        position: absolute; bottom: 40px; left: 40px; right: 40px; color: white;
+    }
+
+    @media (min-width: 768px) {
+        .auth-banner { display: block; }
+    }
+
+    /* Form bên phải */
+    .auth-form-wrapper {
+        flex: 1;
+        padding: 50px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    /* --- STYLE INPUT & GROUP --- */
+    .input-group-text {
+        background: #f9f9f9;
+        border: 1px solid #e1e1e1;
+        color: #6c757d;
+    }
+
+    /* Icon bên trái */
+    .input-group-text:first-child {
+        border-right: none;
+        border-radius: 10px 0 0 10px;
+    }
+
+    .form-control {
+        padding: 12px 15px;
+        border: 1px solid #e1e1e1;
+        background-color: #f9f9f9;
+        /* Mặc định bo góc phải (dùng cho username) */
+        border-radius: 0 10px 10px 0;
+        border-left: none;
+    }
+
+    /* [SỬA ĐỔI] Input mật khẩu nằm giữa nên không bo góc phải */
+    .password-input {
+        border-radius: 0 !important; /* Vuông góc phải */
+        border-right: none;
+    }
+
+    .form-control:focus {
+        background-color: white;
+        border-color: #e1e1e1;
+        box-shadow: none; /* Tắt shadow mặc định bootstrap để tự custom */
+        border-left: 1px solid #e1e1e1;
+    }
+
+    /* Hiệu ứng focus cho cả group */
+    .input-group:focus-within .input-group-text,
+    .input-group:focus-within .form-control,
+    .input-group:focus-within .btn-toggle-password {
+        border-color: #667eea;
+        background-color: white;
+    }
+    .input-group:focus-within .input-group-text i,
+    .input-group:focus-within .btn-toggle-password i {
+        color: #667eea;
+    }
+
+    /* [THÊM MỚI] Nút con mắt bên phải */
+    .btn-toggle-password {
+        background: #f9f9f9;
+        border: 1px solid #e1e1e1;
+        border-left: none;
+        border-radius: 0 10px 10px 0;
+        color: #6c757d;
+        cursor: pointer;
+        z-index: 5; /* Đảm bảo nút nổi lên trên */
+    }
+    .btn-toggle-password:hover {
+        background-color: #f1f1f1;
+    }
+
+    .btn-auth {
+        background: linear-gradient(to right, #667eea, #764ba2);
+        border: none;
+        padding: 12px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: transform 0.2s;
+    }
+    .btn-auth:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(118, 75, 162, 0.3);
+    }
+</style>
+
+<body class="d-flex flex-column min-vh-100">
 <div th:replace="~{screen/customer/header :: main-header}"></div>
 
-<main class="container d-flex justify-content-center align-items-center flex-grow-1">
-    <div class="card shadow-sm" style="width: 25rem;">
-        <div class="card-body p-4">
-            <h1 class="card-title text-center mb-4">Đăng nhập</h1>
+<main class="auth-container">
+    <div class="auth-card">
 
-            <div th:if="${param.logout}" class="alert alert-success" role="alert">
-                Bạn đã đăng xuất thành công!
+        <div class="auth-banner">
+            <div class="auth-banner-text">
+                <h2 class="fw-bold mb-2">Chào mừng trở lại!</h2>
+                <p class="mb-0 opacity-75">Đăng nhập để tiếp tục mua sắm và quản lý đơn hàng của bạn.</p>
+            </div>
+        </div>
+
+        <div class="auth-form-wrapper">
+            <div class="text-center mb-4">
+                <h3 class="fw-bold text-dark">Đăng nhập</h3>
+                <p class="text-muted small">Điền thông tin đăng nhập của bạn</p>
             </div>
 
-            <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}">
-                Tên đăng nhập hoặc mật khẩu không chính xác.
+            <div th:if="${errorMessage}" class="alert alert-danger py-2 rounded-3 text-center small mb-3 shadow-sm">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> <span th:text="${errorMessage}"></span>
             </div>
 
-            <form th:action="@{/api/login}" th:object="${userForm}" method="post">
+            <div th:if="${successMessage}" class="alert alert-success py-2 rounded-3 text-center small mb-3 shadow-sm">
+                <i class="bi bi-check-circle-fill me-1"></i> <span th:text="${successMessage}"></span>
+            </div>
+
+            <form th:action="@{/api/login}" method="post">
+
                 <div class="mb-3">
-                    <label for="username" class="form-label">Tên đăng nhập</label>
-                    <input type="text" id="username" th:field="*{username}" class="form-control" required autofocus>
+                    <label class="form-label small fw-bold text-secondary">Tên đăng nhập</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                        <input type="text" name="username" class="form-control"
+                               placeholder="Nhập tên đăng nhập" required autofocus autocomplete="username">
+                    </div>
                 </div>
 
                 <div class="mb-3">
-                    <label for="password" class="form-label">Mật khẩu</label>
-                    <input type="password" id="password" th:field="*{password}" class="form-control" required>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label small fw-bold text-secondary mb-0">Mật khẩu</label>
+                    </div>
+                    <div class="input-group mt-2">
+                        <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+
+                        <input type="password" name="password" id="passwordInput"
+                               class="form-control password-input"
+                               placeholder="Nhập mật khẩu" required autocomplete="current-password">
+
+                        <button class="btn btn-toggle-password" type="button" id="togglePasswordBtn">
+                            <i class="bi bi-eye-slash-fill" id="toggleIcon"></i>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="d-grid mt-4">
-                    <button type="submit" class="btn btn-primary btn-lg">Đăng nhập</button>
+                <div class="mb-4 form-check d-flex justify-content-between align-items-center">
+<!--                    <div>-->
+<!--                        <input type="checkbox" class="form-check-input" id="remember-me" name="remember-me">-->
+<!--                        <label class="form-check-label small text-secondary" for="remember-me">Ghi nhớ đăng nhập</label>-->
+<!--                    </div>-->
+                    <a th:href="@{/api/forgot-password}" class="text-decoration-none small text-primary">Quên mật khẩu?</a>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-auth w-100 text-white mb-4">
+                    Đăng Nhập
+                </button>
+
+                <div class="text-center border-top pt-3">
+                    <span class="text-muted small">Chưa có tài khoản?</span>
+                    <a th:href="@{/api/register}" class="fw-bold text-decoration-none ms-1 text-primary">Đăng ký ngay</a>
                 </div>
             </form>
-
-            <div class="text-center mt-3">
-                <a href="#">Quên mật khẩu?</a>
-            </div>
-            <div class="text-center mt-3">
-                <a th:href="@{/api/register}">Đăng ký</a>
-            </div>
         </div>
     </div>
 </main>
 
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const toggleBtn = document.getElementById("togglePasswordBtn");
+        const passwordInput = document.getElementById("passwordInput");
+        const toggleIcon = document.getElementById("toggleIcon");
+
+        if(toggleBtn && passwordInput) {
+            toggleBtn.addEventListener("click", function() {
+                // Kiểm tra type hiện tại
+                const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+                passwordInput.setAttribute("type", type);
+
+                // Đổi icon
+                if (type === "text") {
+                    toggleIcon.classList.remove("bi-eye-slash-fill");
+                    toggleIcon.classList.add("bi-eye-fill");
+                } else {
+                    toggleIcon.classList.remove("bi-eye-fill");
+                    toggleIcon.classList.add("bi-eye-slash-fill");
+                }
+            });
+        }
+    });
+</script>
+
 </body>
 </html>

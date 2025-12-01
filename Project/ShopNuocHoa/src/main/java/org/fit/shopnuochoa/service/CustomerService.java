@@ -24,6 +24,8 @@ public class CustomerService {
     public Customer getById(Integer id) {return customerRepository.findById(id).orElse(null);}
     public Customer createCustomer(Customer customer, Integer userId) {
         Users user = userRepository.findById(userId).orElse(null);
+        customer.setName(user.getFull_name());
+        customer.setEmail(user.getEmail());
         customer.setUser(user);
         customer.setCustomerSince(LocalDate.now());
         return customerRepository.save(customer);
@@ -35,11 +37,55 @@ public class CustomerService {
         return customerRepository.save(customer);
     }
     // Cập nhật
+    // [CẬP NHẬT QUAN TRỌNG] Hàm Update hỗ trợ tách địa chỉ
     public Optional<Customer> updateCustomer(int id, Customer updatedCustomer) {
-        return customerRepository.findById(id).map(category -> {
-            category.setName(updatedCustomer.getName());
-            category.setCustomerSince(updatedCustomer.getCustomerSince());
-            return customerRepository.save(category);
+        return customerRepository.findById(id).map(existingCustomer -> {
+
+            // 1. Cập nhật thông tin cơ bản
+            if (updatedCustomer.getName() != null && !updatedCustomer.getName().trim().isEmpty()) {
+                existingCustomer.setName(updatedCustomer.getName());
+            }
+            if (updatedCustomer.getPhoneNumber() != null && !updatedCustomer.getPhoneNumber().trim().isEmpty()) {
+                existingCustomer.setPhoneNumber(updatedCustomer.getPhoneNumber());
+            }
+            if (updatedCustomer.getGender() != null) {
+                existingCustomer.setGender(updatedCustomer.getGender());
+            }
+            if (updatedCustomer.getBirthday() != null) {
+                existingCustomer.setBirthday(updatedCustomer.getBirthday());
+            }
+            if (updatedCustomer.getIdCard() != null && !updatedCustomer.getIdCard().trim().isEmpty()) {
+                existingCustomer.setIdCard(updatedCustomer.getIdCard());
+            }
+            if (updatedCustomer.getNickName() != null && !updatedCustomer.getNickName().trim().isEmpty()) {
+                existingCustomer.setNickName(updatedCustomer.getNickName());
+            }
+            if (updatedCustomer.getEmail() != null && !updatedCustomer.getEmail().trim().isEmpty()) {
+                existingCustomer.setEmail(updatedCustomer.getEmail());
+            }
+
+            // 2. [MỚI] Cập nhật Địa chỉ chi tiết (Tách riêng)
+            // Chỉ cập nhật nếu người dùng có chọn/nhập giá trị mới
+
+            if (updatedCustomer.getProvince() != null && !updatedCustomer.getProvince().isEmpty()) {
+                existingCustomer.setProvince(updatedCustomer.getProvince());
+            }
+
+            if (updatedCustomer.getDistrict() != null && !updatedCustomer.getDistrict().isEmpty()) {
+                existingCustomer.setDistrict(updatedCustomer.getDistrict());
+            }
+
+            if (updatedCustomer.getWard() != null && !updatedCustomer.getWard().isEmpty()) {
+                existingCustomer.setWard(updatedCustomer.getWard());
+            }
+
+            if (updatedCustomer.getStreetDetail() != null && !updatedCustomer.getStreetDetail().isEmpty()) {
+                existingCustomer.setStreetDetail(updatedCustomer.getStreetDetail());
+            }
+
+            // (Trường 'address' cũ không còn dùng để set nữa, nó được thay thế bằng getFullAddress() khi hiển thị)
+
+            return customerRepository.save(existingCustomer);
         });
     }
     public Optional<Customer> deleteCustomer(int id) {

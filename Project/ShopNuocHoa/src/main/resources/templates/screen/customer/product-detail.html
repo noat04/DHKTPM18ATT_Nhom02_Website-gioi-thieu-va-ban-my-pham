@@ -1,102 +1,325 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
 <head th:replace="~{screen/customer/header :: html-head}"></head>
+<style>
+    /* --- Phần thông tin sản phẩm --- */
+    .product-image-container {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        border: 1px solid #eee;
+        background: white;
+    }
+    .product-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    .product-price {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #dc3545; /* Màu đỏ nổi bật */
+        margin: 15px 0;
+    }
+    .stock-badge {
+        font-size: 0.9rem;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+    .btn-add-cart {
+        padding: 12px 30px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border-radius: 30px;
+        transition: all 0.3s;
+    }
+    .btn-add-cart:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
+    }
 
+    /* --- Phần đánh giá & Form --- */
+    .review-section {
+        background-color: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        padding: 40px;
+        margin-top: 40px;
+    }
+
+    /* (Dán lại CSS cho Comment Card & Rating từ các câu trả lời trước vào đây) */
+    /* ... CSS Avatar, Comment Card, Rating Stars ... */
+</style>
 <body class="d-flex flex-column min-vh-100 bg-light">
 
 <div th:replace="~{screen/customer/header:: main-header}"></div>
 
 <main class="container my-5">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a th:href="@{/static}">Trang chủ</a></li>
-            <li class="breadcrumb-item"><a th:href="@{/api/products/list}">Sản phẩm</a></li>
-            <li class="breadcrumb-item active" aria-current="page" th:text="${product.name}">Chi tiết sản phẩm</li>
+
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb bg-white p-3 rounded shadow-sm">
+            <li class="breadcrumb-item"><a th:href="@{/api/home}" class="text-decoration-none">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a th:href="@{/api/products/list}" class="text-decoration-none">Sản phẩm</a></li>
+            <li class="breadcrumb-item active fw-bold" aria-current="page" th:text="${product.name}">Chi tiết</li>
         </ol>
     </nav>
 
-    <div th:if="${product == null}" class="alert alert-warning text-center">
-        <h2>Không tìm thấy sản phẩm!</h2>
-        <p>Sản phẩm bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.</p>
-        <a th:href="@{/api/products/list}" class="btn btn-primary mt-2">Quay lại danh sách</a>
+    <div th:if="${commentError}" class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert">
+        <i class="bi bi-exclamation-circle-fill me-2"></i> <span th:text="${commentError}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${commentSuccess}" class="alert alert-success alert-dismissible fade show shadow-sm mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${commentSuccess}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <div th:if="${product != null}" class="card shadow-sm">
-        <div class="row g-0">
-            <div class="col-md-5">
-                <img src="https://via.placeholder.com/500x500" class="img-fluid rounded-start" alt="Product Image">
+    <div th:if="${product != null}" class="row g-5">
+
+        <div class="col-lg-5">
+            <div class="product-image-container">
+                <img th:src="${product.imageUrl != null && !#strings.isEmpty(product.imageUrl) ? product.imageUrl : 'https://via.placeholder.com/500x500?text=No+Image'}"
+                     class="img-fluid w-100" th:alt="${product.name}"
+                     style="object-fit: contain; max-height: 500px;">
             </div>
+        </div>
 
-            <div class="col-md-7">
-                <div class="card-body p-4">
-                    <h1 class="card-title" th:text="${product.name}">Tên sản phẩm</h1>
+        <div class="col-lg-7">
+            <div class="ps-lg-4">
+                <h5 class="text-uppercase text-muted ls-1 mb-2" th:text="${product.category.name}">Thương hiệu</h5>
+                <h1 class="product-title" th:text="${product.name}">Tên sản phẩm</h1>
 
-                    <h5 class="card-subtitle mb-3 text-muted" th:text="${product.category.name}">Nhà sản xuất</h5>
+                <div class="d-flex align-items-center mb-4">
+                    <div class="me-3 text-warning">
+                        <span th:each="i : ${#numbers.sequence(1,5)}"
+                              class="bi"
+                              th:classappend="${i <= T(java.lang.Math).round((rating != null ? rating : 0))} ? 'bi-star-fill' : 'bi-star'"></span>
+                        <span class="text-muted ms-1 small" th:text="'(' + ${rating} + '/5)'">(4.5/5)</span>
+                    </div>
+                    <div class="vr mx-3"></div>
 
-                    <p class="card-text fs-2 fw-bold text-danger my-3">
-                        <span th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
-                    </p>
-
-                    <p class="card-text">
-                        <strong>Tình trạng:</strong>
-                        <span th:if="${product.inStock}" class="badge bg-success">Còn hàng</span>
-                        <span th:unless="${product.inStock}" class="badge bg-danger">Hết hàng</span>
-                    </p>
-
-                    <hr>
-
-                    <p class="card-text">Đây là phần mô tả ngắn cho sản phẩm. Bạn có thể thêm một thuộc tính 'description' vào Entity Product để hiển thị ở đây.</p>
-
-                    <form th:action="@{/api/cart}" method="post" class="mt-4">
-                        <input type="hidden" name="action" value="add">
+                    <form th:action="@{/api/wishlist/toggle}" method="post" class="d-inline">
                         <input type="hidden" name="productId" th:value="${product.id}">
-
-                        <div class="d-flex align-items-center">
-                            <div th:if="${product.inStock}">
-                                <label for="quantity" class="me-2">Số lượng:</label>
-                                <input type="number" id="quantity" name="quantity" value="1" min="1" class="form-control d-inline-block" style="width: 80px;">
-                                <button type="submit" class="btn btn-primary btn-lg ms-3">
-                                    <i class="bi bi-cart-plus"></i> Thêm vào giỏ hàng
-                                </button>
-                            </div>
-                            <div th:unless="${product.inStock}">
-                                <button type="button" class="btn btn-secondary btn-lg" disabled>Đã hết hàng</button>
-                            </div>
-                        </div>
+                        <button type="submit" class="btn btn-link text-decoration-none p-0 link-danger">
+                            <i class="bi fs-5" th:classappend="${product.isFavorite} ? 'bi-heart-fill' : 'bi-heart'"></i>
+                            <span class="ms-1" th:text="${product.isFavorite} ? 'Đã thích' : 'Yêu thích'"></span>
+                        </button>
                     </form>
+                </div>
+
+                <div class="product-price" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+
+                <p class="lead text-muted mb-4">
+                    Mô tả ngắn về sản phẩm sẽ nằm ở đây. Giúp khách hàng hiểu rõ hơn về mùi hương, phong cách và độ lưu hương của sản phẩm.
+                </p>
+
+                <div class="mb-4">
+                    <span th:if="${product.isInStock()}" class="stock-badge bg-success-subtle text-success border border-success">
+                        <i class="bi bi-check-lg me-1"></i>Còn hàng (<span th:text="${product.quantity}"></span>)
+                    </span>
+                    <span th:unless="${product.isInStock()}" class="stock-badge bg-danger-subtle text-danger border border-danger">
+                        <i class="bi bi-x-circle me-1"></i>Hết hàng
+                    </span>
+                </div>
+
+                <form th:action="@{/api/cart}" method="post" th:if="${product.isInStock()}">
+                    <input type="hidden" name="action" value="add">
+                    <input type="hidden" name="productId" th:value="${product.id}">
+
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="input-group" style="width: 130px;">
+                            <button class="btn btn-outline-secondary" type="button" onclick="this.parentNode.querySelector('input[type=number]').stepDown()"><i class="bi bi-dash"></i></button>
+                            <input type="number" name="quantity" class="form-control text-center" value="1" min="1" th:max="${product.quantity}">
+                            <button class="btn btn-outline-secondary" type="button" onclick="this.parentNode.querySelector('input[type=number]').stepUp()"><i class="bi bi-plus"></i></button>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-add-cart flex-grow-1">
+                            <i class="bi bi-cart-plus-fill me-2"></i>Thêm vào giỏ hàng
+                        </button>
+                    </div>
+                </form>
+
+                <div th:unless="${product.isInStock()}" class="d-grid">
+                    <button class="btn btn-secondary btn-lg disabled" type="button">Tạm hết hàng</button>
+                </div>
+
+                <div class="mt-5 pt-4 border-top">
+                    <div class="row text-center text-muted">
+                        <div class="col"><i class="bi bi-truck fs-4 d-block mb-1"></i><small>Giao hàng nhanh</small></div>
+                        <div class="col"><i class="bi bi-shield-check fs-4 d-block mb-1"></i><small>Hàng chính hãng</small></div>
+                        <div class="col"><i class="bi bi-arrow-repeat fs-4 d-block mb-1"></i><small>Đổi trả 7 ngày</small></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card shadow-sm mt-5">
-        <div class="card-header">
-            <h3>Sản phẩm tương tự</h3>
+    <div class="mt-5 pt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold text-dark border-start border-4 border-primary ps-3">Sản phẩm cùng thương hiệu</h3>
         </div>
-        <div class="card-body">
-            <div th:replace="~{fragment/product-with-category :: product-list}"></div>
+        <div th:replace="~{fragment/product-list-carousel :: product-list(similarProducts=${similarProducts}, carouselId='similarProductsCarousel')}"></div>
+    </div>
+
+    <div class="review-section" id="reviews">
+        <h3 class="fw-bold mb-4 border-bottom pb-3">Đánh giá & Nhận xét</h3>
+
+        <div class="row">
+            <div class="col-md-5 mb-4 mb-md-0">
+                <div class="p-4 bg-light rounded-3 h-100">
+                    <h5 class="fw-bold mb-3">Gửi đánh giá của bạn</h5>
+
+                    <div sec:authorize="isAuthenticated()">
+                        <form th:action="@{/api/comments/add}" method="post">
+                            <input type="hidden" name="productId" th:value="${product.id}">
+
+                            <div class="mb-3 text-center">
+                                <label class="form-label d-block mb-2">Bạn chấm mấy sao?</label>
+                                <div class="rating-input d-flex flex-row-reverse justify-content-center gap-2 fs-2">
+                                    <input type="radio" id="star5" name="rating" value="5" required/><label for="star5" class="text-warning" style="cursor:pointer">★</label>
+                                    <input type="radio" id="star4" name="rating" value="4" /><label for="star4" class="text-warning" style="cursor:pointer">★</label>
+                                    <input type="radio" id="star3" name="rating" value="3" /><label for="star3" class="text-warning" style="cursor:pointer">★</label>
+                                    <input type="radio" id="star2" name="rating" value="2" /><label for="star2" class="text-warning" style="cursor:pointer">★</label>
+                                    <input type="radio" id="star1" name="rating" value="1" /><label for="star1" class="text-warning" style="cursor:pointer">★</label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <textarea name="text" class="form-control" rows="4" placeholder="Chia sẻ cảm nhận của bạn..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 rounded-pill">Gửi đánh giá</button>
+                        </form>
+                    </div>
+
+                    <div sec:authorize="!isAuthenticated()" class="text-center py-5">
+                        <i class="bi bi-person-lock fs-1 text-secondary d-block mb-3"></i>
+                        <p class="text-muted">Bạn cần đăng nhập để viết đánh giá.</p>
+                        <a th:href="@{/api/login}" class="btn btn-outline-primary rounded-pill px-4">Đăng nhập ngay</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-7">
+                <div th:replace="~{fragment/comment-list-for-detail :: comment-list}"></div>
+            </div>
         </div>
     </div>
 
-    <div class="card shadow-sm mt-5">
-        <div class="card-header">
-            <h3>Bình luận sản phẩm</h3>
-        </div>
-        <div class="card-body">
-            <form th:action="@{/api/comments/add}" method="post" class="mb-4">
-                <input type="hidden" name="productId" th:value="${product.id}">
-                <label for="text"></label><input type="text" id="text" name="text" class="form-control d-inline-block" style="width: 500px; border: 1px black" placeholder="Nhập nội dung bình luận">
-                <button type="submit" class="btn btn-primary btn-lg ms-3">
-                    send
-                </button>
-            </form>
-
-            <div th:replace="~{fragment/comment-list-for-detail :: comment-list}"></div>
-        </div>
-    </div>
 </main>
 
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
-<div th:replace="~{screen/customer/footer :: page-scripts}"></div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        // --- XỬ LÝ CLICK (Sửa, Hủy, Xóa) ---
+        document.body.addEventListener("click", function(e) {
+
+            // 1. Nút SỬA (btn-edit-comment)
+            // Dùng .closest() để đảm bảo click vào icon bên trong nút vẫn nhận
+            const editBtn = e.target.closest('.btn-edit-comment');
+            if (editBtn) {
+                e.preventDefault();
+                const commentId = editBtn.dataset.commentId;
+
+                console.log("Sửa comment:", commentId);
+
+                // Ẩn nhóm nút Sửa/Xóa
+                const actionsDiv = document.getElementById(`comment-actions-${commentId}`);
+                if (actionsDiv) actionsDiv.style.display = 'none';
+
+                // Hiện form Sửa
+                const editForm = document.getElementById(`comment-edit-form-${commentId}`);
+                if (editForm) editForm.style.display = 'block';
+
+                // Focus vào ô textarea để tiện nhập liệu
+                const textarea = editForm.querySelector('textarea');
+                if(textarea) textarea.focus();
+                return;
+            }
+
+            // 2. Nút HỦY (btn-cancel-edit)
+            const cancelBtn = e.target.closest('.btn-cancel-edit');
+            if (cancelBtn) {
+                e.preventDefault();
+                const commentId = cancelBtn.dataset.commentId;
+
+                console.log("Hủy sửa comment:", commentId);
+
+                // Ẩn form Sửa
+                const editForm = document.getElementById(`comment-edit-form-${commentId}`);
+                if (editForm) editForm.style.display = 'none';
+
+                // Hiện lại nhóm nút Sửa/Xóa
+                const actionsDiv = document.getElementById(`comment-actions-${commentId}`);
+                if (actionsDiv) actionsDiv.style.display = 'block';
+                return;
+            }
+        });
+
+        // --- XỬ LÝ SUBMIT FORM (Lưu) ---
+        document.body.addEventListener("submit", function(e) {
+
+            // Chỉ xử lý form có class 'form-edit-comment'
+            if (e.target.classList.contains('form-edit-comment')) {
+                e.preventDefault(); // Ngăn submit mặc định
+
+                const form = e.target;
+                const formData = new FormData(form);
+                const commentId = formData.get('commentId');
+                const newText = formData.get('text');
+
+                // Hiệu ứng loading (tùy chọn)
+                const saveBtn = form.querySelector('.btn-save-comment');
+                const originalBtnText = saveBtn.innerHTML;
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang lưu...';
+
+                // Lấy CSRF Token
+                const csrfTokenEl = document.querySelector('form[method="post"] input[name="_csrf"]');
+                const headers = {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                };
+                if (csrfTokenEl) {
+                    headers['X-CSRF-TOKEN'] = csrfTokenEl.value;
+                }
+
+                // Gọi API AJAX
+                fetch('/api/comments/edit', {
+                    method: 'POST',
+                    headers: headers,
+                    body: new URLSearchParams({
+                        commentId: commentId,
+                        text: newText
+                    })
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.text().then(text => { throw new Error(text || response.status); });
+                        }
+                        return response.json();
+                    })
+                    .then(updatedComment => {
+                        // Cập nhật giao diện
+                        const textElement = document.getElementById(`comment-text-${commentId}`);
+                        if (textElement) textElement.textContent = updatedComment.text;
+
+                        // Ẩn form, hiện nút
+                        document.getElementById(`comment-edit-form-${commentId}`).style.display = 'none';
+                        document.getElementById(`comment-actions-${commentId}`).style.display = 'block';
+                    })
+                    .catch(error => {
+                        console.error("Lỗi:", error);
+                        alert("Không thể lưu bình luận: " + error.message);
+                    })
+                    .finally(() => {
+                        // Trả lại trạng thái nút
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = originalBtnText;
+                    });
+            }
+        });
+
+    });
+</script>
 </body>
 </html>

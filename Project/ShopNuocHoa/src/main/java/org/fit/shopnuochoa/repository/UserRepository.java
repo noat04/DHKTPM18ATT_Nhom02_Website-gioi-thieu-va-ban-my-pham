@@ -1,6 +1,5 @@
 package org.fit.shopnuochoa.repository;
 
-import org.fit.shopnuochoa.model.Role;
 import org.fit.shopnuochoa.model.Users;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,10 +11,8 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<Users, Integer> {
     Users findByUsername(String username);
-    Optional<Users> findByEmail(String email); // Thêm dòng này
 
-    long countByRole(Role role);
-    long count();
+    Optional<Users> findByEmail(String email); // Thêm dòng này
 
     @Query("""
         SELECT u FROM Users u

@@ -36,6 +36,9 @@
                                 <th>Mã đơn</th>
                                 <th>Tên khách hàng</th>
                                 <th>Username</th>
+                                <th>Thời gian đặt hàng</th>
+                                <th>Thời gian giao dự kiến</th>
+                                <th>Trạng thái</th>
                                 <th>Tổng tiền</th>
                                 <th>Hành động</th>
                             </tr>
@@ -51,6 +54,30 @@
 
                                 <td th:text="${order.customer != null && order.customer.user != null ? order.customer.user.username : 'N/A'}"
                                     class="text-center"></td>
+
+                                <!--ngày đặt-->
+                                <td class="text-center">
+                                    <span class="small text-muted" th:text="${#temporals.format(order.date, 'dd/MM/yyyy HH:mm')}"></span>
+                                </td>
+
+                                <!-- Ngày giao dự kiến -->
+                                <td class="text-center">
+                                    <span th:if="${order.status.name() == 'SHIPPING' or order.status.name() == 'PENDING'}">
+                                        Dự kiến giao: <strong th:text="${#temporals.format(order.getEstimatedDeliveryDate(), 'dd/MM/yyyy')}"></strong>
+                                    </span>
+                                    <span th:if="${order.status.name() == 'DELIVERED' or order.status.name() == 'COMPLETED'}">
+                                        Đã nhận: <strong th:text="${#temporals.format(order.deliveryDate, 'dd/MM/yyyy')}"></strong>
+                                    </span>
+                                </td>
+
+                                <!--trạng thái đơn hàng-->
+                                <td class="text-center">
+                                    <span th:if="${order.status.name() == 'PENDING'}" class="status-badge status-PENDING"><i class="bi bi-hourglass-split"></i> Chờ xử lý</span>
+                                    <span th:if="${order.status.name() == 'SHIPPING'}" class="status-badge status-SHIPPING"><i class="bi bi-truck"></i> Đang giao</span>
+                                    <span th:if="${order.status.name() == 'DELIVERED'}" class="status-badge status-DELIVERED"><i class="bi bi-geo-alt-fill"></i> Đã giao</span>
+                                    <span th:if="${order.status.name() == 'COMPLETED'}" class="status-badge status-COMPLETED"><i class="bi bi-check-circle-fill"></i> Hoàn thành</span>
+                                    <span th:if="${order.status.name() == 'CANCELLED'}" class="status-badge status-CANCELLED"><i class="bi bi-x-circle-fill"></i> Đã hủy</span>
+                                </td>
 
                                 <!-- Tổng tiền -->
                                 <td th:text="${#numbers.formatDecimal(order.total, 0, 'COMMA', 0, 'POINT')} + ' đ'"
