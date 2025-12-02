@@ -138,4 +138,13 @@ public class CategoryController {
         return "redirect:/api/categories/list";
     }
 
+    /**
+     * API endpoint trả về danh sách categories dạng JSON (cho import product)
+     */
+    @GetMapping("/all")
+    @ResponseBody
+    public List<Category> getAllCategories() {
+        return categoryService.getAll();
+    }
+
 }

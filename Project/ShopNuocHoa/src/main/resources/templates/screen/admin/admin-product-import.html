@@ -13,6 +13,7 @@
             padding: 15px;
             margin-bottom: 15px;
             transition: all 0.3s;
+            position: relative;
         }
         .product-preview-card.has-image {
             border-color: #28a745;
@@ -21,6 +22,26 @@
         .product-preview-card.no-image {
             border-color: #ffc107;
             background-color: #fffbf0;
+        }
+        .product-preview-card.invalid {
+            border-color: #dc3545;
+            background-color: #ffe6e6;
+        }
+        .product-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+        }
+        .btn-action {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
         }
         .image-preview {
             width: 100%;
@@ -94,22 +115,7 @@
                         <h5><i class="bi bi-2-circle"></i> Upload Ảnh</h5>
                         <small>Tải ảnh sản phẩm lên</small>
                     </div>
-                    <div class="step" id="step3">
-                        <h5><i class="bi bi-3-circle"></i> Match & Xác nhận</h5>
-                        <small>Kiểm tra và xác nhận import</small>
-                    </div>
-                </div>
 
-                <!-- Hướng dẫn -->
-                <div class="alert alert-info">
-                    <h5><i class="bi bi-info-circle-fill"></i> Hướng dẫn Import</h5>
-                    <ol class="mb-0">
-                        <li><strong>Bước 1:</strong> Tải template Excel, điền thông tin sản phẩm (Name, Price, Category, Volume, Gender, Quantity, HotTrend)</li>
-                        <li><strong>Bước 2:</strong> Upload file Excel đã điền → Hệ thống sẽ hiển thị preview</li>
-                        <li><strong>Bước 3:</strong> Upload ảnh sản phẩm (tên ảnh phải khớp với tên sản phẩm)</li>
-                        <li><strong>VD:</strong> Sản phẩm "Dior Sauvage" → Ảnh: "Dior Sauvage.jpg" hoặc "dior sauvage.png"</li>
-                        <li><strong>Bước 4:</strong> Kiểm tra preview → Click "Xác nhận Import"</li>
-                    </ol>
                 </div>
 
                 <!-- Section 1: Upload Excel -->
@@ -184,12 +190,12 @@
 
                         <div class="alert alert-info mt-3">
                             <i class="bi bi-info-circle"></i>
-                            <strong id="matchedCount">0</strong> sản phẩm đã có ảnh /
-                            <strong id="unmatchedCount">0</strong> sản phẩm chưa có ảnh
+                            <strong id="validCount">0</strong> sản phẩm hợp lệ /
+                            <strong id="invalidCount">0</strong> sản phẩm không hợp lệ
                         </div>
 
                         <button class="btn btn-success btn-lg w-100 mt-3" id="btnConfirmImport">
-                            <i class="bi bi-check-circle"></i> Xác nhận Import Vào Database
+                            <i class="bi bi-check-circle"></i> Import <span id="validCountBtn">0</span> Sản phẩm Hợp lệ
                         </button>
                     </div>
                 </div>
@@ -199,10 +205,95 @@
     </div>
 </div>
 
+<!-- Modal Edit Product - Load fragment from server -->
+<div class="modal fade" id="editProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <!-- Modal content will be loaded here via AJAX -->
+        <div id="modalContentContainer"></div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 let productsData = [];
 let imagesMap = {};
+let currentStep = 1;
+
+// ========== WIZARD NAVIGATION ==========
+function showStep(stepNumber) {
+    currentStep = stepNumber;
+
+    // Hide all sections
+    document.getElementById('excelSection').style.display = 'none';
+    document.getElementById('previewSection').style.display = 'none';
+
+    // Show current section
+    if (stepNumber === 1) {
+        document.getElementById('excelSection').style.display = 'block';
+    } else if (stepNumber === 2 || stepNumber === 3) {
+        document.getElementById('previewSection').style.display = 'block';
+    }
+
+    // Update step indicators
+    updateStepIndicators(stepNumber);
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateStepIndicators(current) {
+    for (let i = 1; i <= 3; i++) {
+        const step = document.getElementById('step' + i);
+        if (step) {
+            step.classList.remove('active', 'completed');
+            if (i < current) {
+                step.classList.add('completed');
+            } else if (i === current) {
+                step.classList.add('active');
+            }
+        }
+    }
+}
+
+// Initialize - Show only Step 1
+document.addEventListener('DOMContentLoaded', function() {
+    showStep(1);
+});
+
+// Thymeleaf đã render sẵn categories trong select dropdown
+// Không cần load categories bằng JavaScript nữa
+
+// Helper function: Convert Volume enum to display tex
+function formatVolume(volumeEnum) {
+    if (!volumeEnum) return 'N/A';
+    // ML_10 -> 10ml, ML_30 -> 30ml
+    return volumeEnum.replace('ML_', '') + 'ml';
+}
+
+// Helper function: Convert Gender enum to display text
+function formatGender(genderEnum) {
+    if (!genderEnum) return 'N/A';
+    const genderMap = { 'NAM': 'Nam', 'NU': 'Nữ', 'UNISEX': 'Unisex' };
+    return genderMap[genderEnum] || genderEnum;
+}
+
+// Helper function: Tạo options cho Volume select
+function createVolumeOptions(selectedVolume) {
+    const volumes = ['ML_10', 'ML_30', 'ML_50', 'ML_75', 'ML_100', 'ML_150', 'ML_200'];
+    return volumes.map(vol => {
+        const value = vol.replace('ML_', '');
+        const selected = selectedVolume === vol ? 'selected' : '';
+        return `<option value="${vol}" ${selected}>${value}ml</option>`;
+    }).join('');
+}
+
+// Helper function: Tạo options cho Category select
+function createCategoryOptions(categories, selectedCategoryId) {
+    return categories.map(cat => {
+        const selected = selectedCategoryId == cat.id ? 'selected' : '';
+        return `<option value="${cat.id}" ${selected}>${cat.name}</option>`;
+    }).join('');
+}
 
 // ========== STEP 1: UPLOAD EXCEL ==========
 const excelDropZone = document.getElementById('excelDropZone');
@@ -234,13 +325,18 @@ excelFileInput.addEventListener('change', (e) => {
 function handleExcelFile(file) {
     if (!file) return;
 
-    document.getElementById('excelFileName').style.display = 'block';
-    document.getElementById('excelNameDisplay').textContent = file.name;
-    document.getElementById('btnPreviewExcel').style.display = 'block';
+    const excelFileName = document.getElementById('excelFileName');
+    const excelNameDisplay = document.getElementById('excelNameDisplay');
+    const btnPreviewExcel = document.getElementById('btnPreviewExcel');
+
+    if (excelFileName) excelFileName.style.display = 'block';
+    if (excelNameDisplay) excelNameDisplay.textContent = file.name;
+    if (btnPreviewExcel) btnPreviewExcel.style.display = 'block';
 
     // Store file for preview
     window.currentExcelFile = file;
 }
+
 
 document.getElementById('btnPreviewExcel').addEventListener('click', async () => {
     const file = window.currentExcelFile;
@@ -259,19 +355,14 @@ document.getElementById('btnPreviewExcel').addEventListener('click', async () =>
 
         productsData = await response.json();
 
-        // Update UI
-        document.getElementById('step1').classList.add('completed');
-        document.getElementById('step1').classList.remove('active');
-        document.getElementById('step2').classList.add('active');
-
-        document.getElementById('previewSection').style.display = 'block';
-        document.getElementById('totalProducts').textContent = productsData.length;
+        const totalProducts = document.getElementById('totalProducts');
+        if (totalProducts) totalProducts.textContent = productsData.length;
 
         renderProductsList();
-        updateMatchCount();
+        updateValidCount();
 
-        // Scroll to preview section
-        document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
+        // Chuyển sang Step 2
+        showStep(2);
 
     } catch (error) {
         alert('Lỗi khi đọc file Excel: ' + error.message);
@@ -308,9 +399,13 @@ imagesFileInput.addEventListener('change', (e) => {
 async function handleImageFiles(files) {
     if (files.length === 0) return;
 
-    document.getElementById('uploadProgress').style.display = 'block';
-    document.getElementById('progressBar').style.width = '0%';
-    document.getElementById('progressText').textContent = `Đang upload ${files.length} ảnh...`;
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+
+    if (uploadProgress) uploadProgress.style.display = 'block';
+    if (progressBar) progressBar.style.width = '0%';
+    if (progressText) progressText.textContent = `Đang upload ${files.length} ảnh...`;
 
     const formData = new FormData();
     files.forEach(file => formData.append('images', file));
@@ -323,26 +418,34 @@ async function handleImageFiles(files) {
 
         if (!response.ok) throw new Error('Failed to upload images');
 
-        imagesMap = await response.json();
+        const newImages = await response.json();
 
-        document.getElementById('progressBar').style.width = '100%';
-        document.getElementById('progressText').textContent = `✓ Đã upload thành công ${Object.keys(imagesMap).length} ảnh!`;
+        // Merge new images with existing images
+        imagesMap = { ...imagesMap, ...newImages };
+
+        if (progressBar) progressBar.style.width = '100%';
+        if (progressText) progressText.textContent = `✓ Đã upload thành công ${Object.keys(newImages).length} ảnh!`;
 
         setTimeout(() => {
-            document.getElementById('uploadProgress').style.display = 'none';
+            if (uploadProgress) uploadProgress.style.display = 'none';
         }, 2000);
 
         // Match images with products
         matchImages();
 
         // Update UI
-        document.getElementById('step2').classList.add('completed');
-        document.getElementById('step2').classList.remove('active');
-        document.getElementById('step3').classList.add('active');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+        if (step2) {
+            step2.classList.add('completed');
+            step2.classList.remove('active');
+        }
+        if (step3) step3.classList.add('active');
 
     } catch (error) {
+        console.error('Upload error:', error);
         alert('Lỗi khi upload ảnh: ' + error.message);
-        document.getElementById('uploadProgress').style.display = 'none';
+        if (uploadProgress) uploadProgress.style.display = 'none';
     }
 }
 
@@ -363,7 +466,7 @@ function matchImages() {
     });
 
     renderProductsList();
-    updateMatchCount();
+    updateValidCount();
 }
 
 function renderProductsList() {
@@ -371,29 +474,65 @@ function renderProductsList() {
     container.innerHTML = '';
 
     productsData.forEach((product, index) => {
-        const hasImage = !!product.imageUrl;
+
+        const hasRealImage = product.imageUrl &&
+                             product.imageUrl.trim() !== '' &&
+                             !product.imageUrl.includes('default-product.jpg') &&
+                             product.imageUrl !== '/images/default-product.jpg';
+
+        const isValid = validateProduct(product);
+
+        let cardClass = 'no-image'; // Mặc định: warning (ảnh mặc định)
+        if (!isValid) {
+            cardClass = 'invalid'; // Đỏ: sản phẩm không hợp lệ
+        } else if (hasRealImage) {
+            cardClass = 'has-image'; // Xanh: có ảnh thực
+        }
+
+        // Sử dụng logic giống getImagePath() - nếu không có ảnh thì dùng ảnh mặc định
+        const imageUrl = (product.imageUrl &&
+                         product.imageUrl.trim() !== '' &&
+                         !product.imageUrl.includes('default-product.jpg'))
+            ? product.imageUrl
+            : '/images/default-product.jpg';
+
         const card = document.createElement('div');
         card.className = 'col-md-4 col-lg-3';
         card.innerHTML = `
-            <div class="product-preview-card ${hasImage ? 'has-image' : 'no-image'}">
-                <div class="text-center mb-2">
-                    ${hasImage
-                        ? `<img src="${product.imageUrl}" class="image-preview" alt="${product.name}">`
-                        : `<div class="image-preview d-flex align-items-center justify-content-center">
-                               <i class="bi bi-image" style="font-size: 48px; color: #adb5bd;"></i>
-                           </div>`
-                    }
+            <div class="product-preview-card ${cardClass}">
+                <div class="product-actions">
+                    <button class="btn btn-primary btn-action btn-sm" onclick="editProduct(${index})" title="Sửa">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-danger btn-action btn-sm" onclick="deleteProduct(${index})" title="Xóa">
+                        <i class="bi bi-trash"></i>
+                    </button>
                 </div>
+
+                <div class="text-center mb-2">
+                    <img src="${imageUrl}" class="image-preview" alt="${product.name || 'Product'}"
+                         onerror="this.src='/images/default-product.jpg'">
+                </div>
+
                 <h6 class="text-truncate" title="${product.name}">
-                    ${hasImage ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-exclamation-circle-fill text-warning"></i>'}
-                    ${product.name}
+                    ${isValid
+                        ? (hasRealImage ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-exclamation-circle-fill text-warning"></i>')
+                        : '<i class="bi bi-x-circle-fill text-danger"></i>'
+                    }
+                    ${product.name || '<span class="text-danger">Chưa có tên</span>'}
                 </h6>
-                <p class="mb-1 small"><strong>Giá:</strong> ${product.price.toLocaleString('vi-VN')} VNĐ</p>
-                <p class="mb-1 small"><strong>NSX:</strong> ${product.category}</p>
-                <p class="mb-1 small"><strong>Dung tích:</strong> ${product.volume || 'N/A'}</p>
-                ${hasImage
-                    ? `<small class="text-success"><i class="bi bi-image"></i> ${product.imageName}</small>`
-                    : `<small class="text-muted"><i class="bi bi-image"></i> Chưa có ảnh</small>`
+
+                <p class="mb-1 small"><strong>Giá:</strong> ${product.price ? product.price.toLocaleString('vi-VN') + ' VNĐ' : '<span class="text-danger">Chưa có</span>'}</p>
+                <p class="mb-1 small"><strong>NSX:</strong> ${product.category || '<span class="text-danger">Chưa có</span>'}</p>
+                <p class="mb-1 small"><strong>Số lượng:</strong> ${product.quantity != null ? product.quantity : '<span class="text-danger">Chưa có</span>'}</p>
+                <p class="mb-1 small"><strong>Dung tích:</strong> ${formatVolume(product.volume)}</p>
+                <p class="mb-1 small"><strong>Giới tính:</strong> ${formatGender(product.gender)}</p>
+
+                ${!isValid
+                    ? '<small class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Sản phẩm không hợp lệ</small>'
+                    : (hasRealImage
+                        ? `<small class="text-success"><i class="bi bi-image"></i> ${product.imageName}</small>`
+                        : `<small class="text-warning"><i class="bi bi-exclamation-triangle"></i> Chưa có ảnh</small>`)
                 }
             </div>
         `;
@@ -401,17 +540,361 @@ function renderProductsList() {
     });
 }
 
-function updateMatchCount() {
-    const matched = productsData.filter(p => p.imageUrl).length;
-    const unmatched = productsData.length - matched;
+function updateValidCount() {
+    const validProducts = productsData.filter(p => validateProduct(p));
+    const validCount = validProducts.length;
+    const invalidCount = productsData.length - validCount;
 
-    document.getElementById('matchedCount').textContent = matched;
-    document.getElementById('unmatchedCount').textContent = unmatched;
+    // Safely update text content
+    const validCountEl = document.getElementById('validCount');
+    const invalidCountEl = document.getElementById('invalidCount');
+    const validCountBtnEl = document.getElementById('validCountBtn');
+
+    if (validCountEl) validCountEl.textContent = validCount;
+    if (invalidCountEl) invalidCountEl.textContent = invalidCount;
+    if (validCountBtnEl) validCountBtnEl.textContent = validCount;
+
+    // Disable button if no valid products
+    const btn = document.getElementById('btnConfirmImport');
+    if (btn) {
+        if (validCount === 0) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-x-circle"></i> Không có sản phẩm hợp lệ để import';
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="bi bi-check-circle"></i> Import ${validCount} Sản phẩm Hợp lệ`;
+        }
+    }
 }
+
+function validateProduct(product) {
+    // Validation đồng bộ CHÍNH XÁC với Product.java entity
+
+    // 1. Name: @NotBlank, @Size(max=255), @Pattern (phải có ít nhất 1 chữ cái)
+    if (!product.name || product.name.trim() === '') return false;
+    if (product.name.length > 255) return false;
+
+    // Check regex - phải có ít nhất 1 chữ cái
+    const namePattern = /^(?=.*[a-zA-ZàáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđÀÁẢÃẠĂẮẰẲẴẶÂẤẦẨẪẬÈÉẺẼẸÊẾỀỂỄỆÌÍỈĨỊÒÓỎÕỌÔỐỒỔỖỘƠỚỜỞỠỢÙÚỦŨỤƯỨỪỬỮỰỲÝỶỸỴĐ])[a-zA-Z0-9àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđÀÁẢÃẠĂẮẰẲẴẶÂẤẦẨẪẬÈÉẺẼẸÊẾỀỂỄỆÌÍỈĨỊÒÓỎÕỌÔỐỒỔỖỘƠỚỜỞỬỮỰỲÝỶỸỴĐ\s\-\.,'&()]+$/;
+    if (!namePattern.test(product.name)) return false;
+
+    // 2. Price: @NotNull, @Min(value = 1) - Giá phải >= 1 (không chấp nhận 0)
+    if (product.price == null || product.price < 1) return false;
+
+    // 3. Category: @NotNull - Bắt buộc có categoryId
+    if (!product.categoryId) return false;
+
+    // 4. Quantity: @NotNull, @Min(value = 1) - Số lượng phải >= 1 (không chấp nhận 0)
+    if (product.quantity == null || product.quantity < 1) return false;
+
+    // 5. Volume: @NotNull - Bắt buộc chọn dung tích (enum)
+    if (!product.volume) return false;
+
+    // 6. Gender: @NotNull - Bắt buộc chọn giới tính (enum)
+    if (!product.gender) return false;
+
+    // 7. ImageUrl: @Size(max = 512) - Không bắt buộc, nhưng nếu có thì phải <= 512 ký tự
+    if (product.imageUrl && product.imageUrl.length > 512) return false;
+
+    return true;
+}
+
+// Edit Product - Load modal fragment from server
+async function editProduct(index) {
+    const product = productsData[index];
+
+    try {
+        // Gửi request load modal fragment từ server
+        const productJson = encodeURIComponent(JSON.stringify(product));
+        const response = await fetch(`/api/products/import/edit-modal?index=${index}&productJson=${productJson}`);
+
+        if (!response.ok) {
+            throw new Error('Failed to load modal');
+        }
+
+        const html = await response.text();
+
+        // Load HTML vào container
+        document.getElementById('modalContentContainer').innerHTML = html;
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
+        modal.show();
+
+        // Clear previous errors
+        clearAllErrors();
+
+        // Setup image preview on change
+        const imageInput = document.getElementById('editImageFile');
+        if (imageInput) {
+            imageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const preview = document.getElementById('editImagePreview');
+                        if (preview) {
+                            preview.src = e.target.result;
+                            preview.style.display = 'block';
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // Setup Save button event listener
+        const btnSaveEdit = document.getElementById('btnSaveEdit');
+        if (btnSaveEdit) {
+            btnSaveEdit.onclick = async function() {
+                await handleSaveEdit();
+            };
+        }
+
+    } catch (error) {
+        console.error('Error loading modal:', error);
+        alert('Không thể tải modal. Vui lòng thử lại!');
+    }
+}
+
+// Helper function to show error
+function showFieldError(fieldId, message) {
+    // Special handling for gender radio group
+    if (fieldId === 'editGender') {
+        const genderGroup = document.getElementById('editGenderGroup');
+        const errorDiv = document.getElementById('editGenderError');
+
+        if (genderGroup) {
+            genderGroup.classList.add('is-invalid');
+        }
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.add('d-block');
+        }
+        return;
+    }
+
+    const field = document.getElementById(fieldId);
+    const errorDiv = document.getElementById(fieldId + 'Error');
+
+    if (field) {
+        field.classList.add('is-invalid');
+    }
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.classList.add('d-block');
+    }
+}
+
+// Helper function to clear all errors
+function clearAllErrors() {
+    const fields = ['editName', 'editPrice', 'editCategory', 'editQuantity', 'editVolume'];
+
+    // Clear standard fields
+    fields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        const errorDiv = document.getElementById(fieldId + 'Error');
+
+        if (field) field.classList.remove('is-invalid');
+        if (errorDiv) {
+            errorDiv.textContent = '';
+            errorDiv.classList.remove('d-block');
+        }
+    });
+
+    // Clear gender radio group
+    const genderGroup = document.getElementById('editGenderGroup');
+    const genderError = document.getElementById('editGenderError');
+
+    if (genderGroup) {
+        genderGroup.classList.remove('is-invalid');
+    }
+    if (genderError) {
+        genderError.textContent = '';
+        genderError.classList.remove('d-block');
+    }
+}
+
+// Save Edit - Hàm xử lý lưu thay đổi
+async function handleSaveEdit() {
+    // Clear previous errors
+    clearAllErrors();
+
+    const index = parseInt(document.getElementById('editIndex').value);
+    const imageFile = document.getElementById('editImageFile').files[0];
+
+    // Get values
+    const name = document.getElementById('editName').value.trim();
+    const price = parseFloat(document.getElementById('editPrice').value);
+    const quantity = parseInt(document.getElementById('editQuantity').value);
+
+    // Category: Lấy cả id và name
+    const categorySelect = document.getElementById('editCategory');
+    const categoryId = categorySelect.value;
+    const categoryName = categorySelect.options[categorySelect.selectedIndex]?.text || '';
+
+    const volume = document.getElementById('editVolume').value;
+    const selectedGender = document.querySelector('input[name="editGender"]:checked');
+
+    let hasError = false;
+
+    // Validation khớp 100% với Product.java model
+
+    // 1. Tên sản phẩm - @NotBlank, @Size(max=255), @Pattern (phải có ít nhất 1 chữ cái)
+    if (!name || name === '') {
+        showFieldError('editName', 'Tên sản phẩm không được để trống');
+        hasError = true;
+    } else if (name.length > 255) {
+        showFieldError('editName', 'Tên sản phẩm không được vượt quá 255 ký tự');
+        hasError = true;
+    } else {
+        // Regex pattern giống Product.java - Phải có ít nhất 1 chữ cái (dùng positive lookahead)
+        const namePattern = /^(?=.*[a-zA-ZàáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđÀÁẢÃẠĂẮẰẲẴẶÂẤẦẨẪẬÈÉẺẼẸÊẾỀỂỄỆÌÍỈĨỊÒÓỎÕỌÔỐỒỔỖỘƠỚỜỞỬỮỰỲÝỶỸỴĐ])[a-zA-Z0-9àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđÀÁẢÃẠĂẮẰẲẴẶÂẤẦẨẪẬÈÉẺẼẸÊẾỀỂỄỆÌÍỈĨỊÒÓỎÕỌÔỐỒỔỖỘƠỚỜỞỬỮỰỲÝỶỸỴĐ\s\-\.,'&()]+$/;
+        if (!namePattern.test(name)) {
+            showFieldError('editName', "Tên sản phẩm phải chứa ít nhất một chữ cái và chỉ được chứa chữ cái, số, khoảng trắng và các ký tự: - . , ' & ( )");
+            hasError = true;
+        }
+    }
+
+    // 2. Giá - @NotNull, @Min(value = 1) - Giá phải > 0
+    const priceInput = document.getElementById('editPrice').value;
+    if (!priceInput || priceInput.trim() === '') {
+        showFieldError('editPrice', 'Giá sản phẩm không được để trống');
+        hasError = true;
+    } else if (isNaN(price) || price < 1) {
+        showFieldError('editPrice', 'Giá sản phẩm phải lớn hơn 0');
+        hasError = true;
+    }
+
+    // 3. Nhà sản xuất (Category) - @NotNull
+    if (!categoryId || categoryId === '') {
+        showFieldError('editCategory', 'Vui lòng chọn danh mục cho sản phẩm');
+        hasError = true;
+    }
+
+    // 4. Số lượng - @NotNull, @Min(value = 1) - Số lượng phải > 0
+    const quantityInput = document.getElementById('editQuantity').value;
+    if (!quantityInput || quantityInput.trim() === '') {
+        showFieldError('editQuantity', 'Số lượng không được để trống');
+        hasError = true;
+    } else if (isNaN(quantity) || quantity < 1) {
+        showFieldError('editQuantity', 'Số lượng phải lớn hơn 0');
+        hasError = true;
+    }
+
+    // 5. Dung tích (Volume) - @NotNull
+    if (!volume || volume === '') {
+        showFieldError('editVolume', 'Vui lòng chọn dung tích');
+        hasError = true;
+    }
+
+    // 6. Giới tính (Gender) - @NotNull
+    if (!selectedGender) {
+        showFieldError('editGender', 'Vui lòng chọn giới tính phù hợp');
+        hasError = true;
+    }
+
+    // If has error, focus on first error field and return
+    if (hasError) {
+        const firstInvalidField = document.querySelector('.is-invalid');
+        if (firstInvalidField) firstInvalidField.focus();
+        return;
+    }
+
+    // Update product data - Đồng bộ hoàn toàn với backend format
+    productsData[index].name = name;
+    productsData[index].price = price;
+    productsData[index].quantity = quantity;
+    productsData[index].categoryId = parseInt(categoryId); // Lưu id
+    productsData[index].category = categoryName; // Lưu name để hiển thị
+    productsData[index].volume = volume; // Đã là enum (ML_10, ML_30...)
+    productsData[index].hotTrend = document.getElementById('editHotTrend').checked;
+    productsData[index].gender = selectedGender.value; // Đã là enum (NAM, NU, UNISEX)
+
+    // Upload new image if selected
+    if (imageFile) {
+        const formData = new FormData();
+        formData.append('images', imageFile);
+
+        try {
+            const response = await fetch('/api/products/import/upload-images', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const newImages = await response.json();
+                const imageName = imageFile.name.replace(/\.[^/.]+$/, "");
+                if (newImages[imageName]) {
+                    productsData[index].imageUrl = newImages[imageName];
+                    productsData[index].imageName = imageFile.name;
+                    imagesMap[imageName] = newImages[imageName];
+                }
+            }
+        } catch (error) {
+            console.error('Error uploading image:', error);
+        }
+    } else if (!productsData[index].imageUrl) {
+        // Set ảnh mặc định nếu không có ảnh
+        productsData[index].imageUrl = '/images/default-product.jpg';
+        productsData[index].imageName = 'default-product.jpg';
+    }
+
+    // Re-render
+    renderProductsList();
+    updateValidCount();
+
+    // Close modal
+    const modalElement = document.getElementById('editProductModal');
+    const modalInstance = bootstrap.Modal.getInstance(modalElement);
+    if (modalInstance) {
+        modalInstance.hide();
+    } else {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.hide();
+    }
+
+    // Clear backdrop
+    setTimeout(() => {
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) backdrop.remove();
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+    }, 300);
+}
+
+// Delete Product
+function deleteProduct(index) {
+    if (confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
+        productsData.splice(index, 1);
+
+        const totalProducts = document.getElementById('totalProducts');
+        if (totalProducts) totalProducts.textContent = productsData.length;
+
+        renderProductsList();
+        updateValidCount();
+    }
+}
+
 
 // ========== STEP 3: CONFIRM IMPORT ==========
 document.getElementById('btnConfirmImport').addEventListener('click', async () => {
-    if (!confirm(`Xác nhận import ${productsData.length} sản phẩm vào database?`)) {
+    // Filter only valid products
+    const validProducts = productsData.filter(p => validateProduct(p));
+    const invalidProducts = productsData.filter(p => !validateProduct(p));
+
+    if (validProducts.length === 0) {
+        alert('Không có sản phẩm hợp lệ để import!');
+        return;
+    }
+
+    let confirmMessage = `Xác nhận import ${validProducts.length} sản phẩm hợp lệ vào database?`;
+    if (invalidProducts.length > 0) {
+        confirmMessage += `\n\nLưu ý: ${invalidProducts.length} sản phẩm không hợp lệ sẽ bị bỏ qua.`;
+    }
+
+    if (!confirm(confirmMessage)) {
         return;
     }
 
@@ -425,13 +908,17 @@ document.getElementById('btnConfirmImport').addEventListener('click', async () =
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(productsData)
+            body: JSON.stringify(validProducts)
         });
 
         const result = await response.json();
 
         if (result.success) {
-            alert('✓ ' + result.message);
+            let message = '✓ ' + result.message;
+            if (invalidProducts.length > 0) {
+                message += `\n\n⚠️ ${invalidProducts.length} sản phẩm không hợp lệ đã bị bỏ qua.`;
+            }
+            alert(message);
             window.location.href = '/api/products/list';
         } else {
             throw new Error(result.message);
@@ -439,7 +926,7 @@ document.getElementById('btnConfirmImport').addEventListener('click', async () =
     } catch (error) {
         alert('Lỗi khi import: ' + error.message);
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-check-circle"></i> Xác nhận Import Vào Database';
+        btn.innerHTML = `<i class="bi bi-check-circle"></i> Import ${validProducts.length} Sản phẩm Hợp lệ`;
     }
 });
 </script>

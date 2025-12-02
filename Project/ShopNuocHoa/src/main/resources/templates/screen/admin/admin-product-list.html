@@ -21,6 +21,16 @@
             <main class="container my-5">
                 <h2 class="text-center mb-4">Danh sách sản phẩm</h2>
 
+                <!-- Flash Messages -->
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i> <span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
                 <!-- Thanh tìm kiếm và bộ lọc -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
@@ -110,9 +120,9 @@
                                     <a th:href="@{/api/products/form(action='edit', id=${product.id})}" class="btn btn-sm btn-warning">
                                         <i class="bi bi-pencil"></i> Sửa
                                     </a>
-                                    <a th:href="@{/api/products/list(action='delete', id=${product.id})}" class="btn btn-sm btn-danger"
-                                       onclick="return confirm('Bạn chắc chắn muốn xóa?')">
-                                        Xóa
+                                    <a th:href="@{/api/products/delete/{id}(id=${product.id})}" class="btn btn-sm btn-danger"
+                                       onclick="return confirm('Bạn chắc chắn muốn xóa sản phẩm này?')">
+                                        <i class="bi bi-trash"></i> Xóa
                                     </a>
                                 </td>
                             </tr>

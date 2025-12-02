@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <style>
+        /* Custom styles for modal */
+        .img-preview-container {
+            position: relative;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .img-preview-placeholder {
+            color: #adb5bd;
+            text-align: center;
+        }
+
+        .img-preview-placeholder i {
+            font-size: 64px;
+            opacity: 0.5;
+        }
+
+        #editImagePreview {
+            transition: all 0.3s ease;
+        }
+
+        .form-label.fw-semibold {
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Simplified validation styles */
+        .invalid-feedback {
+            display: none !important;
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .invalid-feedback.d-block {
+            display: block !important;
+        }
+
+        .form-control.is-invalid,
+        .form-select.is-invalid {
+            border-color: #dc3545 !important;
+        }
+
+        .gender-radio-group.is-invalid {
+            border: 1px solid #dc3545 !important;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+        }
+
+        /* Giới hạn chiều cao dropdown select - chỉ hiển thị 4-5 options */
+        .form-select option {
+            padding: 8px;
+        }
+
+        /* Custom scrollbar cho select dropdown (chỉ hoạt động trên một số browser) */
+        select.form-select {
+            overflow-y: auto;
+        }
+
+        /* Sử dụng size attribute sẽ hiệu quả hơn nhưng thay đổi UI, nên dùng CSS */
+    </style>
+</head>
+<body>
+
+<!-- Fragment: Modal Edit Product -->
+<div th:fragment="edit-modal" class="modal-content">
+    <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Chỉnh sửa sản phẩm</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body p-4">
+        <form id="editProductForm" th:object="${product}">
+            <input type="hidden" id="editIndex" th:value="${index}">
+
+            <div class="row">
+                <!-- Image Column -->
+                <div class="col-md-4 mb-4">
+                    <label for="editImageFile" class="form-label fw-semibold">
+                        Ảnh sản phẩm
+                    </label>
+
+                    <div class="mb-3 p-3 bg-light rounded text-center img-preview-container">
+                        <img th:src="${product.imageUrl != null and !product.imageUrl.isEmpty() ? product.imageUrl : '/images/default-product.jpg'}"
+                             alt="Product Image"
+                             class="img-thumbnail w-100"
+                             style="max-height: 300px; object-fit: contain; display: block;"
+                             id="editImagePreview">
+                        <div id="editImagePlaceholder" class="img-preview-placeholder" style="display: none;">
+                            <i class="bi bi-image"></i>
+                            <p class="text-muted mt-3 mb-0">Chưa có ảnh</p>
+                        </div>
+                    </div>
+
+                    <p class="text-muted small mb-2" id="editImageStatus">
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                        <span th:text="${product.imageUrl != null and !product.imageUrl.isEmpty() and !product.imageUrl.contains('default-product.jpg') ? 'Ảnh hiện tại' : 'Ảnh mặc định'}">Ảnh hiện tại</span>
+                    </p>
+
+                    <input type="file" id="editImageFile" class="form-control" accept="image/*">
+
+                    <small class="text-muted d-block mt-2">
+                        <i class="bi bi-info-circle"></i>
+                        Chấp nhận: JPG, PNG, GIF. Tối đa: 5MB
+                    </small>
+                </div>
+
+                <!-- Info Column -->
+                <div class="col-md-8">
+                    <!-- Tên sản phẩm và Giá -->
+                    <div class="row mb-3">
+                        <div class="col-md-7">
+                            <label for="editName" class="form-label fw-semibold">
+                                Tên sản phẩm <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="editName"
+                                   th:value="${product.name}"
+                                   placeholder="VD: Dior Sauvage">
+                            <div class="invalid-feedback" id="editNameError">Tên sản phẩm không được để trống</div>
+                        </div>
+
+                        <div class="col-md-5">
+                            <label for="editPrice" class="form-label fw-semibold">
+                                Giá (VND) <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" class="form-control" id="editPrice"
+                                   th:value="${product.price}"
+                                   placeholder="VD: 2500000" step="1000" min="1">
+                            <div class="invalid-feedback" id="editPriceError">Giá sản phẩm không được để trống</div>
+                        </div>
+                    </div>
+
+                    <!-- Nhà sản xuất và Dung tích -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="editCategory" class="form-label fw-semibold">
+                                Nhà sản xuất <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="editCategory">
+                                <option value="">-- Chọn NSX --</option>
+                                <option th:each="category : ${categories}"
+                                        th:value="${category.id}"
+                                        th:text="${category.name}"
+                                        th:selected="${product.categoryId != null and product.categoryId == category.id}"></option>
+                            </select>
+                            <div class="invalid-feedback" id="editCategoryError">Vui lòng chọn danh mục cho sản phẩm</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="editVolume" class="form-label fw-semibold">
+                                Dung tích <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="editVolume">
+                                <option value="">-- Chọn dung tích --</option>
+                                <option th:each="vol : ${ {10, 30, 50, 75, 100, 150, 200} }"
+                                        th:value="${'ML_' + vol}"
+                                        th:text="${vol + 'ml'}"
+                                        th:selected="${product.volume?.name() == 'ML_' + vol}"></option>
+                            </select>
+                            <div class="invalid-feedback" id="editVolumeError">Vui lòng chọn dung tích</div>
+                        </div>
+                    </div>
+
+                    <!-- Giới tính và Số lượng -->
+                    <div class="row mb-3">
+                        <div class="col-md-7">
+                            <label class="form-label fw-semibold">
+                                Giới tính <span class="text-danger">*</span>
+                            </label>
+                            <div class="d-flex gap-3 mt-2 gender-radio-group" id="editGenderGroup">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="editGender"
+                                           id="editGenderNam" value="NAM"
+                                           th:checked="${product.gender?.name() == 'NAM'}">
+                                    <label class="form-check-label" for="editGenderNam">
+                                        <i class="bi bi-gender-male text-primary"></i> Nam
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="editGender"
+                                           id="editGenderNu" value="NU"
+                                           th:checked="${product.gender?.name() == 'NU'}">
+                                    <label class="form-check-label" for="editGenderNu">
+                                        <i class="bi bi-gender-female text-danger"></i> Nữ
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="editGender"
+                                           id="editGenderUnisex" value="UNISEX"
+                                           th:checked="${product.gender?.name() == 'UNISEX'}">
+                                    <label class="form-check-label" for="editGenderUnisex">
+                                        <i class="bi bi-gender-ambiguous text-success"></i> Unisex
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="invalid-feedback" id="editGenderError">Vui lòng chọn giới tính phù hợp</div>
+                        </div>
+
+                        <div class="col-md-5">
+                            <label for="editQuantity" class="form-label fw-semibold">
+                                Số lượng <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" class="form-control" id="editQuantity"
+                                   th:value="${product.quantity}"
+                                   placeholder="VD: 100" min="1">
+                            <div class="invalid-feedback" id="editQuantityError">Số lượng không được để trống</div>
+                        </div>
+                    </div>
+
+                    <!-- Hot Trend -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card border-warning shadow-sm">
+                                <div class="card-body bg-warning bg-opacity-10 py-2">
+                                    <div class="form-check mb-0">
+                                        <input class="form-check-input" type="checkbox" id="editHotTrend"
+                                               th:checked="${product.hotTrend}">
+                                        <label class="form-check-label fw-semibold" for="editHotTrend">
+                                            <i class="bi bi-fire text-danger"></i>
+                                            <span class="ms-1">Sản phẩm Nổi bật (Hot Trend)</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle"></i> Hủy
+        </button>
+        <button type="button" class="btn btn-primary px-4" id="btnSaveEdit">
+            <i class="bi bi-check-circle"></i> Lưu thay đổi
+        </button>
+    </div>
+</div>
+
+<script>
+    // Preview image when file selected
+    document.addEventListener('DOMContentLoaded', function() {
+        const imageInput = document.getElementById('editImageFile');
+        const imagePreview = document.getElementById('editImagePreview');
+        const imageStatus = document.getElementById('editImageStatus');
+
+        if (imageInput) {
+            imageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+
+                if (file) {
+                    // Validate file size (5MB max)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('Kích thước file vượt quá 5MB!');
+                        imageInput.value = '';
+                        return;
+                    }
+
+                    // Validate file type
+                    if (!file.type.match('image.*')) {
+                        alert('Vui lòng chọn file ảnh!');
+                        imageInput.value = '';
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        if (imagePreview) {
+                            imagePreview.src = e.target.result;
+                            imagePreview.style.display = 'block';
+                        }
+                        if (imageStatus) {
+                            imageStatus.innerHTML = '<i class="bi bi-cloud-upload-fill text-info"></i> Ảnh mới (chưa lưu)';
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // Giới hạn số lượng options hiển thị trong select dropdown
+        // Sử dụng custom attribute để control dropdown height
+        const selectElements = document.querySelectorAll('select.form-select');
+        selectElements.forEach(select => {
+            // Thêm custom CSS để giới hạn chiều cao dropdown khi click
+            select.addEventListener('mousedown', function() {
+                this.setAttribute('data-open', 'true');
+            });
+
+            select.addEventListener('blur', function() {
+                this.removeAttribute('data-open');
+            });
+
+            select.addEventListener('change', function() {
+                this.removeAttribute('data-open');
+            });
+        });
+    });
+</script>
+
+<style>
+    /* Style cho select khi mở dropdown - giới hạn chiều cao */
+    select.form-select[data-open="true"] {
+        height: auto !important;
+        max-height: 200px !important;
+    }
+
+    /* Style cho select với size attribute - scrollable listbox */
+    select.form-select[size] {
+        height: auto !important;
+        padding: 0.375rem 0 !important;
+        overflow-y: auto !important;
+        border: 1px solid #ced4da !important;
+        border-radius: 0.375rem !important;
+    }
+
+    select.form-select[size] option {
+        padding: 8px 12px !important;
+        cursor: pointer !important;
+    }
+
+    select.form-select[size] option:hover,
+    select.form-select[size] option:focus {
+        background-color: #0d6efd !important;
+        color: white !important;
+    }
+
+    select.form-select[size] option:checked {
+        background-color: #0d6efd !important;
+        color: white !important;
+    }
+
+    /* Style scrollbar cho select */
+    select.form-select[size]::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    select.form-select[size]::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    select.form-select[size]::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    select.form-select[size]::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* Khi select bị invalid */
+    select.form-select[size].is-invalid {
+        border-color: #dc3545 !important;
+    }
+</style>
+
+</body>
+</html>
+

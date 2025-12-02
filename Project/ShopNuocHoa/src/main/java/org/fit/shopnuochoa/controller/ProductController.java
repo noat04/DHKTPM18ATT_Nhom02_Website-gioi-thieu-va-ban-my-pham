@@ -1,5 +1,6 @@
 package org.fit.shopnuochoa.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.apache.poi.common.usermodel.HyperlinkType;
@@ -234,6 +235,21 @@ public class ProductController {
         return "redirect:/api/products/list";
     }
 
+    /**
+     * Delete Product
+     */
+    @GetMapping("/delete/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String deleteProduct(@PathVariable("id") Integer id, RedirectAttributes ra) {
+        try {
+            productService.deleteProduct(id);
+            ra.addFlashAttribute("successMessage", "Xóa sản phẩm thành công!");
+        } catch (Exception e) {
+            ra.addFlashAttribute("errorMessage", "Không thể xóa sản phẩm: " + e.getMessage());
+        }
+        return "redirect:/api/products/list";
+    }
+
 
 // (Hãy chắc chắn bạn đã inject các service này trong Constructor)
 // private final UserService userService;
@@ -361,7 +377,8 @@ public class ProductController {
      */
     @GetMapping("/import")
     @PreAuthorize("hasRole('ADMIN')")
-    public String showImportPage() {
+    public String showImportPage(Model model) {
+        model.addAttribute("categories", categoryService.getAll());
         return "screen/admin/admin-product-import";
     }
 
@@ -386,6 +403,34 @@ public class ProductController {
     @ResponseBody
     public Map<String, String> uploadImages(@RequestParam("images") List<MultipartFile> images) throws IOException {
         return productService.uploadImagesToCloudinary(images);
+    }
+
+    /**
+     * Get modal fragment for editing product
+     */
+    @GetMapping("/import/edit-modal")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String getEditModal(@RequestParam("index") int index,
+                                @RequestParam("productJson") String productJson,
+                                Model model) {
+        try {
+            // Parse product từ JSON với ObjectMapper
+            ObjectMapper mapper = new ObjectMapper();
+            // Cấu hình để parse enum đúng cách
+            mapper.findAndRegisterModules();
+
+            ProductImportDTO product = mapper.readValue(productJson, ProductImportDTO.class);
+
+            model.addAttribute("product", product);
+            model.addAttribute("index", index);
+            model.addAttribute("categories", categoryService.getAll());
+
+            return "fragment/product-import-edit-modal :: edit-modal";
+        } catch (Exception e) {
+            e.printStackTrace();
+            model.addAttribute("errorMessage", "Không thể load modal: " + e.getMessage());
+            return "error";
+        }
     }
 
     /**

@@ -12,7 +12,8 @@ import org.fit.shopnuochoa.Enum.Volume;
 public class ProductImportDTO {
     private String name;
     private Double price;
-    private String category;
+    private String category; // Tên category (từ Excel)
+    private Integer categoryId; // ID category (sau khi resolve)
     private Volume volume;
     private Gender gender;
     private Integer quantity;

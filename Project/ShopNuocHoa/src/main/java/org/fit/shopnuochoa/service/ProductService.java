@@ -177,13 +177,28 @@ public class ProductService {
             ProductImportDTO dto = new ProductImportDTO();
             dto.setName(name);
             dto.setPrice(getCellValueAsDouble(row.getCell(1)));
-            dto.setCategory(getCellValueAsString(row.getCell(2)));
 
-            // Parse Volume
+            // Category: Lưu cả name và resolve id
+            String categoryName = getCellValueAsString(row.getCell(2));
+            dto.setCategory(categoryName);
+            if (categoryName != null && !categoryName.isBlank()) {
+                // Resolve categoryId ngay
+                categoryRepository.findByName(categoryName.trim()).ifPresent(cat -> {
+                    dto.setCategoryId(cat.getId());
+                });
+            }
+
+            // Parse Volume - Hỗ trợ cả 2 format: "10ml" và "ML_10"
             String volumeStr = getCellValueAsString(row.getCell(3));
             if (volumeStr != null && !volumeStr.isBlank()) {
                 try {
-                    dto.setVolume(Volume.valueOf(volumeStr));
+                    // Nếu user nhập "10ml", "30ml"... thì convert sang "ML_10", "ML_30"...
+                    String normalizedVolume = volumeStr.trim().toUpperCase();
+                    if (normalizedVolume.matches("\\d+ML")) {
+                        // Format: "10ML" -> "ML_10"
+                        normalizedVolume = "ML_" + normalizedVolume.replace("ML", "");
+                    }
+                    dto.setVolume(Volume.valueOf(normalizedVolume));
                 } catch (Exception e) {
                     // Ignore invalid volume
                 }
