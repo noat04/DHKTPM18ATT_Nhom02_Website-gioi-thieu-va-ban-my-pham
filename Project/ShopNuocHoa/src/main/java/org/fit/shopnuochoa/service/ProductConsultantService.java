@@ -27,9 +27,9 @@ import java.util.Map;
 public class ProductConsultantService {
 
     private final ChatClient.Builder chatClientBuilder;
-    private final ProductService productService;
     private final ProductVectorService vectorService;
     private final ProductFilterEngine filterEngine;
+    private final ProductStatisticsService statisticsService;
 
     /**
      * Main consultation method - Hybrid approach
@@ -43,16 +43,62 @@ public class ProductConsultantService {
             log.info("📊 Extracted intents: {}", intents);
 
             // ========== PHASE 2: STRUCTURED FILTERING ==========
-            ProductFilterEngine.FilterCriteria criteria =
-                filterEngine.buildCriteriaFromIntents(userQuery, intents);
+            List<Product> filteredProducts;
+            String productContext;
 
-            List<Product> filteredProducts = filterEngine.filterProducts(criteria);
+            // Xử lý đặc biệt cho query bán chạy
+            if ((Boolean) intents.getOrDefault("isBestSelling", false)) {
+                log.info("🏆 Processing best-selling query");
+                List<ProductStatisticsService.ProductStats> bestSellers =
+                    statisticsService.getBestSellingProducts(5);
+                filteredProducts = bestSellers.stream()
+                    .map(ProductStatisticsService.ProductStats::getProduct)
+                    .collect(java.util.stream.Collectors.toList());
+                // Sử dụng context đặc biệt cho bán chạy
+                productContext = vectorService.generateBestSellingContext(bestSellers);
+            }
+            // Xử lý query hot trend
+            else if ((Boolean) intents.getOrDefault("isHotTrend", false)) {
+                log.info("🔥 Processing hot trend query");
+                filteredProducts = statisticsService.getHotTrendProducts(5);
+                productContext = vectorService.generateProductContext(filteredProducts);
+            }
+            // Xử lý query sản phẩm mới
+            else if ((Boolean) intents.getOrDefault("isNewProducts", false)) {
+                log.info("✨ Processing new products query");
+                filteredProducts = statisticsService.getNewestProducts(5);
+                productContext = vectorService.generateProductContext(filteredProducts);
+            }
+            // Xử lý query đánh giá cao
+            else if ((Boolean) intents.getOrDefault("isTopRated", false)) {
+                log.info("⭐ Processing top-rated query");
+                filteredProducts = statisticsService.getTopRatedProducts(5);
+                productContext = vectorService.generateProductContext(filteredProducts);
+            }
+            // Xử lý query giá rẻ
+            else if ((Boolean) intents.getOrDefault("isCheapQuery", false)) {
+                log.info("💰 Processing cheap products query");
+                filteredProducts = statisticsService.getCheapestProducts(5);
+                productContext = vectorService.generateProductContext(filteredProducts);
+            }
+            // Xử lý query giá đắt
+            else if ((Boolean) intents.getOrDefault("isExpensiveQuery", false)) {
+                log.info("💎 Processing expensive products query");
+                filteredProducts = statisticsService.getMostExpensiveProducts(5);
+                productContext = vectorService.generateProductContext(filteredProducts);
+            }
+            // Xử lý thông thường với filter engine
+            else {
+                ProductFilterEngine.FilterCriteria criteria =
+                    filterEngine.buildCriteriaFromIntents(intents);
+                filteredProducts = filterEngine.filterProducts(criteria);
+                productContext = vectorService.generateProductContext(filteredProducts);
+            }
+
             log.info("🔎 Filtered {} products", filteredProducts.size());
 
             // ========== PHASE 3: RAG - CONTEXT GENERATION ==========
-            String productContext = vectorService.generateProductContext(filteredProducts);
-            String statisticsContext = vectorService.generateStatisticsContext(
-                productService.getAll());
+            String statisticsContext = statisticsService.generateEnhancedStatistics();
 
             log.info("📚 Generated RAG context with {} products", filteredProducts.size());
 
@@ -86,18 +132,35 @@ public class ProductConsultantService {
         String systemPrompt = """
             Bạn là chuyên gia tư vấn nước hoa chuyên nghiệp tại cửa hàng ShopNuocHoa.
             
-            NHIỆM VỤ:
-            - Phân tích câu hỏi của khách hàng
-            - Đưa ra gợi ý sản phẩm phù hợp từ danh sách có sẵn
-            - Giải thích lý do tại sao gợi ý sản phẩm đó
-            - Trả lời ngắn gọn, tự nhiên, thân thiện (2-4 câu)
+            ⚠️ QUY TẮC BẮT BUỘC - KHÔNG ĐƯỢC VI PHẠM:
+            1. ❌ TUYỆT ĐỐI KHÔNG bịa đặt, suy đoán, hoặc thêm thông tin không có trong dữ liệu
+            2. ✅ CHỈ sử dụng CHÍNH XÁC thông tin từ [DỮ LIỆU SẢN PHẨM THỰC TẾ] bên dưới
+            3. ✅ Nếu không có thông tin về một trường nào đó, hãy BỎ QUA, ĐỪNG đoán
+            4. ✅ Số liệu "Đã bán" CHỈ lấy từ trường "Đã bán" trong dữ liệu
+            5. ✅ Giá tiền, rating, tồn kho phải CHÍNH XÁC 100%
+            6. ✅ Nếu không tìm thấy sản phẩm phù hợp, trả lời thẳng thắn
             
-            QUY TẮC:
-            1. CHỈ giới thiệu sản phẩm có trong danh sách bên dưới
-            2. Ưu tiên sản phẩm còn hàng, đánh giá cao
-            3. Đề cập giá, NSX, đặc điểm nổi bật
-            4. Không bịa đặt thông tin không có
-            5. Nếu không tìm thấy sản phẩm phù hợp, gợi ý khách xem thêm
+            CÁCH TRẢ LỜI:
+            - Ngắn gọn (2-3 câu)
+            - Tự nhiên, thân thiện
+            - Đề cập: Tên sản phẩm, Giá, Thương hiệu
+            - Nếu có "Đã bán": Nói rõ "Đã bán X sản phẩm"
+            - Nếu KHÔNG có "Đã bán" hoặc = 0: ĐỪNG nói về số lượng bán
+            
+            VÍ DỤ TRẢ LỜI ĐÚNG:
+            ✅ "Dior Sauvage (2,500,000 VNĐ) đã bán được 25 sản phẩm, là lựa chọn phổ biến."
+            ✅ "Chanel Bleu (3,200,000 VNĐ) có đánh giá 4.5/5 sao, rất được ưa chuộng."
+            ✅ "CK One (450,000 VNĐ) là lựa chọn giá tốt, còn 80 sản phẩm."
+            
+            VÍ DỤ TRẢ LỜI SAI - TUYỆT ĐỐI TRÁNH:
+            ❌ "...đã bán được 150 sản phẩm" (khi dữ liệu chỉ có 25)
+            ❌ "...được nhiều khách hàng tin dùng" (khi không có dữ liệu bán hàng)
+            ❌ "...rating 4.8/5" (khi dữ liệu chỉ có 4.2/5)
+            
+            LƯU Ý ĐẶC BIỆT:
+            - "Sản phẩm bán chạy": CHỈ xếp hạng theo số "Đã bán" trong dữ liệu
+            - "Đánh giá cao": CHỈ xếp hạng theo số "Đánh giá" trong dữ liệu
+            - "Giá rẻ/đắt": CHỈ so sánh "Giá" trong dữ liệu
             
             {statistics}
             
@@ -130,118 +193,6 @@ public class ProductConsultantService {
             .user(prompt.getContents())
             .call()
             .content();
-    }
-
-    /**
-     * Get product recommendations based on user preferences
-     */
-    public List<Product> getRecommendations(String userQuery) {
-        try {
-            Map<String, Object> intents = vectorService.extractQueryIntents(userQuery);
-            ProductFilterEngine.FilterCriteria criteria =
-                filterEngine.buildCriteriaFromIntents(userQuery, intents);
-            criteria.setLimit(5); // Top 5 recommendations
-
-            return filterEngine.filterProducts(criteria);
-        } catch (Exception e) {
-            log.error("Error getting recommendations: ", e);
-            return List.of();
-        }
-    }
-
-    /**
-     * Compare two products
-     */
-    public String compareProducts(Integer productId1, Integer productId2) {
-        try {
-            Product p1 = productService.getById(productId1);
-            Product p2 = productService.getById(productId2);
-
-            String comparisonContext = String.format("""
-                So sánh hai sản phẩm:
-                
-                1. %s
-                   - Giá: %,.0f VNĐ
-                   - NSX: %s
-                   - Đánh giá: %.1f/5 ⭐
-                   - Dung tích: %s
-                   
-                2. %s
-                   - Giá: %,.0f VNĐ
-                   - NSX: %s
-                   - Đánh giá: %.1f/5 ⭐
-                   - Dung tích: %s
-                """,
-                p1.getName(), p1.getPrice(), p1.getCategory().getName(),
-                p1.getAverageRating() != null ? p1.getAverageRating() : 0.0,
-                p1.getVolume() != null ? p1.getVolume().name() : "N/A",
-                p2.getName(), p2.getPrice(), p2.getCategory().getName(),
-                p2.getAverageRating() != null ? p2.getAverageRating() : 0.0,
-                p2.getVolume() != null ? p2.getVolume().name() : "N/A"
-            );
-
-            String prompt = comparisonContext +
-                "\n\nHãy so sánh 2 sản phẩm này và đưa ra nhận xét ngắn gọn (3-4 câu).";
-
-            ChatClient chatClient = chatClientBuilder.build();
-            return chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
-
-        } catch (Exception e) {
-            log.error("Error comparing products: ", e);
-            return "Không thể so sánh sản phẩm. Vui lòng thử lại.";
-        }
-    }
-
-    /**
-     * Get product details with AI-generated description
-     */
-    public String getProductInsights(Integer productId) {
-        try {
-            Product product = productService.getById(productId);
-            List<Product> similar = vectorService.findSimilarProducts(
-                product, productService.getAll(), 3);
-
-            String context = String.format("""
-                Thông tin sản phẩm:
-                - Tên: %s
-                - Giá: %,.0f VNĐ
-                - NSX: %s
-                - Đánh giá: %.1f/5 ⭐ (%d lượt)
-                - Dung tích: %s
-                - Giới tính: %s
-                - Còn hàng: %s
-                %s
-                
-                Sản phẩm tương tự: %s
-                """,
-                product.getName(),
-                product.getPrice(),
-                product.getCategory().getName(),
-                product.getAverageRating() != null ? product.getAverageRating() : 0.0,
-                product.getRatingCount() != null ? product.getRatingCount() : 0,
-                product.getVolume() != null ? product.getVolume().name() : "N/A",
-                product.getGender() != null ? product.getGender().name() : "N/A",
-                product.isInStock() ? "✓ Còn " + product.getQuantity() : "✗ Hết hàng",
-                product.getHotTrend() != null && product.getHotTrend() ? "- 🔥 HOT TREND" : "",
-                similar.stream().map(Product::getName).reduce((a, b) -> a + ", " + b).orElse("Không có")
-            );
-
-            String prompt = context +
-                "\n\nHãy mô tả ngắn gọn về sản phẩm này và ai nên mua (2-3 câu).";
-
-            ChatClient chatClient = chatClientBuilder.build();
-            return chatClient.prompt()
-                .user(prompt)
-                .call()
-                .content();
-
-        } catch (Exception e) {
-            log.error("Error getting product insights: ", e);
-            return "Không thể tạo thông tin chi tiết. Vui lòng thử lại.";
-        }
     }
 }
 
