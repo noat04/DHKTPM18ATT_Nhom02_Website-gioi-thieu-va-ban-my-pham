@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.fit.shopnuochoa.Enum.Gender;
 import org.fit.shopnuochoa.Enum.Volume;
@@ -475,40 +476,101 @@ public class ProductController {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Products");
 
-        // Header row (không có ImageUrl)
+        // Create CellStyle for header
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerFont.setColor(IndexedColors.WHITE.getIndex());
+        headerStyle.setFont(headerFont);
+        headerStyle.setFillForegroundColor(IndexedColors.BLUE.getIndex());
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        headerStyle.setAlignment(HorizontalAlignment.CENTER);
+
+        // Header row
         Row header = sheet.createRow(0);
-        header.createCell(0).setCellValue("Name");
-        header.createCell(1).setCellValue("Price");
-        header.createCell(2).setCellValue("Category");
-        header.createCell(3).setCellValue("Volume");
-        header.createCell(4).setCellValue("Gender");
-        header.createCell(5).setCellValue("Quantity");
-        header.createCell(6).setCellValue("HotTrend");
+        String[] headers = {"Name", "Price", "Category", "Volume", "Gender", "Quantity", "HotTrend"};
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = header.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
 
-        // Example row
-        Row example = sheet.createRow(1);
-        example.createCell(0).setCellValue("Dior Sauvage");
-        example.createCell(1).setCellValue(2500000);
-        example.createCell(2).setCellValue("Dior");
-        example.createCell(3).setCellValue("ML_100");
-        example.createCell(4).setCellValue("NAM");
-        example.createCell(5).setCellValue(50);
-        example.createCell(6).setCellValue("true");
+        // Example rows
+        Row example1 = sheet.createRow(1);
+        example1.createCell(0).setCellValue("Dior Sauvage");
+        example1.createCell(1).setCellValue(2500000);
+        example1.createCell(2).setCellValue("Dior");
+        example1.createCell(3).setCellValue("ML_100");
+        example1.createCell(4).setCellValue("NAM");
+        example1.createCell(5).setCellValue(50);
+        example1.createCell(6).setCellValue("true");
 
-        // Instruction row
-        Row instruction = sheet.createRow(2);
-        instruction.createCell(0).setCellValue("Chanel No 5");
-        instruction.createCell(1).setCellValue(3200000);
-        instruction.createCell(2).setCellValue("Chanel");
-        instruction.createCell(3).setCellValue("ML_50");
-        instruction.createCell(4).setCellValue("NU");
-        instruction.createCell(5).setCellValue(30);
-        instruction.createCell(6).setCellValue("true");
+        Row example2 = sheet.createRow(2);
+        example2.createCell(0).setCellValue("Chanel No 5");
+        example2.createCell(1).setCellValue(3200000);
+        example2.createCell(2).setCellValue("Chanel");
+        example2.createCell(3).setCellValue("ML_50");
+        example2.createCell(4).setCellValue("NU");
+        example2.createCell(5).setCellValue(30);
+        example2.createCell(6).setCellValue("false");
+
+        // ========== DATA VALIDATION (DROPDOWN LISTS) ==========
+        DataValidationHelper validationHelper = sheet.getDataValidationHelper();
+
+        // 1. Category Dropdown - Lấy từ database
+        List<Category> categories = categoryService.getAll();
+        String[] categoryNames = categories.stream()
+                .map(Category::getName)
+                .toArray(String[]::new);
+
+        if (categoryNames.length > 0) {
+            CellRangeAddressList categoryRange = new CellRangeAddressList(1, 1000, 2, 2); // Column C (Category)
+            DataValidationConstraint categoryConstraint = validationHelper.createExplicitListConstraint(categoryNames);
+            DataValidation categoryValidation = validationHelper.createValidation(categoryConstraint, categoryRange);
+            categoryValidation.setShowErrorBox(true);
+            categoryValidation.createErrorBox("Lỗi", "Vui lòng chọn Category từ danh sách!");
+            categoryValidation.setEmptyCellAllowed(false);
+            sheet.addValidationData(categoryValidation);
+        }
+
+        // 2. Volume Dropdown
+        String[] volumes = {"ML_10", "ML_30", "ML_50", "ML_75", "ML_100", "ML_150", "ML_200"};
+        CellRangeAddressList volumeRange = new CellRangeAddressList(1, 1000, 3, 3); // Column D (Volume)
+        DataValidationConstraint volumeConstraint = validationHelper.createExplicitListConstraint(volumes);
+        DataValidation volumeValidation = validationHelper.createValidation(volumeConstraint, volumeRange);
+        volumeValidation.setShowErrorBox(true);
+        volumeValidation.createErrorBox("Lỗi", "Vui lòng chọn Volume từ danh sách!");
+        volumeValidation.setEmptyCellAllowed(false);
+        sheet.addValidationData(volumeValidation);
+
+        // 3. Gender Dropdown
+        String[] genders = {"NAM", "NU", "UNISEX"};
+        CellRangeAddressList genderRange = new CellRangeAddressList(1, 1000, 4, 4); // Column E (Gender)
+        DataValidationConstraint genderConstraint = validationHelper.createExplicitListConstraint(genders);
+        DataValidation genderValidation = validationHelper.createValidation(genderConstraint, genderRange);
+        genderValidation.setShowErrorBox(true);
+        genderValidation.createErrorBox("Lỗi", "Vui lòng chọn Gender từ danh sách!");
+        genderValidation.setEmptyCellAllowed(false);
+        sheet.addValidationData(genderValidation);
+
+        // 4. HotTrend Dropdown
+        String[] hotTrends = {"true", "false"};
+        CellRangeAddressList hotTrendRange = new CellRangeAddressList(1, 1000, 6, 6); // Column G (HotTrend)
+        DataValidationConstraint hotTrendConstraint = validationHelper.createExplicitListConstraint(hotTrends);
+        DataValidation hotTrendValidation = validationHelper.createValidation(hotTrendConstraint, hotTrendRange);
+        hotTrendValidation.setShowErrorBox(true);
+        hotTrendValidation.createErrorBox("Lỗi", "Vui lòng chọn true hoặc false!");
+        hotTrendValidation.setEmptyCellAllowed(false);
+        sheet.addValidationData(hotTrendValidation);
 
         // Auto-size columns
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < headers.length; i++) {
             sheet.autoSizeColumn(i);
+            sheet.setColumnWidth(i, sheet.getColumnWidth(i) + 1000); // Add padding
         }
+
+        // Freeze header row
+        sheet.createFreezePane(0, 1);
 
         workbook.write(response.getOutputStream());
         workbook.close();
