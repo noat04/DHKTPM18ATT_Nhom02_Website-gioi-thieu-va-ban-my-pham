@@ -63,45 +63,38 @@ public class ProductController {
 
     @GetMapping("/list")
     public String showProductList(
-            // Tất cả các tham số từ Form
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "categoryId", required = false) Integer categoryId,
             @RequestParam(value = "price", required = false) Double price,
             @RequestParam(value = "maxPrice", required = false) Double maxPrice,
-            @RequestParam(value = "country", required = false) List<String> countries, // Sửa 'origin' -> 'country'
+            @RequestParam(value = "country", required = false) List<String> countries,
             @RequestParam(value = "gender", required = false) Gender gender,
             @RequestParam(value = "volume", required = false) Volume volume,
             @RequestParam(value = "rating", required = false) Double rating,
-            // Tham số sắp xếp và phân trang
             @RequestParam(value = "sort", required = false, defaultValue = "newest") String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "6") int size,
             Model model,
             Authentication authentication) {
 
-        // 1. Lấy danh sách Categories (Giữ nguyên)
         List<Category> categories = categoryService.getAll();
         List<String> countryName = categoryService.findDistinctCountries();
         model.addAttribute("listCountryName", countryName);
         model.addAttribute("categories", categories);
 
-        // 2. Tạo Sort (Giữ nguyên)
         Sort sortOption = switch (sort) {
             case "priceDesc" -> Sort.by("price").descending();
             case "priceAsc" -> Sort.by("price").ascending();
             case "bestseller" -> Sort.by("ratingCount").descending();
-            default -> Sort.by("id").descending(); // "newest"
+            default -> Sort.by("id").descending();
         };
         Pageable pageable = PageRequest.of(page, size, sortOption);
 
-        // 3. GỌI HÀM TÌM KIẾM TỔNG HỢP (ĐÃ CẬP NHẬT)
         Page<Product> productPage = productService.searchProducts(
                 keyword, categoryId, price, maxPrice, countries, volume, gender, rating, pageable
         );
 
         model.addAttribute("productPage", productPage);
-
-        // 4. Đưa tất cả tham số filter trở lại Model (để form "nhớ" lựa chọn)
         model.addAttribute("keyword", keyword);
         model.addAttribute("categoryId", categoryId);
         model.addAttribute("price", price);
@@ -110,10 +103,8 @@ public class ProductController {
         model.addAttribute("volume", volume);
         model.addAttribute("rating", rating);
         model.addAttribute("country", countries);
-        model.addAttribute("sort", sort); // Giữ lại sort
+        model.addAttribute("sort", sort);
 
-
-        // 5. Kiểm tra quyền Admin (Giữ nguyên)
         if (authentication == null || !authentication.isAuthenticated()
                 || authentication.getPrincipal().equals("anonymousUser")) {
             return "screen/customer/product-list";
@@ -123,14 +114,8 @@ public class ProductController {
         return isAdmin ? "screen/admin/admin-product-list" : "screen/customer/product-list";
     }
 
-    /**
-     * [CẬP NHẬT]
-     * Logic hiển thị fragment AJAX
-     * Đã được tinh gọn để đồng bộ 100% với showProductList
-     */
     @GetMapping("/list/fragment")
     public String getProductFragment(
-            // Tất cả các tham số từ Form (do JavaScript gửi lên)
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "categoryId", required = false) Integer categoryId,
             @RequestParam(value = "price", required = false) Double price,
@@ -139,41 +124,33 @@ public class ProductController {
             @RequestParam(value = "volume", required = false) Volume volume,
             @RequestParam(value = "rating", required = false) Double rating,
             @RequestParam(value = "country", required = false) List<String> countries,
-            // Tham số sắp xếp và phân trang
             @RequestParam(value = "sort", required = false, defaultValue = "newest") String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "6") int size,
             Model model) {
 
-        // 1. Tạo Sort (Giữ nguyên)
         Sort sortOption = switch (sort) {
             case "priceDesc" -> Sort.by("price").descending();
             case "priceAsc" -> Sort.by("price").ascending();
             case "bestseller" -> Sort.by("ratingCount").descending();
-            default -> Sort.by("id").descending(); // "newest"
+            default -> Sort.by("id").descending();
         };
         Pageable pageable = PageRequest.of(page, size, sortOption);
 
-        // 2. GỌI HÀM TÌM KIẾM TỔNG HỢP (ĐÃ CẬP NHẬT)
         Page<Product> productPage = productService.searchProducts(
                 keyword, categoryId, price, maxPrice, countries, volume, gender, rating, pageable
         );
         model.addAttribute("productPage", productPage);
-
-        // 3. Đưa tham số filter trở lại (cho fragment nếu cần)
         model.addAttribute("categoryId", categoryId);
         model.addAttribute("price", price);
-        model.addAttribute("country", countries); // Thêm dòng này
-        model.addAttribute("gender", gender); // <-- QUAN TRỌNG
-        model.addAttribute("volume", volume); // <-- QUAN TRỌNG
-        model.addAttribute("rating", rating); // <-- QUAN TRỌNG
-        // 4. Trả về fragment (Giữ nguyên)
-        // (Hãy chắc chắn bạn có file /fragment/product-ajax.html
-        // và nó chứa một fragment tên là 'ajaxUpdate')
+        model.addAttribute("country", countries);
+        model.addAttribute("gender", gender);
+        model.addAttribute("volume", volume);
+        model.addAttribute("rating", rating);
+
         return "fragment/product-ajax :: ajaxUpdate";
     }
 
-    // ✅ Đúng
     @GetMapping("/form")
     @PreAuthorize("hasAnyRole('ADMIN')")
     public String showEmployeeForm(@RequestParam(value = "action", required = false, defaultValue = "add") String action,
@@ -182,16 +159,15 @@ public class ProductController {
         Product product;
         List<Category> categories = categoryService.getAll();
         if ("edit".equals(action) && id != null) {
-            product = productService.getById(id); // Lấy thông tin nhân viên theo id
+            product = productService.getById(id);
         } else {
-            product = new Product(); // Thêm mới thì tạo mới
+            product = new Product();
         }
         model.addAttribute("categories", categories);
         model.addAttribute("product", product);
         model.addAttribute("action", action);
         return "screen/admin/admin-product-form";
     }
-
 
     @PostMapping("/form")
     @PreAuthorize("hasAnyRole('ADMIN')")
@@ -203,33 +179,26 @@ public class ProductController {
             RedirectAttributes ra,
             Model model) {
 
-        // 1. Kiểm tra lỗi Validation (Dữ liệu nhập vào form)
         if (result.hasErrors()) {
-            // Load lại danh sách Category để dropdown không bị lỗi
             model.addAttribute("categories", categoryService.getAll());
-            return "screen/admin/admin-product-form"; // Trả về form để hiện lỗi
+            return "screen/admin/admin-product-form";
         }
 
         try {
-            // Lấy categoryId từ object product (do form đã binding vào category.id)
-            // Nếu product.getCategory() null (do lỗi binding), nó sẽ bị bắt ở catch
             Integer categoryId = (product.getCategory() != null) ? product.getCategory().getId() : null;
 
             if ("add".equals(action)) {
-                // Thêm mới
                 productService.createProduct(product, categoryId, imageFile);
                 ra.addFlashAttribute("successMessage", "Thêm sản phẩm thành công!");
             } else {
-                // Cập nhật
                 productService.updateProduct(product.getId(), product, categoryId, imageFile);
                 ra.addFlashAttribute("successMessage", "Cập nhật sản phẩm thành công!");
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            // 2. Bắt lỗi Logic/Hệ thống (Lỗi upload ảnh, lỗi DB...)
             model.addAttribute("errorMessage", "Lỗi hệ thống: " + e.getMessage());
-            model.addAttribute("categories", categoryService.getAll()); // Đừng quên load lại category
+            model.addAttribute("categories", categoryService.getAll());
             return "screen/admin/admin-product-form";
         }
 
@@ -251,23 +220,17 @@ public class ProductController {
         return "redirect:/api/products/list";
     }
 
-
-// (Hãy chắc chắn bạn đã inject các service này trong Constructor)
-// private final UserService userService;
-// private final WishlistService wishlistService;
-
     @GetMapping("/detail/{id}")
     public String showDetail(@PathVariable("id") Integer id,
                              @RequestParam(defaultValue = "0") int page,
                              @RequestParam(defaultValue = "5") int size,
-                             Authentication authentication, // <-- Sửa: Dùng Authentication (linh hoạt hơn)
+                             Authentication authentication,
                              Model model) {
 
         Product product = productService.getById(id);
         Double rating = productService.findAverageRatingByProductId(id);
         model.addAttribute("product", product);
 
-        // === [THÊM MỚI] Lấy ID của khách hàng đang đăng nhập ===
         Integer loggedInCustomerId = null;
         if (authentication != null && authentication.isAuthenticated()) {
             String username = authentication.getName();
@@ -276,28 +239,22 @@ public class ProductController {
                 loggedInCustomerId = loggedInUser.getCustomer().getId();
             }
         }
-        // Thêm vào Model để HTML có thể sử dụng
         model.addAttribute("loggedInCustomerId", loggedInCustomerId);
-        // === [KẾT THÚC THÊM MỚI] ===
-
 
         if (product != null) {
-            // ✅ Phân trang cho bình luận (Giữ nguyên)
             Pageable commentPageable = PageRequest.of(page, size);
             Page<Comment> commentPage = commentService.getByProductId(id, commentPageable);
             model.addAttribute("commentPage", commentPage);
             model.addAttribute("productId", id);
             model.addAttribute("rating", rating);
 
-            // ✅ [SỬA LỖI] Cập nhật logic Wishlist (dùng customerId)
             if (loggedInCustomerId != null) {
                 boolean isFavorite = wishlistService.existsInWishlist(loggedInCustomerId, id);
                 product.setFavorite(isFavorite);
             } else {
-                product.setFavorite(false); // Đảm bảo là false nếu chưa đăng nhập
+                product.setFavorite(false);
             }
 
-            // ✅ Lấy sản phẩm tương tự (Giữ nguyên)
             List<Product> similarProducts = productService.findSimilarProducts(
                     product.getCategory().getId(), id);
             model.addAttribute("similarProducts", similarProducts);
@@ -315,14 +272,12 @@ public class ProductController {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Products");
 
-        // Hyperlink style
         CellStyle hyperlinkStyle = workbook.createCellStyle();
         Font hyperlinkFont = workbook.createFont();
         hyperlinkFont.setUnderline(Font.U_SINGLE);
         hyperlinkFont.setColor(IndexedColors.BLUE.getIndex());
         hyperlinkStyle.setFont(hyperlinkFont);
 
-        // Header
         Row headerRow = sheet.createRow(0);
         headerRow.createCell(0).setCellValue("ID");
         headerRow.createCell(1).setCellValue("Name");
@@ -343,9 +298,8 @@ public class ProductController {
             row.createCell(0).setCellValue(product.getId());
             row.createCell(1).setCellValue(product.getName());
 
-            // --- IMAGE URL as HYPERLINK ---
             Cell imgCell = row.createCell(2);
-            String imageUrl = product.getImagePath(); // Cloudinary URL
+            String imageUrl = product.getImagePath();
             imgCell.setCellValue(imageUrl);
 
             if (imageUrl != null && !imageUrl.isEmpty()) {
@@ -371,11 +325,6 @@ public class ProductController {
         workbook.close();
     }
 
-    // ============= NEW IMPORT FLOW =============
-
-    /**
-     * Step 1: Show import preview page
-     */
     @GetMapping("/import")
     @PreAuthorize("hasRole('ADMIN')")
     public String showImportPage(Model model) {
@@ -383,9 +332,6 @@ public class ProductController {
         return "screen/admin/admin-product-import";
     }
 
-    /**
-     * Step 2: Preview Excel data
-     */
     @PostMapping("/import/preview")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
@@ -396,9 +342,6 @@ public class ProductController {
         return productService.previewExcelData(file);
     }
 
-    /**
-     * Step 3: Upload images and return URLs
-     */
     @PostMapping("/import/upload-images")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
@@ -406,18 +349,13 @@ public class ProductController {
         return productService.uploadImagesToCloudinary(images);
     }
 
-    /**
-     * Get modal fragment for editing product
-     */
     @GetMapping("/import/edit-modal")
     @PreAuthorize("hasRole('ADMIN')")
     public String getEditModal(@RequestParam("index") int index,
                                 @RequestParam("productJson") String productJson,
                                 Model model) {
         try {
-            // Parse product từ JSON với ObjectMapper
             ObjectMapper mapper = new ObjectMapper();
-            // Cấu hình để parse enum đúng cách
             mapper.findAndRegisterModules();
 
             ProductImportDTO product = mapper.readValue(productJson, ProductImportDTO.class);
@@ -434,9 +372,6 @@ public class ProductController {
         }
     }
 
-    /**
-     * Step 4: Final import with matched data
-     */
     @PostMapping("/import/confirm")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
@@ -455,17 +390,6 @@ public class ProductController {
         }
     }
 
-    // ============= OLD IMPORT (Deprecated) =============
-
-    @PostMapping("/import-old")
-    @PreAuthorize("hasRole('ADMIN')")
-    public String importProducts(@RequestParam("file") MultipartFile file) throws IOException {
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("Please select a file to upload.");
-        }
-        productService.importFromExcel(file);
-        return "redirect:/api/products/list";
-    }
 
     @GetMapping("/template")
     @PreAuthorize("hasRole('ADMIN')")
