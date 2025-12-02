@@ -5,11 +5,8 @@ import org.fit.shopnuochoa.Enum.Gender;
 import org.fit.shopnuochoa.Enum.Volume;
 import org.fit.shopnuochoa.model.Product;
 import org.fit.shopnuochoa.repository.ProductRepository;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -133,9 +130,9 @@ public class ProductFilterEngine {
     }
 
     /**
-     * Build filter criteria from user query and intents
+     * Build filter criteria from user intents
      */
-    public FilterCriteria buildCriteriaFromIntents(String query, Map<String, Object> intents) {
+    public FilterCriteria buildCriteriaFromIntents(Map<String, Object> intents) {
         FilterCriteria criteria = new FilterCriteria();
 
         // Set gender
@@ -160,18 +157,63 @@ public class ProductFilterEngine {
             criteria.setCategoryName((String) intents.get("brand"));
         }
 
+        // Set volume
+        if (intents.containsKey("volume")) {
+            try {
+                criteria.setVolume(Volume.valueOf((String) intents.get("volume")));
+            } catch (Exception e) {
+                // Ignore
+            }
+        }
+
         // Default: only in-stock products
         criteria.setInStockOnly(true);
 
         // Default: top 10 results
         criteria.setLimit(10);
 
-        // Sorting based on intent
-        if ((Boolean) intents.getOrDefault("isPriceQuery", false)) {
-            criteria.setSortBy("price_asc");
-        } else if ((Boolean) intents.getOrDefault("isRecommendation", false)) {
+        // ========== SORTING BASED ON INTENT ==========
+        // 1. Bán chạy nhất (sẽ xử lý riêng trong service)
+        if ((Boolean) intents.getOrDefault("isBestSelling", false)) {
+            criteria.setSortBy("best_selling");
+            criteria.setLimit(5);
+        }
+        // 2. Đánh giá cao
+        else if ((Boolean) intents.getOrDefault("isTopRated", false)) {
+            criteria.setSortBy("rating");
+            criteria.setMinRating(4.0);
+            criteria.setLimit(5);
+        }
+        // 3. Sản phẩm mới
+        else if ((Boolean) intents.getOrDefault("isNewProducts", false)) {
+            criteria.setSortBy("newest");
+            criteria.setLimit(5);
+        }
+        // 4. Hot trend
+        else if ((Boolean) intents.getOrDefault("isHotTrend", false)) {
+            criteria.setHotTrendOnly(true);
             criteria.setSortBy("popular");
-        } else {
+        }
+        // 5. Giá rẻ
+        else if ((Boolean) intents.getOrDefault("isCheapQuery", false)) {
+            criteria.setSortBy("price_asc");
+            criteria.setLimit(5);
+        }
+        // 6. Giá đắt/cao cấp
+        else if ((Boolean) intents.getOrDefault("isExpensiveQuery", false)) {
+            criteria.setSortBy("price_desc");
+            criteria.setLimit(5);
+        }
+        // 7. Tìm kiếm theo giá
+        else if ((Boolean) intents.getOrDefault("isPriceQuery", false)) {
+            criteria.setSortBy("price_asc");
+        }
+        // 8. Gợi ý/Tư vấn
+        else if ((Boolean) intents.getOrDefault("isRecommendation", false)) {
+            criteria.setSortBy("popular");
+        }
+        // Default: rating
+        else {
             criteria.setSortBy("rating");
         }
 
