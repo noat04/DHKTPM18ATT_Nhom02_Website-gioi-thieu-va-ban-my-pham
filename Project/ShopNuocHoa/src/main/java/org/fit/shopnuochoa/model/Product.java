@@ -23,16 +23,20 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    // 1. Validate Tên: Không được rỗng, độ dài vừa phải
+    // 1. Validate Tên: Không được rỗng, độ dài vừa phải, ký tự hợp lệ, phải có ít nhất 1 chữ cái
     @Column(nullable = false)
     @NotBlank(message = "Tên sản phẩm không được để trống")
     @Size(max = 255, message = "Tên sản phẩm không được vượt quá 255 ký tự")
+    @Pattern(
+        regexp = "^(?=.*[a-zA-ZàáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđÀÁẢÃẠĂẮẰẲẴẶÂẤẦẨẪẬÈÉẺẼẸÊẾỀỂỄỆÌÍỈĨỊÒÓỎÕỌÔỐỒỔỖỘƠỚỜỞỠỢÙÚỦŨỤƯỨỪỬỮỰỲÝỶỸỴĐ])[a-zA-Z0-9àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđÀÁẢÃẠĂẮẰẲẴẶÂẤẦẨẪẬÈÉẺẼẸÊẾỀỂỄỆÌÍỈĨỊÒÓỎÕỌÔỐỒỔỖỘƠỚỜỞỠỢÙÚỦŨỤƯỨỪỬỮỰỲÝỶỸỴĐ\\s\\-\\.,'&()]+$",
+        message = "Tên sản phẩm phải chứa ít nhất một chữ cái và chỉ được chứa chữ cái, số, khoảng trắng và các ký tự: - . , ' & ( )"
+    )
     private String name;
 
-    // 2. Validate Giá: Không null, không âm (Giữ nguyên Double)
+    // 2. Validate Giá: Không null, phải lớn hơn 0 (không chấp nhận giá = 0)
     @Column(nullable = false)
     @NotNull(message = "Giá sản phẩm không được để trống")
-    @Min(value = 0, message = "Giá sản phẩm không được âm")
+    @Min(value = 1, message = "Giá sản phẩm phải lớn hơn 0")
     private Double price;
 
     // 3. Validate Rating: Từ 0 đến 5 (Giữ nguyên Double)
@@ -48,10 +52,10 @@ public class Product {
     @Min(value = 0, message = "Lượt đánh giá không được âm")
     private Integer ratingCount;
 
-    // 4. Validate Số lượng: Không null, không âm (Giữ nguyên Integer)
+    // 4. Validate Số lượng: Không null, phải lớn hơn 0 (không chấp nhận 0)
     @Column(name = "quantity")
     @NotNull(message = "Số lượng không được để trống")
-    @Min(value = 0, message = "Số lượng tồn kho không được âm")
+    @Min(value = 1, message = "Số lượng phải lớn hơn 0")
     private Integer quantity = 0;
 
     // 5. Validate Ảnh: Giới hạn độ dài URL
