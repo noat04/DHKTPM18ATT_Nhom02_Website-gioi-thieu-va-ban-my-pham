@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -17,6 +18,8 @@ public class CouponService {
 
     @Autowired
     private CategoryRepository categoryRepo;
+    @Autowired
+    private OrderService orderService;
 
     /** Lấy toàn bộ coupon */
     public List<Coupon> getAll() {
@@ -81,7 +84,7 @@ public class CouponService {
 
     public List<Coupon> findApplicableCoupons(CartBean cart, Integer customerId) {
         return couponRepo.findAll().stream()
-                .filter(cp -> cp.isApplicable(cart, customerId))
+                .filter(cp -> cp.isApplicable(cart, customerId, orderService))
                 .filter(Coupon::isActive)
                 .filter(cp -> cp.getQuantity() > 0)
                 .collect(Collectors.toList());

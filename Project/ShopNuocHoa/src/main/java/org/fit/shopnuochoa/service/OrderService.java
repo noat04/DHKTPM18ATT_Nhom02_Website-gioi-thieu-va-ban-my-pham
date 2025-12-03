@@ -10,7 +10,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -81,4 +83,39 @@ public class OrderService {
     public Page<Orders> searchByCustomerNameOrUsername(String keyword, Pageable pageable) {
         return ordersRepository.searchByCustomerNameOrUsername(keyword, pageable);
     }
+
+    public long countByCustomerId(Integer customerId) {
+        return ordersRepository.countByCustomerId(customerId);
+    }
+    public long countOrdersInWeek() {
+        return ordersRepository.countOrdersInCurrentWeek();
+    }
+
+    public long countOrdersInMonth() {
+        return ordersRepository.countOrdersInCurrentMonth();
+    }
+
+    public BigDecimal getMonthlyRevenue() {
+        List<Orders> orders = ordersRepository.findOrdersInCurrentMonth();
+
+        BigDecimal revenue = BigDecimal.ZERO;
+
+        for (Orders order : orders) {
+            revenue = revenue.add(order.getFinalTotal()); // dùng hàm tính của entity
+        }
+        return revenue;
+    }
+
+    public List<BigDecimal> getRevenueLast30Days() {
+        List<BigDecimal> revenueList = new ArrayList<>();
+
+        for (int i = 29; i >= 0; i--) {
+            LocalDate day = LocalDate.now().minusDays(i);
+            BigDecimal revenue = ordersRepository.getRevenueByDay(day);
+            revenueList.add(revenue != null ? revenue : BigDecimal.ZERO);
+        }
+
+        return revenueList;
+    }
+
 }

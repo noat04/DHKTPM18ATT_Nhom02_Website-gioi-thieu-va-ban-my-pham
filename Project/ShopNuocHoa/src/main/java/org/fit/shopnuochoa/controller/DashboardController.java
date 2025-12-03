@@ -1,18 +1,24 @@
 package org.fit.shopnuochoa.controller;
 
+import org.fit.shopnuochoa.Enum.Role;
 import org.fit.shopnuochoa.model.Customer;
 import org.fit.shopnuochoa.model.Orders;
 import org.fit.shopnuochoa.model.Users;
 import org.fit.shopnuochoa.repository.OrdersRepository;
 import org.fit.shopnuochoa.service.CustomerService;
 import org.fit.shopnuochoa.service.OrderService;
+import org.fit.shopnuochoa.service.ProductService;
 import org.fit.shopnuochoa.service.UserService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal; // [QUAN TRỌNG] Import BigDecimal
 import java.util.ArrayList;  // [QUAN TRỌNG] Import ArrayList
@@ -27,26 +33,19 @@ public class DashboardController {
     private final UserService userService;
     private final CustomerService customerService;
     private final OrderService orderService;
-
+    private final ProductService productService;
     public DashboardController(OrdersRepository ordersRepository,
                                UserService userService,
                                CustomerService customerService,
-                               OrderService orderService) {
+                               OrderService orderService,
+                               ProductService productService) {
         this.ordersRepository = ordersRepository;
         this.userService = userService;
         this.customerService = customerService;
         this.orderService = orderService;
+        this.productService=productService;
     }
-
-    @GetMapping()
-    @PreAuthorize("hasAnyRole('ADMIN')")
-    public String showOrders(Model model) {
-        List<Orders> orders = ordersRepository.findAll();
-        model.addAttribute("orders", orders);
-        return "screen/admin/admin_dashboard";
-    }
-
-    @GetMapping("/test")
+    @GetMapping("/overview")
     public String showCustomerDashboard(Model model, Authentication authentication) {
         if (authentication == null) {
             return "redirect:/api/login";
@@ -110,5 +109,62 @@ public class DashboardController {
         model.addAttribute("chartData", new ArrayList<>(monthlySpending.values()));
 
         return "screen/customer/customer-dashboard";
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN')")
+    public String showOrders(Model model,
+                             @RequestParam(defaultValue = "0") int page) {
+
+        int pageSize = 5;
+        PageRequest pageable = PageRequest.of(page, pageSize, Sort.by("date").descending());
+        Page<Orders> ordersPage = ordersRepository.findAll(pageable);
+
+        // Đếm user theo role
+        long totalCustomers = userService.countByRole(Role.CUSTOMER);
+        long totalAdmins =  userService.countByRole(Role.ADMIN);
+        long totalUsers =  userService.count();
+
+        // Tổng đơn hàng
+        long totalOrders = ordersRepository.count();
+
+        // Đơn hàng tuần
+        long ordersThisWeek = orderService.countOrdersInWeek();
+
+        // Đơn hàng tháng
+        long ordersThisMonth = orderService.countOrdersInMonth();
+
+        long totalProducts = productService.count();
+        long inStockProducts = productService.countInStock();
+        long outOfStockProducts =productService.countOutOfStock();
+
+        BigDecimal revenueThisMonth = orderService.getMonthlyRevenue();
+
+        // Doanh thu tháng
+        BigDecimal revenueThisMonths = orderService.getMonthlyRevenue();
+        model.addAttribute("revenueThisMonths", revenueThisMonths);
+
+        // ⭐ THÊM — Doanh thu 30 ngày gần nhất (để vẽ biểu đồ)
+        List<BigDecimal> revenueLast30Days = orderService.getRevenueLast30Days();
+        model.addAttribute("revenueLast30Days", revenueLast30Days);
+
+        model.addAttribute("revenueThisMonth", revenueThisMonth);
+
+        model.addAttribute("inStockProducts", inStockProducts);
+        model.addAttribute("outOfStockProducts", outOfStockProducts);
+
+
+        model.addAttribute("totalOrders", totalOrders);
+        model.addAttribute("ordersThisWeek", ordersThisWeek);
+        model.addAttribute("ordersThisMonth", ordersThisMonth);
+
+        model.addAttribute("totalUsers", totalUsers);
+        model.addAttribute("totalCustomers", totalCustomers);
+        model.addAttribute("totalAdmins", totalAdmins);
+        model.addAttribute("ordersPage", ordersPage);
+        model.addAttribute("orders", ordersPage.getContent());
+        model.addAttribute("totalProducts", totalProducts);
+
+        return "screen/admin/admin_dashboard";
     }
 }

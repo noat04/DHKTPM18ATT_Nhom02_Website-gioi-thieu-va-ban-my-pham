@@ -13,4 +13,5 @@ public interface CommentRepository extends JpaRepository<Comment, Integer> {
 
     @Query("SELECT AVG(c.rating) FROM Comment c WHERE c.product.id = :productId")
     Double findAverageRatingByProductId(@Param("productId") Integer productId);
+
 }

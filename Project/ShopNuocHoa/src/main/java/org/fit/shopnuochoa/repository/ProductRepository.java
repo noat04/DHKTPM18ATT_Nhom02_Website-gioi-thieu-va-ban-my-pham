@@ -73,4 +73,11 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
         AND c.rating > 0
    \s""")
     RatingStats getRatingStatsByProductId(Integer productId);
+
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.quantity > 0")
+    long countInStock();
+
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.quantity = 0")
+    long countOutOfStock();
+
 }
