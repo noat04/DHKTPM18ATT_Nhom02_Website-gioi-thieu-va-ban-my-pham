@@ -62,6 +62,12 @@ public class CategoryService {
     }
 
     public Optional<Category> deleteCategory(int id) {
+        // Kiểm tra xem category có tồn tại sản phẩm nào không
+        long productCount = productRepository.countByCategoryId(id);
+        if (productCount > 0) {
+            throw new IllegalStateException("Không thể xóa loại sản phẩm này vì đang tồn tại " + productCount + " sản phẩm thuộc loại này!");
+        }
+
         Optional<Category> emp = categoryRepository.findById(id);
         emp.ifPresent(categoryRepository::delete);   // Nếu có thì xoá
         return emp;// Trả về Optional vừa xoá (nếu có)

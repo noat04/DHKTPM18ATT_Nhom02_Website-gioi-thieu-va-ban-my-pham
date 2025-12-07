@@ -22,6 +22,9 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     long countByCategoryCountry(String categoryCountry);
 
+    // Đếm số lượng sản phẩm theo category ID
+    long countByCategoryId(Integer categoryId);
+
     List<Double> countProductByAverageRating(Double averageRating);
 
     Page<Product> findByPriceGreaterThan(Double price, Pageable pageable);
