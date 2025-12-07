@@ -112,8 +112,28 @@ public class ProductService {
 
     public Optional<Product> deleteProduct(int id) {
         Optional<Product> emp = productRepository.findById(id);
-        emp.ifPresent(productRepository::delete);   // Nếu có thì xoá
-        return emp;// Trả về Optional vừa xoá (nếu có)
+        emp.ifPresent(product -> {
+            product.setDeleted(true);
+            productRepository.save(product);
+        });
+        return emp;
+    }
+
+    public Optional<Product> restoreProduct(int id) {
+        Optional<Product> product = productRepository.findById(id);
+        product.ifPresent(p -> {
+            p.setDeleted(false);
+            productRepository.save(p);
+        });
+        return product;
+    }
+
+    public Page<Product> getAllDeleted(Pageable pageable) {
+        return productRepository.findAllDeleted(pageable);
+    }
+
+    public long countDeleted() {
+        return productRepository.countDeleted();
     }
 
     public Page<Product> getByPrice(Double price, Pageable pageable) {
