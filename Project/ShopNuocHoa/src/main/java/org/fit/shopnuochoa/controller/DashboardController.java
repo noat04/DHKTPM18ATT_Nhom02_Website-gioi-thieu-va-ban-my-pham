@@ -140,13 +140,13 @@ public class DashboardController {
 
         BigDecimal revenueThisMonth = orderService.getMonthlyRevenue();
 
+        // Biểu đồ 12 tháng
+        List<BigDecimal> revenue12Months = orderService.getRevenue12Months();
+        model.addAttribute("revenue12Months", revenue12Months);
+
         // Doanh thu tháng
         BigDecimal revenueThisMonths = orderService.getMonthlyRevenue();
         model.addAttribute("revenueThisMonths", revenueThisMonths);
-
-        // ⭐ THÊM — Doanh thu 30 ngày gần nhất (để vẽ biểu đồ)
-        List<BigDecimal> revenueLast30Days = orderService.getRevenueLast30Days();
-        model.addAttribute("revenueLast30Days", revenueLast30Days);
 
         model.addAttribute("revenueThisMonth", revenueThisMonth);
 

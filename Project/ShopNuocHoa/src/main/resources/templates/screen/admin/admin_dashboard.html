@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <th:block th:replace="~{fragment/sidebar :: sidebar-styles}"></th:block>
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
     <style>
         body {
             font-family: "Segoe UI", sans-serif;
@@ -127,55 +127,11 @@
 
             </div>
 
-            <!-- ===== CHART ===== -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <i class="bi bi-graph-up"></i> Biểu đồ doanh thu 30 ngày gần nhất
-                </div>
-                <div class="card-body">
-                    <canvas id="revenueChart" height="100"></canvas>
-                </div>
+            <!-- ================== BIỂU ĐỒ 12 THÁNG ================== -->
+            <div class="card">
+                <h5 class="fw-bold text-secondary">Doanh thu 12 tháng</h5>
+                <canvas id="spendingChart" style="max-height: 400px;"></canvas>
             </div>
-
-            <!-- LOAD CHARTJS -->
-            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-            <!-- ===== BIỂU ĐỒ DOANH THU 30 NGÀY ===== -->
-            <script>
-                const revenueData = [[${revenueLast30Days}]]
-                    .map(v => (v / 1_000_000).toFixed(2)); // đổi ra triệu
-
-                // tạo nhãn 30 ngày gần nhất
-                const labels = [];
-                for (let i = 29; i >= 0; i--) {
-                    const d = new Date();
-                    d.setDate(d.getDate() - i);
-                    labels.push(d.toLocaleDateString("vi-VN"));
-                }
-
-                const ctx = document.getElementById("revenueChart").getContext("2d");
-
-                new Chart(ctx, {
-                    type: "line",
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: "Doanh thu (triệu đồng)",
-                            data: revenueData,
-                            borderWidth: 2,
-                            borderColor: "rgb(75, 192, 192)",
-                            backgroundColor: "rgba(75, 192, 192, 0.2)",
-                            tension: 0.3,
-                            fill: true,
-                        }]
-                    },
-                    options: {
-                        scales: {
-                            y: { beginAtZero: true }
-                        }
-                    }
-                });
-            </script>
 
             <!-- ===== RECENT ORDERS TABLE ===== -->
             <div class="card">
@@ -241,6 +197,56 @@
         </div>
     </div>
 </div>
+
+<!-- ================== SCRIPT BIỂU ĐỒ ================== -->
+<script th:inline="javascript">
+    document.addEventListener("DOMContentLoaded", function() {
+
+        /* ============================================================
+           BIỂU ĐỒ 30 NGÀY GẦN NHẤT
+           dữ liệu labels = danh sách ngày dạng ["10/11","11/11",...]
+        ============================================================ */
+        const data30Days = /*[[${revenue30Days}]]*/ [];
+        const labels30 = /*[[${revenueDates30Days}]]*/ []; // ngày dạng dd/MM
+
+        new Chart(document.getElementById('chart30Days'), {
+            type: 'bar',
+            data: {
+                labels: labels30,
+                datasets: [{
+                    label: 'Doanh thu (VND)',
+                    data: data30Days,
+                    borderWidth: 1,
+                    backgroundColor: 'rgba(54,162,235,0.5)'
+                }]
+            }
+        });
+
+        /* ============================================================
+           BIỂU ĐỒ 12 THÁNG
+        ============================================================ */
+        const data12Months = /*[[${revenue12Months}]]*/ [];
+
+        const labels12 = Array.from({ length: 12 }, (_, i) => "Tháng " + (i + 1));
+
+        new Chart(document.getElementById('spendingChart'), {
+            type: 'line',
+            data: {
+                labels: labels12,
+                datasets: [{
+                    label: 'Doanh thu (VND)',
+                    data: data12Months,
+                    borderWidth: 3,
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78,115,223,0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            }
+        });
+
+    });
+</script>
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
