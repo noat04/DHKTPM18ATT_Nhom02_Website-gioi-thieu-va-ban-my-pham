@@ -12,9 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 @Service
 public class OrderService {
@@ -116,6 +115,37 @@ public class OrderService {
         }
 
         return revenueList;
+    }
+
+    public List<BigDecimal> getRevenue12Months() {
+        List<BigDecimal> list = new ArrayList<>();
+        int year = LocalDate.now().getYear();
+
+        for (int month = 1; month <= 12; month++) {
+            BigDecimal revenue = ordersRepository.getRevenueByMonth(month, year);
+            list.add(revenue != null ? revenue : BigDecimal.ZERO);
+        }
+        return list;
+    }
+
+    public long countTotalOrders() {
+        return ordersRepository.count();
+    }
+
+    public BigDecimal getTotalRevenueYear() {
+        int year = LocalDate.now().getYear();
+        BigDecimal sum = ordersRepository.getRevenueByYear(year);
+        return sum != null ? sum : BigDecimal.ZERO;
+    }
+
+    public List<String> getLast30DaysLabels() {
+        List<String> labels = new ArrayList<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM");
+
+        for (int i = 29; i >= 0; i--) {
+            labels.add(LocalDate.now().minusDays(i).format(formatter));
+        }
+        return labels;
     }
 
 }

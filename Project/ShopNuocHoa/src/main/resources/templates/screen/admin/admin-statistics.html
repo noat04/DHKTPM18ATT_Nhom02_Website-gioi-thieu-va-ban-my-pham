@@ -1,10 +1,111 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Thống kê doanh thu</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <th:block th:replace="~{fragment/sidebar :: sidebar-styles}"></th:block>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
 </head>
+
 <body>
+<div class="container-fluid">
+    <div class="row">
+
+        <!-- SIDEBAR -->
+        <div th:replace="~{fragment/sidebar :: main-sidebar}"></div>
+
+        <!-- MAIN CONTENT -->
+        <div class="col-md-9 col-lg-10 content py-4 px-5">
+
+            <h2 class="text-center mb-4">Thống kê doanh thu</h2>
+
+            <!-- ======= Thống kê tổng ======= -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="p-4 bg-success text-white rounded shadow">
+                        <h5>Tổng doanh thu</h5>
+                        <h3 th:text="${#numbers.formatDecimal(totalRevenue,0,'COMMA',0,'POINT')} + ' ₫'">0 ₫</h3>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="p-4 bg-primary text-white rounded shadow">
+                        <h5>Tổng số đơn hàng</h5>
+                        <h3 th:text="${totalOrders}">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================== BIỂU ĐỒ 30 NGÀY GẦN NHẤT (đưa lên trên) ================== -->
+            <div class="card p-4 mb-5 shadow">
+                <h5 class="fw-bold text-secondary">Doanh thu 30 ngày gần nhất</h5>
+                <canvas id="chart30Days" style="max-height: 400px;"></canvas>
+            </div>
+
+            <!-- ================== BIỂU ĐỒ 12 THÁNG ================== -->
+            <div class="card p-4 shadow">
+                <h5 class="fw-bold text-secondary">Doanh thu 12 tháng</h5>
+                <canvas id="spendingChart" style="max-height: 400px;"></canvas>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ================== SCRIPT BIỂU ĐỒ ================== -->
+<script th:inline="javascript">
+    document.addEventListener("DOMContentLoaded", function() {
+
+        /* ============================================================
+           BIỂU ĐỒ 30 NGÀY GẦN NHẤT
+           dữ liệu labels = danh sách ngày dạng ["10/11","11/11",...]
+        ============================================================ */
+        const data30Days = /*[[${revenue30Days}]]*/ [];
+        const labels30 = /*[[${revenueDates30Days}]]*/ []; // ngày dạng dd/MM
+
+        new Chart(document.getElementById('chart30Days'), {
+            type: 'bar',
+            data: {
+                labels: labels30,
+                datasets: [{
+                    label: 'Doanh thu (VND)',
+                    data: data30Days,
+                    borderWidth: 1,
+                    backgroundColor: 'rgba(54,162,235,0.5)'
+                }]
+            }
+        });
+
+        /* ============================================================
+           BIỂU ĐỒ 12 THÁNG
+        ============================================================ */
+        const data12Months = /*[[${revenue12Months}]]*/ [];
+        const labels12 = Array.from({ length: 12 }, (_, i) => "Tháng " + (i + 1));
+
+        new Chart(document.getElementById('spendingChart'), {
+            type: 'line',
+            data: {
+                labels: labels12,
+                datasets: [{
+                    label: 'Doanh thu (VND)',
+                    data: data12Months,
+                    borderWidth: 3,
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78,115,223,0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            }
+        });
+
+    });
+</script>
 
 </body>
 </html>

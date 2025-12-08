@@ -64,5 +64,25 @@ public interface OrdersRepository extends JpaRepository<Orders, Integer> {
         WHERE DATE(o.date) = :day
     """)
     BigDecimal getRevenueByDay(LocalDate day);
+        @Query("""
+        SELECT COALESCE(SUM(
+            (ol.purchasePrice * ol.amount) + o.shippingFee - o.discountAmount
+        ), 0)
+        FROM Orders o
+        JOIN o.orderLines ol
+        WHERE MONTH(o.date) = :month AND YEAR(o.date) = :year
+    """)
+    BigDecimal getRevenueByMonth(@Param("month") int month, @Param("year") int year);
+
+
+    @Query("""
+        SELECT COALESCE(SUM(
+            (ol.purchasePrice * ol.amount) + o.shippingFee - o.discountAmount
+        ), 0)
+        FROM Orders o
+        JOIN o.orderLines ol
+        WHERE YEAR(o.date) = :year
+    """)
+    BigDecimal getRevenueByYear(@Param("year") int year);
 
 }
