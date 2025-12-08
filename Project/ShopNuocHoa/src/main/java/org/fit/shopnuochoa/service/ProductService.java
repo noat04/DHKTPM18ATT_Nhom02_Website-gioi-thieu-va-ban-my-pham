@@ -93,7 +93,7 @@ public class ProductService {
             product.setHotTrend(updatedProduct.getHotTrend()); // 🆕 cập nhật hot trend
             product.setVolume(updatedProduct.getVolume());
             product.setGender(updatedProduct.getGender());
-
+            product.setDescription(updatedProduct.getDescription());
             if (!imageFile.isEmpty()) {
                 // Nếu có ảnh cũ, có thể xóa đi trước khi up mới (dùng hàm updateProductImage)
                 String newUrl = cloudinaryService.updateProductImage(imageFile, product.getImageUrl());

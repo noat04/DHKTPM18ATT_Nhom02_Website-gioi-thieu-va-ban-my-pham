@@ -107,7 +107,7 @@
         }
 
         /**
-         * 3. [THÊM MỚI] Tính Thời gian giao hàng DỰ KIẾN
+         *  Tính Thời gian giao hàng DỰ KIẾN
          * Logic:
          * - Hỏa tốc: +1 ngày (nội thành), +2 ngày (ngoại thành)
          * - Thường: +2 ngày (nội thành), +4 ngày (ngoại thành)

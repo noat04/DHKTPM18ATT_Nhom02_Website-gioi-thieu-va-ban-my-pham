@@ -124,7 +124,6 @@ public class CheckOutService {
 
             // === PHẦN QUAN TRỌNG NHẤT ĐÃ THÊM ===
             // Cập nhật (giảm) số lượng tồn kho
-            // (Giả sử bạn đã có phương thức 'reduceStock' trong ProductService
             // mà chúng ta đã thảo luận ở lần trước)
             productService.reduceStock(product.getId(), item.getQuantity());
         }

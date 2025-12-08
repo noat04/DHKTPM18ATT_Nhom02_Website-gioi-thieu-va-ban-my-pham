@@ -141,6 +141,27 @@
                                             </div>
 
                                             <div class="row mb-3">
+                                                <div class="col-12">
+                                                    <label for="description" class="form-label fw-semibold">
+                                                        Mô tả sản phẩm <span class="text-danger">*</span>
+                                                    </label>
+
+                                                    <textarea id="description"
+                                                              th:field="*{description}"
+                                                              class="form-control"
+                                                              rows="4"
+                                                              placeholder="Nhập mô tả chi tiết sản phẩm..."
+                                                              th:classappend="${#fields.hasErrors('description')} ? 'is-invalid' : ''"></textarea>
+
+                                                    <div class="invalid-feedback"
+                                                         th:if="${#fields.hasErrors('description')}"
+                                                         th:errors="*{description}">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+
+                                            <div class="row mb-3">
                                                 <div class="col-md-7">
                                                     <label class="form-label fw-semibold">
                                                         Giới tính <span class="text-danger">*</span>

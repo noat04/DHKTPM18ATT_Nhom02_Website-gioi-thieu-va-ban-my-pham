@@ -153,6 +153,22 @@
 
                         </div>
                     </div>
+                    <!-- Cảnh báo nếu thiếu thông tin -->
+                    <div th:if="${customer.getPhoneNumber() == null or #strings.isEmpty(customer.getPhoneNumber()) or customer.getFullAddress() == null or #strings.isEmpty(customer.getFullAddress())}"
+                         class="alert alert-warning d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Thiếu thông tin nhận hàng:</strong>
+                            <span th:if="${customer.getPhoneNumber() == null or #strings.isEmpty(customer.getPhoneNumber())}">Số điện thoại</span>
+                            <span th:if="${(customer.getPhoneNumber() == null or #strings.isEmpty(customer.getPhoneNumber())) and (customer.getFullAddress() == null or #strings.isEmpty(customer.getFullAddress()))}"> và </span>
+                            <span th:if="${customer.getFullAddress() == null or #strings.isEmpty(customer.getFullAddress())}">Địa chỉ</span>.
+                            Vui lòng cập nhật trước khi đặt hàng.
+                        </div>
+
+                        <div>
+                            <a th:href="@{/api/profile}" class="btn btn-outline-primary btn-sm">Cập nhật ngay</a>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -305,13 +321,22 @@
                     </div>
 
                     <hr>
-                    <button type="button" id="btn-place-order" class="btn btn-primary w-100 py-3 fs-5 fw-bold shadow-sm"
-                            th:data-total="${finalTotal}"
-                            th:data-vnpay-url="@{/api/vnpayment/create-payment(amount=${finalTotal})}"
-                            th:data-zalopay-url="@{/api/zalopay/create-payment(amount=${finalTotal})}">
-                        ĐẶT HÀNG NGAY
-                    </button>
 
+<!--                    <button type="button" id="btn-place-order" class="btn btn-primary w-100 py-3 fs-5 fw-bold shadow-sm"-->
+<!--                            th:data-total="${finalTotal}"-->
+<!--                            th:data-vnpay-url="@{/api/vnpayment/create-payment(amount=${finalTotal})}"-->
+<!--                            th:data-zalopay-url="@{/api/zalopay/create-payment(amount=${finalTotal})}">-->
+<!--                        ĐẶT HÀNG NGAY-->
+<!--                    </button>-->
+                    <!-- Nút đặt hàng: nếu thiếu thông tin thì chuyển thành link/disabled -->
+                    <div th:if="${customer.getPhoneNumber() != null and !#strings.isEmpty(customer.getPhoneNumber()) and customer.getFullAddress() != null and !#strings.isEmpty(customer.getFullAddress()) }">
+                        <button type="button" id="btn-place-order" class="btn btn-primary w-100 py-3 fs-5 fw-bold shadow-sm"
+                                th:data-total="${finalTotal}"
+                                th:data-vnpay-url="@{/api/vnpayment/create-payment(amount=${finalTotal})}"
+                                th:data-zalopay-url="@{/api/zalopay/create-payment(amount=${finalTotal})}">
+                            ĐẶT HÀNG NGAY
+                        </button>
+                    </div>
                     <p class="text-center small text-muted mt-2">
                         <i class="bi bi-shield-lock"></i> Thông tin được bảo mật tuyệt đối
                     </p>

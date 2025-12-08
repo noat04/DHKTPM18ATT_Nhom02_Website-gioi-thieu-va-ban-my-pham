@@ -111,9 +111,14 @@ public class UserController {
         // --- 2. KIỂM TRA TỔNG HỢP ---
         // (Bao gồm cả lỗi @Valid như để trống VÀ lỗi trùng lặp vừa thêm ở trên)
         if (bindingResult.hasErrors()) {
-            return "screen/customer/register"; // Trả về form, Thymeleaf sẽ tự hiển thị lỗi dưới từng ô input
-        }
+            // [THÊM DÒNG NÀY ĐỂ DEBUG]
+            System.out.println("Lỗi đăng ký:");
+            bindingResult.getAllErrors().forEach(error -> {
+                System.out.println(error.getDefaultMessage());
+            });
 
+            return "screen/customer/register";
+        }
         try {
             // --- 3. GỬI OTP (Khi dữ liệu đã hợp lệ) ---
             String otp = emailService.generateOtp();
@@ -141,11 +146,30 @@ public class UserController {
 
     // Hiển thị trang nhập OTP
     @GetMapping("/verify-otp")
-    public String showVerifyOtpPage(HttpSession session, RedirectAttributes ra) {
-        if (session.getAttribute("tempUser") == null) {
+    public String showVerifyOtpPage(HttpSession session, Model model, RedirectAttributes ra) {
+
+        // 1. Kiểm tra session
+        Long otpTime = (Long) session.getAttribute("otpTime");
+        if (session.getAttribute("tempUser") == null || otpTime == null) {
             ra.addFlashAttribute("errorMessage", "Phiên đăng ký đã hết hạn.");
             return "redirect:/api/register";
         }
+
+        // 2. [MỚI] Tính thời gian còn lại (Logic giống reset-password)
+        long currentTime = System.currentTimeMillis();
+        long timeElapsed = currentTime - otpTime; // Đã trôi qua bao lâu
+        long timeLimit = 5 * 60 * 1000; // Giới hạn 5 phút (ms)
+
+        long remainingMillis = timeLimit - timeElapsed;
+        long remainingSeconds = remainingMillis / 1000;
+
+        if (remainingSeconds < 0) {
+            remainingSeconds = 0;
+        }
+
+        // 3. Gửi sang View
+        model.addAttribute("remainingSeconds", remainingSeconds);
+
         return "screen/customer/verify-otp";
     }
 

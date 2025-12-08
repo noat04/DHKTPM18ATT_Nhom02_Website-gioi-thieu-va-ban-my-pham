@@ -110,9 +110,16 @@
 
                 <div class="product-price" th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
 
-                <p class="lead text-muted mb-4">
-                    Mô tả ngắn về sản phẩm sẽ nằm ở đây. Giúp khách hàng hiểu rõ hơn về mùi hương, phong cách và độ lưu hương của sản phẩm.
+                <p class="lead text-muted mb-4"
+                   th:if="${product.description != null}"
+                   th:text="${product.description}">
                 </p>
+
+                <p class="text-muted fst-italic mb-4"
+                   th:unless="${product.description != null}">
+                    Hiện sản phẩm này chưa có mô tả.
+                </p>
+
 
                 <div class="mb-4">
                     <span th:if="${product.isInStock()}" class="stock-badge bg-success-subtle text-success border border-success">

@@ -83,6 +83,12 @@ public class Product {
     @NotNull(message = "Vui lòng chọn giới tính phù hợp")
     private Gender gender;
 
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    @NotBlank(message = "Mô tả không được để trống")
+    @Size(min = 10, message = "Mô tả phải có ít nhất 10 ký tự")
+    private String description;
+
     // 8. Validate Category: Bắt buộc chọn danh mục
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)

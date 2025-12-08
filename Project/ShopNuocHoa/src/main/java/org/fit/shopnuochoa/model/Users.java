@@ -39,7 +39,7 @@ public class Users {
     // Validate Full Name
     @NotBlank(message = "Họ và tên không được để trống")
     @Size(min = 2, max = 100, message = "Họ và tên phải từ 2 đến 100 ký tự")
-    @Pattern(regexp = "^[A-ZÀ-Ỹ].*", message = "Ký tự đầu tiên của họ tên phải viết hoa")
+//    @Pattern(regexp = "^[A-ZÀ-Ỹa-zà-ỹ].*", message = "Ký tự đầu tiên của họ tên phải viết hoa")
     @Column(nullable = false, length = 100) // Bỏ unique=true nếu không cần thiết tên phải duy nhất
     private String full_name;
 
@@ -65,7 +65,7 @@ public class Users {
     @ToString.Exclude
     private String password;
 
-    @NotNull(message = "Vai trò không được để trống")
+//    @NotNull(message = "Vai trò không được để trống")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;

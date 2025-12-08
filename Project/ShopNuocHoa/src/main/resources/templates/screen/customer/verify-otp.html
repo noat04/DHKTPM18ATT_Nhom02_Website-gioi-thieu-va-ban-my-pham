@@ -18,24 +18,29 @@
             <div th:if="${errorMessage}" class="alert alert-danger py-2" th:text="${errorMessage}"></div>
 
             <form th:action="@{/api/verify-otp}" method="post">
+
+                <input type="hidden" id="server-remaining-time" th:value="${remainingSeconds}" />
+
                 <div class="mb-4">
                     <input type="text" name="otp" class="form-control form-control-lg text-center fw-bold letter-spacing-2"
                            placeholder="------" maxlength="6" required autocomplete="off"
                            style="letter-spacing: 5px; font-size: 1.5rem;">
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100 py-2 rounded-pill fw-bold mb-3">
+                <button type="submit" id="btn-confirm" class="btn btn-primary w-100 py-2 rounded-pill fw-bold mb-3">
                     Xác nhận
                 </button>
             </form>
 
             <div class="text-muted small">
-                Mã sẽ hết hạn sau: <span id="countdown" class="fw-bold text-danger">05:00</span>
+                Mã sẽ hết hạn sau: <span id="countdown" class="fw-bold text-danger">--:--</span>
             </div>
 
             <div id="resend-box" class="mt-3" style="display: none;">
-                <p class="mb-1">Bạn chưa nhận được mã?</p>
-                <a th:href="@{/api/register}" class="text-decoration-none fw-bold">Đăng ký lại để lấy mã mới</a>
+                <p class="mb-1 text-danger small">Mã OTP đã hết hạn!</p>
+                <a th:href="@{/api/register}" class="text-decoration-none fw-bold btn btn-outline-secondary btn-sm mt-1">
+                    <i class="bi bi-arrow-repeat"></i> Đăng ký lại để lấy mã mới
+                </a>
             </div>
 
         </div>
@@ -45,28 +50,54 @@
 <div th:replace="~{screen/customer/footer :: main-footer}"></div>
 
 <script>
-    // Thời gian đếm ngược: 5 phút = 300 giây
-    let timeLeft = 300;
-    const countdownEl = document.getElementById('countdown');
-    const resendBox = document.getElementById('resend-box');
+    document.addEventListener("DOMContentLoaded", function() {
+        // 1. Lấy thời gian thực từ input ẩn
+        const serverTimeInput = document.getElementById('server-remaining-time');
+        let timeLeft = serverTimeInput && serverTimeInput.value ? parseInt(serverTimeInput.value) : 0;
 
-    const timer = setInterval(() => {
-        if (timeLeft <= 0) {
-            clearInterval(timer);
-            countdownEl.innerHTML = "Hết hạn";
-            resendBox.style.display = "block"; // Hiện nút gửi lại
-        } else {
-            let minutes = Math.floor(timeLeft / 60);
-            let seconds = timeLeft % 60;
+        const countdownEl = document.getElementById('countdown');
+        const resendBox = document.getElementById('resend-box');
+        const btnConfirm = document.getElementById('btn-confirm');
+        const otpInput = document.querySelector('input[name="otp"]');
 
-            // Thêm số 0 phía trước nếu < 10
-            minutes = minutes < 10 ? '0' + minutes : minutes;
-            seconds = seconds < 10 ? '0' + seconds : seconds;
+        // Hàm cập nhật giao diện
+        function updateDisplay() {
+            if (timeLeft <= 0) {
+                // HẾT GIỜ
+                if (typeof timer !== 'undefined') clearInterval(timer);
 
-            countdownEl.innerHTML = `${minutes}:${seconds}`;
-            timeLeft--;
+                countdownEl.innerHTML = "Hết hạn";
+                countdownEl.classList.remove("text-danger");
+                countdownEl.classList.add("text-secondary");
+
+                // Hiển thị nút gửi lại & Vô hiệu hóa form
+                resendBox.style.display = "block";
+                if(btnConfirm) btnConfirm.disabled = true;
+                if(otpInput) otpInput.disabled = true;
+
+            } else {
+                // ĐANG ĐẾM NGƯỢC
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                minutes = minutes < 10 ? '0' + minutes : minutes;
+                seconds = seconds < 10 ? '0' + seconds : seconds;
+                countdownEl.innerHTML = `${minutes}:${seconds}`;
+            }
         }
-    }, 1000);
+
+        // Chạy ngay lần đầu
+        updateDisplay();
+
+        // Bắt đầu đếm ngược mỗi giây
+        const timer = setInterval(() => {
+            if (timeLeft > 0) {
+                timeLeft--;
+                updateDisplay();
+            } else {
+                updateDisplay();
+            }
+        }, 1000);
+    });
 </script>
 
 </body>
