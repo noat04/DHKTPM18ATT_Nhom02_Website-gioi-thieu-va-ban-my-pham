@@ -1,6 +1,7 @@
 package org.fit.shopnuochoa.service;
 
 import com.lowagie.text.*;
+import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import jakarta.mail.internet.InternetAddress;
@@ -15,9 +16,11 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
+import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Random;
+import java.util.stream.Stream;
 
 @Service
 public class EmailService {
@@ -126,51 +129,131 @@ public class EmailService {
     /**
      * ✅ FIX 6: Vẽ PDF an toàn, tránh null, format tiền đúng chuẩn VN
      */
+
     private void generatePdfInvoice(Orders order, ByteArrayOutputStream outputStream) throws DocumentException {
         Document document = new Document(PageSize.A4, 40, 40, 40, 40);
         PdfWriter.getInstance(document, outputStream);
         document.open();
 
-        // Header
-        document.add(new Paragraph("HÓA ĐƠN BÁN HÀNG",
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 22)));
+        // ========= HEADER =========
+        Paragraph header = new Paragraph("HÓA ĐƠN BÁN HÀNG",
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 24));
+        header.setAlignment(Element.ALIGN_CENTER);
+        document.add(header);
 
-        document.add(new Paragraph("Mã đơn hàng: #" + order.getId()));
-        document.add(new Paragraph("Ngày tạo: " + order.getDate()));
-        document.add(new Paragraph("Điện thoại: " + order.getPhoneNumber()));
-        document.add(new Paragraph("Địa chỉ giao: " + order.getShippingAddress()));
-        document.add(new Paragraph("Ghi chú: " + (order.getNote() != null ? order.getNote() : "Không có")));
+        Paragraph shopName = new Paragraph("SHOP NƯỚC HOA TDDN",
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14));
+        shopName.setAlignment(Element.ALIGN_CENTER);
+        document.add(shopName);
+
+        Paragraph shopInfo = new Paragraph("Hotline: 0123 456 789  |  Email: contact@ttdn.vn",
+                FontFactory.getFont(FontFactory.HELVETICA, 10));
+        shopInfo.setAlignment(Element.ALIGN_CENTER);
+        document.add(shopInfo);
+
         document.add(new Paragraph("\n"));
 
-        // Table sản phẩm
-        PdfPTable table = new PdfPTable(3);
-        table.setWidthPercentage(100);
-        table.setWidths(new float[]{5f, 2f, 3f});
+        // ========= THÔNG TIN ĐƠN HÀNG =========
+        PdfPTable infoTable = new PdfPTable(2);
+        infoTable.setWidthPercentage(100);
+        infoTable.setSpacingBefore(10);
+        infoTable.setSpacingAfter(10);
 
-        table.addCell("Sản phẩm");
-        table.addCell("Số lượng");
-        table.addCell("Giá mua");
+        infoTable.setWidths(new float[]{3f, 7f});
+
+        infoTable.addCell("Mã đơn hàng:");
+        infoTable.addCell("#" + order.getId());
+
+        infoTable.addCell("Ngày tạo:");
+        infoTable.addCell(String.valueOf(order.getDate()));
+
+        infoTable.addCell("Tên khách hàng:");
+        infoTable.addCell(order.getCustomer().getName() != null ? order.getCustomer().getName() : "Không có");
+
+        infoTable.addCell("Số điện thoại:");
+        infoTable.addCell(order.getPhoneNumber());
+
+        infoTable.addCell("Địa chỉ giao:");
+        infoTable.addCell(order.getShippingAddress());
+
+        infoTable.addCell("Ghi chú:");
+        infoTable.addCell(order.getNote() != null ? order.getNote() : "Không có");
+
+        document.add(infoTable);
+
+        // ========= BẢNG SẢN PHẨM =========
+        PdfPTable table = new PdfPTable(4);
+        table.setWidthPercentage(100);
+        table.setWidths(new float[]{5f, 2f, 3f, 3f});
+        table.setSpacingBefore(10);
+
+        // Header
+        Stream.of("Sản phẩm", "SL", "Giá mua", "Thành tiền")
+                .forEach(headerTitle -> {
+                    PdfPCell cell = new PdfPCell(new Phrase(headerTitle,
+                            FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12)));
+                    cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+//                    cell.setBackgroundColor(BaseColor.LIGHT_GRAY);
+                    table.addCell(cell);
+                });
 
         NumberFormat currency = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
 
+        BigDecimal total = BigDecimal.ZERO;
+
         if (order.getOrderLines() != null) {
             for (OrderLine line : order.getOrderLines()) {
-                if (line.getProduct() != null) {
-                    table.addCell(line.getProduct().getName());
-                } else {
-                    table.addCell("Unknown Product");
-                }
+
+                String productName = (line.getProduct() != null)
+                        ? line.getProduct().getName()
+                        : "Unknown Product";
+
+                BigDecimal price = line.getPurchasePrice();
+                BigDecimal quantity = BigDecimal.valueOf(line.getAmount());
+                BigDecimal lineTotal = price.multiply(quantity);
+
+                total = total.add(lineTotal);
+
+                table.addCell(productName);
                 table.addCell(String.valueOf(line.getAmount()));
-                table.addCell(currency.format(line.getPurchasePrice()));
+                table.addCell(currency.format(price));
+                table.addCell(currency.format(lineTotal));
             }
         }
+
+
         document.add(table);
 
         document.add(new Paragraph("\n"));
-        document.add(new Paragraph("Phí ship: " + currency.format(order.getShippingFee())));
-        document.add(new Paragraph("Tổng thanh toán: " + currency.format(order.getFinalTotal()),
-                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14)));
+
+        // ========= TỔNG TIỀN =========
+        PdfPTable totalTable = new PdfPTable(2);
+        totalTable.setWidthPercentage(50);
+        totalTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
+
+        totalTable.addCell("Tổng giá trị sản phẩm:");
+        totalTable.addCell(currency.format(total));
+
+        totalTable.addCell("Phí ship:");
+        totalTable.addCell(currency.format(order.getShippingFee()));
+
+        if (order.getDiscountAmount() != null) {
+            totalTable.addCell("Giảm giá:");
+            totalTable.addCell("-" + currency.format(order.getDiscountAmount()));
+        }
+
+        totalTable.addCell("Tổng thanh toán:");
+        totalTable.addCell(new Phrase(
+                currency.format(order.getFinalTotal()),
+                FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14)
+        ));
+
+        document.add(totalTable);
+
+        document.add(new Paragraph("\n\nCảm ơn bạn đã mua hàng tại TDDN!"));
+        document.add(new Paragraph("Hẹn gặp bạn lần sau ♥"));
 
         document.close();
     }
+
 }
