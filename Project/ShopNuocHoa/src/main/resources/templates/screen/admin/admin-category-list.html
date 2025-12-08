@@ -18,8 +18,22 @@
 
         <!-- MAIN CONTENT -->
         <div class="col-md-9 col-lg-10 content">
-            <main class="container my-5">
+            <main class="container my-1">
                 <h2 class="text-center mb-4">Danh sách nhà sản xuất</h2>
+
+                <!-- Hiển thị thông báo thành công -->
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <!-- Hiển thị thông báo lỗi -->
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
 
                 <!-- Thanh tìm kiếm -->
                 <div class="card shadow-sm mb-4">
@@ -99,5 +113,17 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Tự động ẩn thông báo sau 5 giây
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            setTimeout(function() {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            }, 5000); // 5000ms = 5 giây
+        });
+    });
+</script>
 </body>
 </html>

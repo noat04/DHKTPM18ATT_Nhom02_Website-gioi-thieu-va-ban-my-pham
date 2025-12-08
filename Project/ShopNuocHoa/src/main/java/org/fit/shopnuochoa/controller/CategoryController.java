@@ -36,17 +36,27 @@ public class CategoryController {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "keyword", defaultValue = "") String keyword,
             Model model,
+            RedirectAttributes redirectAttributes,
             Authentication authentication) {
 
         // ✅ Nếu là ADMIN và có hành động delete
         if ("delete".equals(action) && id != null && SecurityUtils.hasRole(authentication, "ADMIN")) {
-            categoryService.deleteCategory(id);
+            try {
+                categoryService.deleteCategory(id);
+                redirectAttributes.addFlashAttribute("successMessage", "Xóa danh mục thành công!");
+            } catch (IllegalStateException e) {
+                // Bắt lỗi khi không thể xóa do còn sản phẩm
+                redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            } catch (Exception e) {
+                // Bắt các lỗi khác
+                redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi xóa danh mục: " + e.getMessage());
+            }
             return "redirect:/api/categories/list";
         }
 
         // ✅ Nếu là ADMIN → hiển thị admin view với phân trang
         if (SecurityUtils.hasRole(authentication, "ADMIN")) {
-            Pageable pageable = PageRequest.of(page, 10); // 10 items per page
+            Pageable pageable = PageRequest.of(page, 6);
             Page<Category> categoryPage;
 
             if (keyword != null && !keyword.trim().isEmpty()) {
