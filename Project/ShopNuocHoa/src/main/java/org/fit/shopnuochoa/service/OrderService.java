@@ -10,7 +10,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -91,5 +94,59 @@ public class OrderService {
 
     public long countOrdersInMonth() {
         return ordersRepository.countOrdersInCurrentMonth();
+    }
+
+    public BigDecimal getMonthlyRevenue() {
+        List<Orders> orders = ordersRepository.findOrdersInCurrentMonth();
+
+        BigDecimal revenue = BigDecimal.ZERO;
+
+        for (Orders order : orders) {
+            revenue = revenue.add(order.getFinalTotal()); // dùng hàm tính của entity
+        }
+        return revenue;
+    }
+
+    public List<BigDecimal> getRevenueLast30Days() {
+        List<BigDecimal> revenueList = new ArrayList<>();
+
+        for (int i = 29; i >= 0; i--) {
+            LocalDate day = LocalDate.now().minusDays(i);
+            BigDecimal revenue = ordersRepository.getRevenueByDay(day);
+            revenueList.add(revenue != null ? revenue : BigDecimal.ZERO);
+        }
+
+        return revenueList;
+    }
+
+    public List<BigDecimal> getRevenue12Months() {
+        List<BigDecimal> list = new ArrayList<>();
+        int year = LocalDate.now().getYear();
+
+        for (int month = 1; month <= 12; month++) {
+            BigDecimal revenue = ordersRepository.getRevenueByMonth(month, year);
+            list.add(revenue != null ? revenue : BigDecimal.ZERO);
+        }
+        return list;
+    }
+
+    public long countTotalOrders() {
+        return ordersRepository.count();
+    }
+
+    public BigDecimal getTotalRevenueYear() {
+        int year = LocalDate.now().getYear();
+        BigDecimal sum = ordersRepository.getRevenueByYear(year);
+        return sum != null ? sum : BigDecimal.ZERO;
+    }
+
+    public List<String> getLast30DaysLabels() {
+        List<String> labels = new ArrayList<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM");
+
+        for (int i = 29; i >= 0; i--) {
+            labels.add(LocalDate.now().minusDays(i).format(formatter));
+        }
+        return labels;
     }
 }

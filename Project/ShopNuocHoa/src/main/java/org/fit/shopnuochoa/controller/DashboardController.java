@@ -46,6 +46,7 @@ public class DashboardController {
         this.productService=productService;
     }
     @GetMapping("/overview")
+    @PreAuthorize("hasAnyRole('CUSTOMER')")
     public String showCustomerDashboard(Model model, Authentication authentication) {
         if (authentication == null) {
             return "redirect:/api/login";
@@ -134,14 +135,26 @@ public class DashboardController {
         // Đơn hàng tháng
         long ordersThisMonth = orderService.countOrdersInMonth();
 
-//        long totalProducts = productService.count();
-//        long inStockProducts = productService.countInStock();
-//        long outOfStockProducts =productService.countOutOfStock();
-//
-//        model.addAttribute("inStockProducts", inStockProducts);
-//        model.addAttribute("outOfStockProducts", outOfStockProducts);
-//
-//
+        long totalProducts = productService.count();
+        long inStockProducts = productService.countInStock();
+        long outOfStockProducts =productService.countOutOfStock();
+
+        BigDecimal revenueThisMonth = orderService.getMonthlyRevenue();
+
+        // Biểu đồ 12 tháng
+        List<BigDecimal> revenue12Months = orderService.getRevenue12Months();
+        model.addAttribute("revenue12Months", revenue12Months);
+
+        // Doanh thu tháng
+        BigDecimal revenueThisMonths = orderService.getMonthlyRevenue();
+        model.addAttribute("revenueThisMonths", revenueThisMonths);
+
+        model.addAttribute("revenueThisMonth", revenueThisMonth);
+
+        model.addAttribute("inStockProducts", inStockProducts);
+        model.addAttribute("outOfStockProducts", outOfStockProducts);
+
+
         model.addAttribute("totalOrders", totalOrders);
         model.addAttribute("ordersThisWeek", ordersThisWeek);
         model.addAttribute("ordersThisMonth", ordersThisMonth);
@@ -151,8 +164,7 @@ public class DashboardController {
         model.addAttribute("totalAdmins", totalAdmins);
         model.addAttribute("ordersPage", ordersPage);
         model.addAttribute("orders", ordersPage.getContent());
-//        model.addAttribute("totalProducts", totalProducts);
-
+        model.addAttribute("totalProducts", totalProducts);
 
         return "screen/admin/admin_dashboard";
     }

@@ -442,15 +442,15 @@ public class ProductService {
         productRepository.save(product);
     }
 
-//    public long countInStock() {
-//        return productRepository.countByInStockTrue();
-//    }
-//
-//    public long countOutOfStock() {
-//        return productRepository.countByInStockFalse();
-//    }
-//
-//    public long count(){
-//        return productRepository.count();
-//    }
+    public long count() {
+        return productRepository.count();
+    }
+
+    public long countInStock() {
+        return productRepository.countInStock();
+    }
+
+    public long countOutOfStock() {
+        return productRepository.countOutOfStock();
+    }
 }

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,4 +47,41 @@ public interface OrdersRepository extends JpaRepository<Orders, Integer> {
 
     @Query("SELECT COUNT(o) FROM Orders o WHERE MONTH(o.date) = MONTH(CURRENT_DATE) AND YEAR(o.date) = YEAR(CURRENT_DATE)")
     long countOrdersInCurrentMonth();
+
+    @Query("""
+        SELECT COALESCE(SUM(
+            (ol.purchasePrice * ol.amount) + o.shippingFee - o.discountAmount
+        ), 0)
+        FROM Orders o
+        JOIN o.orderLines ol
+        WHERE DATE(o.date) = :day
+    """)
+    BigDecimal getRevenueByDay(LocalDate day);
+    @Query("""
+        SELECT COALESCE(SUM(
+            (ol.purchasePrice * ol.amount) + o.shippingFee - o.discountAmount
+        ), 0)
+        FROM Orders o
+        JOIN o.orderLines ol
+        WHERE MONTH(o.date) = :month AND YEAR(o.date) = :year
+    """)
+    BigDecimal getRevenueByMonth(@Param("month") int month, @Param("year") int year);
+
+
+    @Query("""
+        SELECT COALESCE(SUM(
+            (ol.purchasePrice * ol.amount) + o.shippingFee - o.discountAmount
+        ), 0)
+        FROM Orders o
+        JOIN o.orderLines ol
+        WHERE YEAR(o.date) = :year
+    """)
+    BigDecimal getRevenueByYear(@Param("year") int year);
+
+    @Query("""
+            SELECT o FROM Orders o
+            WHERE MONTH(o.date) = MONTH(CURRENT_DATE)
+              AND YEAR(o.date) = YEAR(CURRENT_DATE)
+       """)
+    List<Orders> findOrdersInCurrentMonth();
 }
