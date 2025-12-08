@@ -19,7 +19,7 @@ import java.util.*;
 @Component
 public class GeminiChatModel implements ChatModel {
 
-    @Value("${gemini.api.key}")
+    @Value("AIzaSyB0becCvvDriWGBwFCfGLkJFGo7UdrKM44")
     private String apiKey;
 
     @Value("${gemini.model}")
@@ -63,13 +63,16 @@ public class GeminiChatModel implements ChatModel {
             // Call Gemini API using baseUrl from config
             String url = baseUrl + model + ":generateContent?key=" + apiKey;
 
+            // Debugging API key
+            System.out.println("Using API Key: " + apiKey);
+
             ResponseEntity<String> response = restTemplate.exchange(
                     url,
                     HttpMethod.POST,
                     request,
                     String.class
             );
-
+            System.out.println(apiKey);
             // Parse response
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 JsonNode root = objectMapper.readTree(response.getBody());
@@ -100,4 +103,3 @@ public class GeminiChatModel implements ChatModel {
         return null;  // No specific options needed
     }
 }
-

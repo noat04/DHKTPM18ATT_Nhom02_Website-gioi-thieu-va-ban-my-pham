@@ -474,11 +474,7 @@
         </div>
     </div>
     <div class="chat-body" id="chatMessages">
-        <div class="message bot-message">
-            <strong>Xin chào!</strong> 👋<br>
-            Tôi là trợ lý AI tư vấn nước hoa.<br>
-            Tôi có thể giúp gì cho bạn?
-        </div>
+        <!-- Welcome message will be added dynamically by JavaScript on page load -->
     </div>
     <div class="chat-input-area">
         <div class="chat-input-container">
@@ -523,6 +519,7 @@
         textarea.style.height = 'auto';
         textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
     }
+
 
     function scrollToBottom() {
         const chatMessages = document.getElementById('chatMessages');
@@ -571,7 +568,7 @@
         return text;
     }
 
-    function addMessage(text, className, isBot = false) {
+    function addMessage(text, className, isBot = false, products = null) {
         const chatMessages = document.getElementById('chatMessages');
         const msg = document.createElement('div');
         msg.className = 'message ' + className;
@@ -596,12 +593,86 @@
                 });
             };
             msg.appendChild(copyBtn);
+
+            // Add product cards if available
+            if (products && products.length > 0) {
+                const productsContainer = document.createElement('div');
+                productsContainer.className = 'chat-products-container';
+                productsContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-top: 12px;';
+
+                products.forEach(product => {
+                    const productCard = createProductCard(product);
+                    productsContainer.appendChild(productCard);
+                });
+
+                msg.appendChild(productsContainer);
+            }
         } else {
             msg.textContent = text;
         }
 
         chatMessages.appendChild(msg);
         scrollToBottom();
+    }
+
+    function createProductCard(product) {
+        const card = document.createElement('div');
+        card.className = 'chat-product-card';
+        card.style.cssText = `
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: row;
+            max-width: 100%;
+            height: 80px;
+        `;
+
+        card.onmouseover = function() {
+            this.style.boxShadow = '0 3px 8px rgba(0,0,0,0.15)';
+            this.style.borderColor = '#FF5722';
+        };
+        card.onmouseout = function() {
+            this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+            this.style.borderColor = '#e0e0e0';
+        };
+
+        const imageUrl = product.imageUrl || '/images/default-product.jpg';
+
+        card.innerHTML = `
+            <div style="position: relative; flex-shrink: 0; width: 80px; height: 80px; background: #f8f9fa;">
+                <img src="${imageUrl}" alt="${product.name}"
+                     style="width: 100%; height: 100%; object-fit: cover;"
+                     onerror="this.src='/images/default-product.jpg'">
+            </div>
+            <div style="flex: 1; padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; min-width: 0;">
+                <div style="font-weight: 600; font-size: 13px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; color: #333;">
+                    ${product.name}
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                    <div style="font-size: 15px; font-weight: 700; color: #FF5722;">
+                        ${formatCurrency(product.price)}
+                    </div>
+                    <div style="font-size: 10px; color: #999; white-space: nowrap;">
+                        ${product.brandName || ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        card.onclick = function(e) {
+            window.location.href = `/api/products/detail/${product.id}`;
+        };
+
+        return card;
+    }
+
+    function formatCurrency(price) {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0 }).format(price);
     }
 
     function showTypingIndicator() {
@@ -649,15 +720,15 @@
             hideTypingIndicator();
 
             if (data && data.response) {
-                addMessage(data.response, 'bot-message', true);
+                addMessage(data.response, 'bot-message', true, data.products);
             } else {
-                addMessage('Xin lỗi, tôi không nhận được câu trả lời. Vui lòng thử lại.', 'bot-message', true);
+                addMessage('Xin lỗi, tôi không nhận được câu trả lời. Vui lòng thử lại.', 'bot-message', true, null);
             }
         })
         .catch(error => {
             hideTypingIndicator();
             console.error('Chat error:', error);
-            addMessage('❌ Lỗi kết nối. Vui lòng kiểm tra kết nối mạng và thử lại.', 'bot-message', true);
+            addMessage('❌ Lỗi kết nối. Vui lòng kiểm tra kết nối mạng và thử lại.', 'bot-message', true, null);
         })
         .finally(() => {
             sendBtn.disabled = false;
@@ -667,6 +738,10 @@
 
     // 2. LOGIC BỘ LỌC
     document.addEventListener("DOMContentLoaded", function () {
+        // Add welcome message on page load
+        addMessage("Xin chào! 👋 Tôi là trợ lý AI tư vấn nước hoa. Tôi có thể giúp gì cho bạn?", "bot-message", true);
+
+        // ========== EXISTING CODE ==========
         const pageSizeSelect = document.getElementById("pageSizeSelect");
         const sortButtons = document.querySelectorAll(".sort-btn");
         const productListArea = document.getElementById("product-list-area");
