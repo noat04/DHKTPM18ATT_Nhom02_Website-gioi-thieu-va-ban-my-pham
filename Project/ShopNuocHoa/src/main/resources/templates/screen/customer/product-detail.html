@@ -51,6 +51,29 @@
 
     /* (Dán lại CSS cho Comment Card & Rating từ các câu trả lời trước vào đây) */
     /* ... CSS Avatar, Comment Card, Rating Stars ... */
+
+    .rating-input input {
+        display: none; /* Ẩn radio */
+    }
+
+    .rating-input label {
+        color: #ccc; /* sao mặc định màu xám */
+        font-size: 2rem;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    /* Hover: tô sao từ phải sang trái */
+    .rating-input label:hover,
+    .rating-input label:hover ~ label {
+        color: #ffc107;
+    }
+
+    /* Khi đã chọn (checked): tô sao */
+    .rating-input input:checked ~ label {
+        color: #ffc107;
+    }
+
 </style>
 <body class="d-flex flex-column min-vh-100 bg-light">
 
@@ -182,14 +205,25 @@
 
                             <div class="mb-3 text-center">
                                 <label class="form-label d-block mb-2">Bạn chấm mấy sao?</label>
+
                                 <div class="rating-input d-flex flex-row-reverse justify-content-center gap-2 fs-2">
-                                    <input type="radio" id="star5" name="rating" value="5" required/><label for="star5" class="text-warning" style="cursor:pointer">★</label>
-                                    <input type="radio" id="star4" name="rating" value="4" /><label for="star4" class="text-warning" style="cursor:pointer">★</label>
-                                    <input type="radio" id="star3" name="rating" value="3" /><label for="star3" class="text-warning" style="cursor:pointer">★</label>
-                                    <input type="radio" id="star2" name="rating" value="2" /><label for="star2" class="text-warning" style="cursor:pointer">★</label>
-                                    <input type="radio" id="star1" name="rating" value="1" /><label for="star1" class="text-warning" style="cursor:pointer">★</label>
+                                    <input type="radio" id="star5" name="rating" value="5" required/>
+                                    <label for="star5" style="cursor:pointer">★</label>
+
+                                    <input type="radio" id="star4" name="rating" value="4"/>
+                                    <label for="star4" style="cursor:pointer">★</label>
+
+                                    <input type="radio" id="star3" name="rating" value="3"/>
+                                    <label for="star3" style="cursor:pointer">★</label>
+
+                                    <input type="radio" id="star2" name="rating" value="2"/>
+                                    <label for="star2" style="cursor:pointer">★</label>
+
+                                    <input type="radio" id="star1" name="rating" value="1"/>
+                                    <label for="star1" style="cursor:pointer">★</label>
                                 </div>
                             </div>
+
 
                             <div class="mb-3">
                                 <textarea name="text" class="form-control" rows="4" placeholder="Chia sẻ cảm nhận của bạn..." required></textarea>
