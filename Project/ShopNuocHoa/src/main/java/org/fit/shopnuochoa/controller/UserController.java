@@ -2,6 +2,7 @@ package org.fit.shopnuochoa.controller;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import org.fit.shopnuochoa.Enum.Role;
 import org.fit.shopnuochoa.model.Customer;
 import org.fit.shopnuochoa.model.Users;
 import org.fit.shopnuochoa.service.CloudinaryService;
@@ -471,50 +472,57 @@ public class UserController {
 
     // Xử lý cập nhật hồ sơ
     @PostMapping("/profile/edit")
-    public String updateProfile(@Valid @ModelAttribute("customer") Customer updatedCustomer, // [1] Kích hoạt Validate
-                                BindingResult result, // [2] Chứa kết quả lỗi
-                                Principal principal,
-                                RedirectAttributes redirectAttributes,
-                                Model model) { // Cần Model để đẩy dữ liệu khi có lỗi
+    public String updateProfile(
+            @Valid @ModelAttribute("customer") Customer updatedCustomer,
+            BindingResult result,
+            Principal principal,
+            RedirectAttributes redirectAttributes,
+            Model model) {
 
         if (principal == null) {
             return "redirect:/api/login";
         }
 
-        // Lấy thông tin User hiện tại (cần dùng cho cả trường hợp thành công và thất bại)
         String username = principal.getName();
         Users user = userService.getUserByUsername(username);
 
-        // 1. Kiểm tra lỗi Validation (SĐT sai, Tên trống...)
+        // Lấy Customer thật trong DB
+        Customer existingCustomer = customerService.getByUser(user.getId());
+        System.out.println("existingCustomer: " + existingCustomer);
+        if (existingCustomer == null) {
+            existingCustomer = new Customer();
+            existingCustomer.setUser(user);
+        }
+
+        // Nếu validate lỗi → Trả lại form, giữ lại dữ liệu
         if (result.hasErrors()) {
-            // [QUAN TRỌNG] Khi có lỗi, trả về trang cũ chứ không redirect
-            // Để giữ lại thông báo lỗi và dữ liệu người dùng vừa nhập
+            result.getFieldErrors().forEach(error -> {
+                System.out.println("Trường lỗi: " + error.getField());
+                System.out.println("Giá trị sai: " + error.getRejectedValue());
+                System.out.println("Lý do: " + error.getDefaultMessage());
+                System.out.println("---------------------------------");
+            });
+            System.out.println("===== DỮ LIỆU NHẬN TỪ FORM =====");
+            System.out.println("Province: " + updatedCustomer.getProvince());
+            System.out.println("District: " + updatedCustomer.getDistrict());
+            System.out.println("Ward: " + updatedCustomer.getWard());
+            System.out.println("Street: " + updatedCustomer.getStreetDetail());
+
             model.addAttribute("user", user);
-            // Cần set lại User cho customer để hiển thị avatar/email (nếu giao diện cần)
-            updatedCustomer.setUser(user);
-
-            // Nếu giao diện profile cần danh sách đơn hàng hay gì khác, hãy load lại ở đây
-            // model.addAttribute("orders", ...);
-
-            return "screen/customer/account-setting"; // Tên file HTML trang cá nhân của bạn
+            return "screen/customer/account-setting";
         }
 
         try {
-            // 2. Xử lý logic cập nhật
-            Customer existingCustomer = customerService.getByUser(user.getId());
-
-            // Gọi hàm update (lưu ý: chỉ copy các field cho phép sửa)
-            customerService.updateCustomer(existingCustomer.getId(), updatedCustomer);
-
+            // Gọi service cập nhật
+            Optional<Customer> updateCustomer=  customerService.updateCustomer(existingCustomer.getId(), updatedCustomer);
+            System.out.println("updateCustomer " + updateCustomer);
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật hồ sơ thành công!");
-            return "redirect:/api/profile"; // Thành công thì Redirect để refresh
+            return "redirect:/api/profile";
 
         } catch (Exception e) {
             e.printStackTrace();
-            // Lỗi hệ thống -> Trả về view để báo lỗi
             model.addAttribute("user", user);
             model.addAttribute("errorMessage", "Lỗi cập nhật: " + e.getMessage());
-            updatedCustomer.setUser(user); // Re-bind user
             return "screen/customer/account-setting";
         }
     }
@@ -557,29 +565,49 @@ public class UserController {
         return "redirect:/api/admin/users";
     }
 
-    // Hiển thị form chỉnh sửa người dùng
     @GetMapping("/admin/users/update/{id}")
     public String showEditForm(@PathVariable int id, Model model, RedirectAttributes redirectAttributes) {
         Users user = userService.getUserById(id);
+
         if (user == null) {
             redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy người dùng!");
             return "redirect:/api/admin/users";
         }
+
         model.addAttribute("user", user);
-        return "screen/admin/admin-user-edit"; // View đúng
+        model.addAttribute("roles", Role.values());
+        return "screen/admin/admin-user-edit";
     }
 
-    // Cập nhật thông tin người dùng
     @PostMapping("/admin/users/update/{id}")
     public String updateUser(@PathVariable int id,
-                             @ModelAttribute("user") Users updatedUser,
-                             RedirectAttributes redirectAttributes) {
-        Optional<Users> updated = userService.updateUser(id, updatedUser);
-        if (updated.isPresent()) {
-            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật tài khoản thành công!");
-        } else {
-            redirectAttributes.addFlashAttribute("errorMessage", "Không thể cập nhật tài khoản!");
+                             @ModelAttribute("user") Users formUser,
+                             BindingResult result,
+                             RedirectAttributes redirectAttributes,
+                             Model model) {
+
+        Users existingUser = userService.getUserById(id);
+
+        if (existingUser == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy người dùng!");
+            return "redirect:/api/admin/users";
         }
+
+        if (result.hasErrors()) {
+            model.addAttribute("roles", Role.values());
+            return "screen/admin/admin-user-edit";
+        }
+
+        // --- Chỉ update các trường có trong form ---
+        existingUser.setFull_name(formUser.getFull_name());
+        existingUser.setEmail(formUser.getEmail());
+        existingUser.setRole(formUser.getRole());
+        existingUser.setActive(formUser.isActive());
+
+        userService.save(existingUser);
+
+        redirectAttributes.addFlashAttribute("successMessage", "Cập nhật tài khoản thành công!");
         return "redirect:/api/admin/users";
     }
+
 }

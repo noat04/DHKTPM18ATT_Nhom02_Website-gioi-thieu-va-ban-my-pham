@@ -7,6 +7,7 @@ import org.fit.shopnuochoa.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -37,55 +38,68 @@ public class CustomerService {
         return customerRepository.save(customer);
     }
     // Cập nhật
-    // [CẬP NHẬT QUAN TRỌNG] Hàm Update hỗ trợ tách địa chỉ
+    @Transactional // Đảm bảo tính toàn vẹn dữ liệu khi update
     public Optional<Customer> updateCustomer(int id, Customer updatedCustomer) {
         return customerRepository.findById(id).map(existingCustomer -> {
 
-            // 1. Cập nhật thông tin cơ bản
+            // 1. Cập nhật thông tin cá nhân cơ bản
             if (updatedCustomer.getName() != null && !updatedCustomer.getName().trim().isEmpty()) {
                 existingCustomer.setName(updatedCustomer.getName());
+                System.out.println("-> Tên");
             }
             if (updatedCustomer.getPhoneNumber() != null && !updatedCustomer.getPhoneNumber().trim().isEmpty()) {
                 existingCustomer.setPhoneNumber(updatedCustomer.getPhoneNumber());
+                System.out.println("-> số điện thoại");
             }
             if (updatedCustomer.getGender() != null) {
                 existingCustomer.setGender(updatedCustomer.getGender());
+                System.out.println("-> giới tính");
             }
             if (updatedCustomer.getBirthday() != null) {
                 existingCustomer.setBirthday(updatedCustomer.getBirthday());
+                System.out.println("-> sinh nhật");
             }
             if (updatedCustomer.getIdCard() != null && !updatedCustomer.getIdCard().trim().isEmpty()) {
                 existingCustomer.setIdCard(updatedCustomer.getIdCard());
+                System.out.println("-> cccd");
             }
             if (updatedCustomer.getNickName() != null && !updatedCustomer.getNickName().trim().isEmpty()) {
                 existingCustomer.setNickName(updatedCustomer.getNickName());
+                System.out.println("-> tên gọi");
             }
-            if (updatedCustomer.getEmail() != null && !updatedCustomer.getEmail().trim().isEmpty()) {
-                existingCustomer.setEmail(updatedCustomer.getEmail());
-            }
+            // Email thường ít khi cho đổi, nhưng nếu cần thì giữ lại
+//            if (updatedCustomer.getEmail() != null && !updatedCustomer.getEmail().trim().isEmpty()) {
+//                existingCustomer.setEmail(updatedCustomer.getEmail());
+//                System.out.println("-> email");
+//            }
 
-            // 2. [MỚI] Cập nhật Địa chỉ chi tiết (Tách riêng)
-            // Chỉ cập nhật nếu người dùng có chọn/nhập giá trị mới
+            // 2. [CẬP NHẬT ĐỊA CHỈ MỚI - 4 TRƯỜNG]
+            // Kiểm tra null và rỗng để tránh ghi đè dữ liệu cũ bằng dữ liệu rỗng
 
-            if (updatedCustomer.getProvince() != null && !updatedCustomer.getProvince().isEmpty()) {
+            if (updatedCustomer.getProvince() != null && !updatedCustomer.getProvince().isBlank()) {
                 existingCustomer.setProvince(updatedCustomer.getProvince());
+                System.out.println("-> Đã set Tỉnh");
             }
 
-            if (updatedCustomer.getDistrict() != null && !updatedCustomer.getDistrict().isEmpty()) {
+            if (updatedCustomer.getDistrict() != null && !updatedCustomer.getDistrict().isBlank()) {
                 existingCustomer.setDistrict(updatedCustomer.getDistrict());
+                System.out.println("-> Đã set Huyện");
             }
 
-            if (updatedCustomer.getWard() != null && !updatedCustomer.getWard().isEmpty()) {
+            if (updatedCustomer.getWard() != null && !updatedCustomer.getWard().isBlank()) {
                 existingCustomer.setWard(updatedCustomer.getWard());
+                System.out.println("-> Đã set Xã");
             }
 
-            if (updatedCustomer.getStreetDetail() != null && !updatedCustomer.getStreetDetail().isEmpty()) {
+            if (updatedCustomer.getStreetDetail() != null && !updatedCustomer.getStreetDetail().isBlank()) {
                 existingCustomer.setStreetDetail(updatedCustomer.getStreetDetail());
+                System.out.println("-> Đã set Đường");
             }
 
-            // (Trường 'address' cũ không còn dùng để set nữa, nó được thay thế bằng getFullAddress() khi hiển thị)
+            // LƯU Ý: Ta KHÔNG cập nhật trường 'address' cũ nữa.
+            // Khi hiển thị, ta sẽ dùng hàm getFullAddress() trong Model để ghép 4 trường trên lại.
 
-            return customerRepository.save(existingCustomer);
+            return customerRepository.saveAndFlush(existingCustomer);
         });
     }
     public Optional<Customer> deleteCustomer(int id) {

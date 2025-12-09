@@ -2,25 +2,87 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 
-<footer th:fragment="main-footer" class="bg-dark text-white mt-auto py-3 flex-end">
-    <div class="container text-center">
-        <div class="row align-items-center">
-            <div class="col-md-6 text-md-start">
-                <span>&copy; 2025 Shopping App. All Rights Reserved.</span>
+<footer th:fragment="main-footer" class="bg-dark text-white mt-auto pt-5 pb-3" > <div class="container">
+    <div class="row">
+
+        <div class="col-lg-3 col-md-6 mb-4">
+            <h5 class="text-uppercase fw-bold mb-3">Giới thiệu</h5>
+            <ul class="list-unstyled">
+                <li class="mb-2"><a href="#" class="text-white text-decoration-none small">Giới thiệu về TGNH</a></li>
+                <li class="mb-2"><a href="#" class="text-white text-decoration-none small">Quan điểm kinh doanh</a></li>
+                <li class="mb-2"><a href="#" class="text-white text-decoration-none small">Bản quyền & Sở hữu</a></li>
+                <li class="mb-2"><a href="#" class="text-white text-decoration-none small">Hoạt động TGNH</a></li>
+                <li class="mb-2"><a href="#" class="text-white text-decoration-none small">Tuyển dụng</a></li>
+            </ul>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-4">
+            <h5 class="text-uppercase fw-bold mb-3">Chính sách công ty</h5>
+            <ul class="list-unstyled">
+                <li class="mb-2"><a href="#" class="text-white text-decoration-none small">Điều khoản sử dụng</a></li>
+                <li class="mb-2"><a href="#" class="text-white text-decoration-none small">Chính sách bảo mật thông tin</a></li>
+                <li class="mb-2"><a href="#" class="text-white text-decoration-none small">Chính sách vận chuyển</a></li>
+                <li class="mb-2"><a href="#" class="text-white text-decoration-none small">Chính sách bảo hành</a></li>
+                <li class="mb-2"><a href="#" class="text-white text-decoration-none small">Chính sách đổi trả</a></li>
+            </ul>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-4">
+            <h5 class="text-uppercase fw-bold mb-3">Hướng dẫn khách hàng</h5>
+            <ul class="list-unstyled">
+                <li class="mb-2"><a href="#" class="text-white text-decoration-none small">Hướng dẫn sử dụng nước hoa</a></li>
+                <li class="mb-2"><a href="#" class="text-white text-decoration-none small">Hướng dẫn mua hàng</a></li>
+                <li class="mb-2"><a href="#" class="text-white text-decoration-none small">Phương thức thanh toán</a></li>
+                <li class="mb-2"><a href="#" class="text-white text-decoration-none small">Gói quà miễn phí</a></li>
+                <li class="mb-2"><a href="#" class="text-white text-decoration-none small">Member Card</a></li>
+            </ul>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-4">
+            <h5 class="text-uppercase fw-bold mb-3">Liên hệ</h5>
+            <p class="small">Liên hệ với chúng tôi</p>
+            <div class="d-flex gap-3 mb-4">
+                <a href="#" class="text-white"><i class="bi bi-facebook fs-3"></i></a>
+                <a href="#" class="text-white"><i class="bi bi-tiktok fs-3"></i></a>
+                <a href="#" class="text-white"><i class="bi bi-youtube fs-3"></i></a>
+                <a href="#" class="text-white"><i class="bi bi-messenger fs-3"></i></a>
             </div>
 
-            <div class="col-md-6 text-md-end">
-                <a href="#" class="text-white me-3"><i class="bi bi-facebook" style="font-size: 1.5rem;"></i></a>
-                <a href="#" class="text-white me-3"><i class="bi bi-twitter-x" style="font-size: 1.5rem;"></i></a>
-                <a href="#" class="text-white"><i class="bi bi-instagram" style="font-size: 1.5rem;"></i></a>
+            <h5 class="text-uppercase fw-bold mb-3">Thanh toán</h5>
+            <div class="d-flex gap-2">
+                <i class="bi bi-credit-card-2-front fs-2" title="Visa/MasterCard"></i>
+                <i class="bi bi-wallet2 fs-2" title="Ví điện tử"></i>
+                <i class="bi bi-cash-coin fs-2" title="Tiền mặt"></i>
             </div>
         </div>
     </div>
+
+    <hr class="bg-white border-2 border-top border-white my-4">
+
+    <div class="row text-center text-md-start">
+        <div class="col-12 mb-3">
+            <p class="small mb-1">Copyright © 2025 Công ty CPTM Thế Giới Nước Hoa & Mỹ Phẩm.</p>
+            <p class="small mb-1">Giấy chứng nhận ĐKKD số: 0317116620 do Sở Kế Hoạch và Đầu Tư TPHCM cấp lần đầu ngày 10/01/2025.</p>
+            <p class="small mb-1">Địa chỉ văn phòng: 10-10B Cách Mạng Tháng 8, Phường Bến Thành, TP. Hồ Chí Minh</p>
+            <p class="small mb-0">Điện thoại: <strong>028 73020707</strong> - Đặt Hàng: <strong>18006047</strong> - CSKH: <strong>18006077</strong></p>
+        </div>
+    </div>
+</div>
 </footer>
+
 <div th:fragment="page-scripts">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
+
+    <style>
+        footer a:hover {
+            color: #ffc107 !important; /* Màu vàng khi hover */
+            text-decoration: underline !important;
+            transition: color 0.3s ease;
+        }
+    </style>
 </div>
+
 </body>
 </html>

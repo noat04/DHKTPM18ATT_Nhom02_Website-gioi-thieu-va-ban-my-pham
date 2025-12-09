@@ -67,20 +67,27 @@ public class Customer {
     // Hàm tiện ích để lấy địa chỉ đầy đủ hiển thị (khi in hóa đơn)
     @Transient
     public String getFullAddress() {
-        if (streetDetail == null && province == null) return "Chưa cập nhật";
-        return String.format("%s, %s, %s, %s", streetDetail, ward, district, province);
+        StringBuilder sb = new StringBuilder();
+
+        if (streetDetail != null) sb.append(streetDetail);
+        if (ward != null) sb.append(", ").append(ward);
+        if (district != null) sb.append(", ").append(district);
+        if (province != null) sb.append(", ").append(province);
+
+        return sb.length() > 0 ? sb.toString() : "Chưa cập nhật";
     }
 
 
+
     // 6. Email: Bắt buộc và phải đúng định dạng
-    @Column(nullable = false)
-    @NotBlank(message = "Email không được để trống")
-    @Email(message = "Email không đúng định dạng")
+//    @Column(nullable = false)
+//    @NotBlank(message = "Email không được để trống")
+//    @Email(message = "Email không đúng định dạng")
     private String email;
 
     // 7. CCCD: Optional, nhưng nếu nhập phải đủ độ dài
     @Column(nullable = true)
-    @Pattern(regexp = "^\\d{9}|\\d{12}$", message = "CCCD/CMND phải là 9 hoặc 12 chữ số")
+//    @Pattern(regexp = "^\\d{9}|\\d{12}$", message = "CCCD/CMND phải là 9 hoặc 12 chữ số")
     private String idCard;
 
     // 8. Nickname: Optional

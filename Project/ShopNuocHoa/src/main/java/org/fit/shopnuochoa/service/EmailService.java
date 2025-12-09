@@ -136,12 +136,12 @@ public class EmailService {
         document.open();
 
         // ========= HEADER =========
-        Paragraph header = new Paragraph("HÓA ĐƠN BÁN HÀNG",
+        Paragraph header = new Paragraph("HÓA DON BÁN HÀNG",
                 FontFactory.getFont(FontFactory.HELVETICA_BOLD, 24));
         header.setAlignment(Element.ALIGN_CENTER);
         document.add(header);
 
-        Paragraph shopName = new Paragraph("SHOP NƯỚC HOA TDDN",
+        Paragraph shopName = new Paragraph("SHOP NUOC HOA TDDN",
                 FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14));
         shopName.setAlignment(Element.ALIGN_CENTER);
         document.add(shopName);

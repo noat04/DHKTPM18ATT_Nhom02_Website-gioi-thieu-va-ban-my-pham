@@ -21,44 +21,59 @@
                 <!-- ✅ FORM CHUẨN -->
                 <form th:action="@{'/api/admin/users/update/' + ${user.id}}"
                       th:object="${user}"
-                      method="post">
+                      method="post"
+                      enctype="multipart/form-data"
+                      class="row g-3">
 
-                    <div class="mb-3">
-                        <label class="form-label" for="username">Tên đăng nhập</label>
-                        <input id="username" type="text" class="form-control" th:field="*{username}" readonly>
+                    <!-- ID ẩn nếu đang update -->
+                    <input type="hidden" th:field="*{id}"/>
+
+                    <!-- Username -->
+                    <div class="col-md-6">
+                        <label class="form-label">Tên đăng nhập</label>
+                        <input type="text" th:field="*{username}" class="form-control"/>
+                        <div class="text-danger mt-1" th:if="${#fields.hasErrors('username')}"
+                             th:errors="*{username}"></div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label" for="full_name">Họ tên</label>
-                        <input id="full_name" type="text" class="form-control" th:field="*{full_name}" required>
+                    <!-- Email -->
+                    <div class="col-md-6">
+                        <label class="form-label">Email</label>
+                        <input type="email" th:field="*{email}" class="form-control"/>
+                        <div class="text-danger mt-1" th:if="${#fields.hasErrors('email')}"
+                             th:errors="*{email}"></div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label" for="email">Email</label>
-                        <input id="email" type="email" class="form-control" th:field="*{email}" required>
+                    <!-- Full Name -->
+                    <div class="col-md-12">
+                        <label class="form-label">Họ và tên</label>
+                        <input type="text" th:field="*{full_name}" class="form-control"/>
+                        <div class="text-danger mt-1" th:if="${#fields.hasErrors('full_name')}"
+                             th:errors="*{full_name}"></div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label" for="role">Vai trò</label>
-                        <select id="role" class="form-select" th:field="*{role}">
-                            <option value="USER">Người dùng</option>
-                            <option value="ADMIN">Quản trị viên</option>
+                    <!-- Role -->
+                    <div class="col-md-6">
+                        <label class="form-label">Vai trò</label>
+                        <select th:field="*{role}" class="form-select">
+                            <option th:each="r : ${roles}"
+                                    th:value="${r}"
+                                    th:text="${r}"></option>
                         </select>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label" for="active">Trạng thái</label>
-                        <select id="active" class="form-select" th:field="*{active}">
-                            <option th:value="true">Hoạt động</option>
-                            <option th:value="false">Đã khóa</option>
-                        </select>
+                    <!-- Active -->
+                    <div class="col-md-12 form-check mt-3">
+                        <input class="form-check-input" type="checkbox" th:field="*{active}"/>
+                        <label class="form-check-label">Kích hoạt tài khoản</label>
                     </div>
 
-                    <div class="text-center">
-                        <button type="submit" class="btn btn-success">💾 Lưu thay đổi</button>
-                        <a href="/api/admin/users" class="btn btn-secondary">↩️ Hủy</a>
+                    <!-- Submit -->
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary">Lưu</button>
                     </div>
                 </form>
+
             </div>
         </div>
     </div>

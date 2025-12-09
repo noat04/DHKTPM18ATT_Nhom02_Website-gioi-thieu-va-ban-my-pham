@@ -102,7 +102,7 @@
                     <div class="tab-pane fade" id="edit" role="tabpanel">
                         <h5 class="fw-bold text-dark mb-4 ps-2 border-start border-4 border-warning">Cập nhật thông tin</h5>
 
-                        <form th:action="@{/api/profile/edit}" method="post" th:object="${customer}">
+                        <form id="form-edit-profile" th:action="@{/api/profile/edit}" method="post" th:object="${customer}">
 
                             <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-warning border-0 shadow-sm mb-4 rounded-3">
                                 <ul class="mb-0 ps-3">
@@ -180,7 +180,8 @@
 
                                             <div class="col-md-4">
                                                 <label class="small text-muted">Quận/Huyện</label>
-                                                <select class="form-select" id="district" th:field="*{district}" disabled
+                                                <select class="form-select" id="district" th:field="*{district}"
+                                                        disabled
                                                         th:classappend="${#fields.hasErrors('district')} ? 'is-invalid' : ''">
                                                     <option value="">-- Chọn --</option>
                                                 </select>
@@ -246,6 +247,21 @@
         const callAPI = (api) => {
             return axios.get(api).then((response) => {
                 return response.data;
+            });
+        }
+        const profileForm = document.getElementById('form-edit-profile');
+
+        if(profileForm) {
+            profileForm.addEventListener('submit', function() {
+                // Gỡ bỏ thuộc tính disabled để trình duyệt gửi dữ liệu đi
+                const district = document.getElementById('district');
+                const ward = document.getElementById('ward');
+
+                if(district) district.disabled = false;
+                if(ward) ward.disabled = false;
+
+                // Console log để kiểm tra (F12) xem sự kiện có chạy không
+                console.log("Đã enable các trường địa chỉ để gửi dữ liệu");
             });
         }
 
