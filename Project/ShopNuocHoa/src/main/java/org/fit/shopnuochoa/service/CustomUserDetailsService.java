@@ -28,7 +28,6 @@ public class CustomUserDetailsService implements UserDetailsService {
         }
 
         // 2. Chuyển đổi vai trò (Role) của bạn thành một quyền (GrantedAuthority)
-        // Spring Security yêu cầu quyền phải có tiền tố "ROLE_"
         GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + myUser.getRole().name());
 
         // 3. Trả về một đối tượng UserDetails mà Spring Security hiểu được

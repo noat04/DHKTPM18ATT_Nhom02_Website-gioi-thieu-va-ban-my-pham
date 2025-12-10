@@ -27,7 +27,7 @@ public class OrderService {
     }
     public List<Orders> findAll() {return ordersRepository.findAll();}
     public List<Orders> getByCustomer(Integer customerId) {return ordersRepository.findByCustomerId(customerId);}
-    // ✅ Thêm hàm này
+
     public Page<Orders> findAll(Pageable pageable) {
         return ordersRepository.findAll(pageable);
     }
@@ -35,8 +35,6 @@ public class OrderService {
         return ordersRepository.findById(id);
     }
     public Orders createOrder(Orders orders) {
-//        Customer customer = customerRepository.findById(customerId).orElse(null);
-//        orders.setCustomer(customer);
         return ordersRepository.save(orders);
     }
     public Optional<Orders> updateOrder(int id, Orders orderUpdate, Integer customerId) {
@@ -102,7 +100,7 @@ public class OrderService {
         BigDecimal revenue = BigDecimal.ZERO;
 
         for (Orders order : orders) {
-            revenue = revenue.add(order.getFinalTotal()); // dùng hàm tính của entity
+            revenue = revenue.add(order.getFinalTotal());
         }
         return revenue;
     }

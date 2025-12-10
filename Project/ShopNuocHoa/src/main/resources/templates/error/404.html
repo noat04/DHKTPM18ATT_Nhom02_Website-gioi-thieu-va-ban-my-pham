@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>404 - Không tìm thấy trang</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 50px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 500px;
+        }
+        h1 {
+            font-size: 80px;
+            margin: 0;
+            color: #dc3545; /* Màu đỏ cảnh báo */
+        }
+        h2 {
+            margin-top: 10px;
+            font-size: 24px;
+        }
+        p {
+            color: #6c757d;
+            margin-bottom: 30px;
+        }
+        .btn-home {
+            text-decoration: none;
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+        .btn-home:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>404</h1>
+    <h2>Oops! Không tìm thấy trang này</h2>
+    <p>Có vẻ như trang bạn đang tìm kiếm đã bị xóa hoặc đường dẫn không chính xác.</p>
+
+    <a th:href="@{/api/home}" class="btn-home">Quay về Trang chủ</a>
+</div>
+
+</body>
+</html>

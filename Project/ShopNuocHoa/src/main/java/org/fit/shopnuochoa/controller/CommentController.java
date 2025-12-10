@@ -34,7 +34,7 @@ public class CommentController {
 
     /**
      * Hiển thị danh sách tất cả bình luận (dành cho admin) với phân trang.
-     * Cũng xử lý hành động xóa.
+     * xử lý hành động xóa.
      */
     @GetMapping("/list")
     public String showCommentList(@RequestParam(defaultValue = "0") int page,
@@ -43,7 +43,7 @@ public class CommentController {
                                   @RequestParam(value = "id", required = false) Integer id,
                                   Model model) {
 
-        // [CẬP NHẬT] Xử lý xóa và chuyển hướng về trang sản phẩm
+        // Xử lý xóa và chuyển hướng về trang sản phẩm
         if ("delete".equals(action) && id != null) {
             // 1. Gọi hàm xóa (hàm này trả về Optional<Comment> đã xóa)
             Optional<Comment> deletedCommentOpt = commentService.deleteComment(id);
@@ -58,20 +58,12 @@ public class CommentController {
             return "redirect:/api/comments/list";
         }
 
-        // ... (Phần hiển thị danh sách giữ nguyên)
         Pageable pageable = PageRequest.of(page, size);
         Page<Comment> commentPage = commentService.getAll(pageable);
         model.addAttribute("commentPage", commentPage);
-
-        // Lưu ý: Nếu đây là Admin Controller, bạn nên trả về trang Admin
-        // return "screen/admin/comment-list";
-
-        // Nếu bạn đang dùng hàm này cho cả Customer xem list (ít khi dùng), thì giữ nguyên:
         return "screen/customer/product-detail";
     }
-    /**
-     * Xử lý việc thêm bình luận mới từ trang chi tiết sản phẩm.
-     */
+
     /**
      * Xử lý việc thêm bình luận mới.
      * 1. Thêm Authentication để biết ai đang đăng nhập.
@@ -82,8 +74,8 @@ public class CommentController {
     @PostMapping("/add")
     public String addComment(@RequestParam("productId") Integer productId,
                              @RequestParam("text") String text,
-                             @RequestParam("rating") int rating, // <-- Thêm rating
-                             Authentication authentication, // <-- Thêm Authentication
+                             @RequestParam("rating") int rating,
+                             Authentication authentication,
                              RedirectAttributes redirectAttributes) {
 
         // 1. Kiểm tra xem người dùng đã đăng nhập chưa
@@ -125,9 +117,8 @@ public class CommentController {
     }
 
     /**
-     * [THÊM MỚI]
      * Xử lý yêu cầu SỬA bình luận (từ AJAX).
-     * Trả về JSON (ResponseEntity) thay vì redirect.
+     * Trả về JSON (ResponseEntity)
      */
     @PostMapping("/edit")
     public ResponseEntity<?> editComment(@RequestParam("commentId") Integer commentId,

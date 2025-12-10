@@ -11,11 +11,11 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
-@Service // Thêm @Service để Spring quản lý
+@Service
 public class OrderLineService {
     private final OrderLineRepository orderLineRepository;
-    private final OrderService orderService; // Dùng để lấy đối tượng Order
-    private final ProductService productService; // Dùng để lấy đối tượng Product
+    private final OrderService orderService;
+    private final ProductService productService;
 
     public OrderLineService(OrderLineRepository orderLineRepository, OrderService orderService, ProductService productService) {
         this.orderLineRepository = orderLineRepository;
@@ -32,7 +32,6 @@ public class OrderLineService {
     }
     /**
      * Lấy tất cả chi tiết đơn hàng cho một Order ID cụ thể.
-     * Đây là hàm mà OrderController sẽ gọi để tạo Map.
      */
     public List<OrderLine> findAllByOrderId(Integer orderId) {
         return orderLineRepository.findByOrderId(orderId);

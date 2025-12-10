@@ -20,8 +20,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.math.BigDecimal; // [QUAN TRỌNG] Import BigDecimal
-import java.util.ArrayList;  // [QUAN TRỌNG] Import ArrayList
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -62,18 +62,16 @@ public class DashboardController {
         }
 
         // 2. Lấy danh sách đơn hàng
-        // (Giả sử OrderService có hàm này, nếu chưa có hãy dùng OrderRepository.findByCustomerId)
         List<Orders> orders = orderService.getByCustomer(customer.getId());
 
         // 3. Tính toán số liệu thống kê
         int totalOrders = orders.size();
 
-        // [SỬA LỖI] Dùng BigDecimal thay vì double
         BigDecimal totalSpent = BigDecimal.ZERO;
 
         int pendingOrders = 0;
 
-        // [SỬA LỖI] Map lưu giá trị tiền là BigDecimal
+        // Map lưu giá trị tiền là BigDecimal
         Map<Integer, BigDecimal> monthlySpending = new TreeMap<>();
 
         // Khởi tạo 12 tháng = 0
@@ -82,7 +80,7 @@ public class DashboardController {
         }
 
         for (Orders order : orders) {
-            // [SỬA LỖI] Dùng phương thức .add() để cộng BigDecimal
+            // Dùng phương thức .add() để cộng BigDecimal
             // Kiểm tra null để tránh lỗi
             if (order.getTotal() != null) {
                 totalSpent = totalSpent.add(order.getTotal());

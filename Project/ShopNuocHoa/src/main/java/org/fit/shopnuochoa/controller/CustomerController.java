@@ -24,10 +24,9 @@ public class CustomerController {
     }
 
     @GetMapping("/list")
-//    @PreAuthorize("hasAnyRole('ADMIN')")
     public String showCategoryList(@RequestParam(value = "action", required = false) String action,
                                    @RequestParam(value = "id", required = false) Integer id,
-                                   @RequestParam(defaultValue = "0") int page,      // Tham số cho trang hiện tại
+                                   @RequestParam(defaultValue = "0") int page,
                                    @RequestParam(defaultValue = "4") int size,
                                    Model model) {
         Pageable pageable = PageRequest.of(page, size);
@@ -60,7 +59,7 @@ public class CustomerController {
 
         model.addAttribute("customer", customer);
         model.addAttribute("action", action); // Truyền action để form biết là 'add' hay 'edit'
-        return "screen/customer-form"; // Trả về file view department-form.html
+        return "screen/customer-form"; // Trả về file
     }
 
     /**
@@ -69,7 +68,7 @@ public class CustomerController {
     @PostMapping("/form")
     @PreAuthorize("hasAnyRole('CUSTOMER')")
     public String handleDepartmentForm(@RequestParam("action") String action,
-                                       Customer customer) { // Spring tự động binding dữ liệu từ form vào đối tượng
+                                       Customer customer) {
 
         if ("add".equals(action)) {
             customerService.createCustomerFromAdmin(customer);

@@ -28,7 +28,7 @@ public class WishlistController {
             return "redirect:/api/login"; // Yêu cầu đăng nhập
         }
 
-        // [SỬA ĐỔI] Gọi hàm mới để lấy Customer ID
+        // Gọi hàm mới để lấy Customer ID
         Integer customerId = wishlistService.getCustomerIdByUsername(user.getUsername());
 
         // Nếu không tìm thấy (ví dụ: user là Admin hoặc lỗi), không làm gì
@@ -37,7 +37,7 @@ public class WishlistController {
             return "redirect:/api/products/detail/" + productId;
         }
 
-        // [SỬA ĐỔI] Gọi hàm toggleWishlist bằng customerId
+        // Gọi hàm toggleWishlist bằng customerId
         wishlistService.toggleWishlist(customerId, productId);
 
         // Chuyển hướng lại trang chi tiết

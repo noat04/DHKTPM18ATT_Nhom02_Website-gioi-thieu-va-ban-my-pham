@@ -21,7 +21,7 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    // 1. Tên bắt buộc phải có
+    // Tên bắt buộc phải có
     @Column(nullable = false)
     @NotBlank(message = "Họ tên không được để trống")
     @Size(min = 2, max = 100, message = "Họ tên phải từ 2 đến 100 ký tự")
@@ -30,23 +30,23 @@ public class Customer {
     @Column(nullable = false)
     private LocalDate customerSince;
 
-    // 2. Số điện thoại: Không bắt buộc (@NotNull), nhưng nếu nhập thì phải đúng định dạng VN
+    //Số điện thoại: Không bắt buộc (@NotNull), nhưng nếu nhập thì phải đúng định dạng VN
     @Column(nullable = true)
     @Pattern(regexp = "^(0|\\+84)(\\s|\\.)?((3[2-9])|(5[689])|(7[06-9])|(8[1-689])|(9[0-46-9]))(\\d)(\\s|\\.)?(\\d{3})(\\s|\\.)?(\\d{3})$",
             message = "Số điện thoại không hợp lệ (VD: 0912345678)")
     private String phoneNumber;
 
-    // 3. Giới tính: Optional
+    //Giới tính: Optional
     @Enumerated(EnumType.STRING)
     @Column(name = "gender", nullable = true)
     private Gender gender;
 
-    // 4. Ngày sinh: Optional, nhưng nếu nhập thì phải là ngày trong quá khứ
+    // Ngày sinh: Optional, nhưng nếu nhập thì phải là ngày trong quá khứ
     @Column(nullable = true)
     @Past(message = "Ngày sinh không hợp lệ (phải là ngày trong quá khứ)")
     private LocalDate birthday;
 
-    // 5. Địa chỉ: Optional, kiểm tra độ dài để tránh lỗi DB
+    // Địa chỉ: Optional, kiểm tra độ dài để tránh lỗi DB
     @Column(name = "province")
     @Size(max = 100, message = "Tên tỉnh/thành quá dài")
     private String province;
@@ -63,7 +63,6 @@ public class Customer {
     @Size(max = 255, message = "Địa chỉ chi tiết quá dài")
     private String streetDetail;
 
-    // Hàm tiện ích hiển thị địa chỉ
     // Hàm tiện ích để lấy địa chỉ đầy đủ hiển thị (khi in hóa đơn)
     @Transient
     public String getFullAddress() {
@@ -79,18 +78,15 @@ public class Customer {
 
 
 
-    // 6. Email: Bắt buộc và phải đúng định dạng
-//    @Column(nullable = false)
-//    @NotBlank(message = "Email không được để trống")
-//    @Email(message = "Email không đúng định dạng")
+    //Email: Bắt buộc và phải đúng định dạng
     private String email;
 
-    // 7. CCCD: Optional, nhưng nếu nhập phải đủ độ dài
+    //CCCD: Optional, nhưng nếu nhập phải đủ độ dài
     @Column(nullable = true)
 //    @Pattern(regexp = "^\\d{9}|\\d{12}$", message = "CCCD/CMND phải là 9 hoặc 12 chữ số")
     private String idCard;
 
-    // 8. Nickname: Optional
+    //Nickname: Optional
     @Column(nullable = true)
     @Size(max = 50, message = "Biệt danh tối đa 50 ký tự")
     private String nickName;

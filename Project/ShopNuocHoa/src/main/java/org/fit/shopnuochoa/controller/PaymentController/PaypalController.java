@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-@Controller // Đổi từ @RestController sang @Controller để redirect trang web
+@Controller
 @RequestMapping("/api/paypal")
 public class PaypalController {
 
@@ -23,7 +23,7 @@ public class PaypalController {
     // 1. BẮT ĐẦU THANH TOÁN
     @PostMapping("/pay")
     public String createPayment(
-            @RequestParam(value = "note", required = false) String note, // [THÊM] Nhận note từ form
+            @RequestParam(value = "note", required = false) String note,
             HttpSession session, RedirectAttributes redirectAttributes) {
         CartBean cart = (CartBean) session.getAttribute("cart");
 

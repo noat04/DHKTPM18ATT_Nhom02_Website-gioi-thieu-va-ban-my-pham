@@ -24,8 +24,7 @@ public class ZalopayController {
     }
 
     /**
-     * [SỬA ĐỔI]
-     * Chuyển thành @Controller, dùng @GetMapping và trả về RedirectView.
+     * dùng @GetMapping và trả về RedirectView.
      */
     @GetMapping("/create-payment")
     public RedirectView createPayment(@RequestParam("amount") String amount,
@@ -42,10 +41,9 @@ public class ZalopayController {
             session.setAttribute("checkoutNote", note);
             // 2. Chuyển đổi amount
             long amountAsLong = (long) Double.parseDouble(amount);
-            String appUser = "user123"; // (Bạn có thể lấy username thật nếu muốn)
+            String appUser = "user123";
 
             // 3. Tạo app_trans_id duy nhất và LƯU VÀO SESSION
-            // (Chúng ta cần cái này để xác thực khi ZaloPay gọi về)
             String appTransId = zalopayService.getCurrentTimeString("yyMMdd") + "_" + new Random().nextInt(1000000);
             session.setAttribute("zalopay_trans_id", appTransId);
 
@@ -71,7 +69,6 @@ public class ZalopayController {
     }
 
     /**
-     * [THÊM MỚI]
      * Xử lý khi ZaloPay chuyển hướng người dùng về (redirecturl trong embed_data)
      */
     @GetMapping("/return")
@@ -84,7 +81,7 @@ public class ZalopayController {
     }
 
     @GetMapping("/order-status/{appTransId}")
-    @ResponseBody // <-- Thêm
+    @ResponseBody
     public ResponseEntity<String> getOrderStatus(@PathVariable String appTransId) {
         String response = zalopayService.getOrderStatus(appTransId);
         return ResponseEntity.ok(response);

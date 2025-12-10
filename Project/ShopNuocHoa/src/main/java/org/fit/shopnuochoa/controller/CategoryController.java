@@ -29,7 +29,6 @@ public class CategoryController {
     }
 
     @GetMapping("/list")
-// @PreAuthorize("hasAnyRole('ADMIN', 'CUSTOMER')") // ❌ Bỏ vì cần hiển thị cả khi chưa đăng nhập
     public String showCategoryList(
             @RequestParam(value = "action", required = false) String action,
             @RequestParam(value = "id", required = false) Integer id,
@@ -39,7 +38,7 @@ public class CategoryController {
             RedirectAttributes redirectAttributes,
             Authentication authentication) {
 
-        // ✅ Nếu là ADMIN và có hành động delete
+        //ADMIN và có hành động delete
         if ("delete".equals(action) && id != null && SecurityUtils.hasRole(authentication, "ADMIN")) {
             try {
                 categoryService.deleteCategory(id);
@@ -54,7 +53,7 @@ public class CategoryController {
             return "redirect:/api/categories/list";
         }
 
-        // ✅ Nếu là ADMIN → hiển thị admin view với phân trang
+        //ADMIN → hiển thị admin view với phân trang
         if (SecurityUtils.hasRole(authentication, "ADMIN")) {
             Pageable pageable = PageRequest.of(page, 6);
             Page<Category> categoryPage;
@@ -72,7 +71,7 @@ public class CategoryController {
             return "screen/admin/admin-category-list";
         }
 
-        // ✅ Nếu chưa đăng nhập hoặc là CUSTOMER → hiển thị customer view (không phân trang)
+        //Chưa đăng nhập hoặc là CUSTOMER → hiển thị customer view (không phân trang)
         List<Category> categories = categoryService.getAll();
         model.addAttribute("categories", categories);
 
@@ -80,8 +79,6 @@ public class CategoryController {
             return "screen/customer/category-list";
         }
 
-
-        // ✅ Mặc định (phòng lỗi)
         return "screen/customer/category-list";
     }
 
@@ -94,16 +91,16 @@ public class CategoryController {
         Category category;
 
         if ("edit".equals(action) && id != null) {
-            // Nếu là chỉnh sửa, lấy thông tin phòng ban từ DB
+            //chỉnh sửa, lấy thông tin phòng ban từ DB
             category = categoryService.getById(id);
         } else {
-            // Nếu là thêm mới, tạo một đối tượng rỗng
+            //thêm mới, tạo một đối tượng rỗng
             category = new Category();
         }
 
         model.addAttribute("category", category);
         model.addAttribute("action", action); // Truyền action để form biết là 'add' hay 'edit'
-        return "screen/admin/admin-category-form"; // Trả về file view department-form.html
+        return "screen/admin/admin-category-form";
     }
 
     /**
@@ -112,11 +109,11 @@ public class CategoryController {
     @PostMapping("/form")
     @PreAuthorize("hasAnyRole('ADMIN')")
     public String handleDepartmentForm(@RequestParam("action") String action,
-                                       @RequestParam("imageFile") MultipartFile imageFile, // <-- THÊM NHẬN FILE,
-                                       @Valid @ModelAttribute("category") Category category, // [QUAN TRỌNG] Thêm @Valid
-                                       BindingResult result, // [QUAN TRỌNG] Chứa kết quả kiểm tra lỗi
-                                       RedirectAttributes redirectAttributes, // Để gửi thông báo thành công sau khi redirect
-                                       Model model) { // Spring tự động binding dữ liệu từ form vào đối tượng
+                                       @RequestParam("imageFile") MultipartFile imageFile,
+                                       @Valid @ModelAttribute("category") Category category,
+                                       BindingResult result,
+                                       RedirectAttributes redirectAttributes,
+                                       Model model) {
 
         // 1. Kiểm tra lỗi Validation (Annotation trong Entity)
         if (result.hasErrors()) {

@@ -110,7 +110,6 @@ public class Product {
 
     @Transient
     public boolean isInStock() {
-        // Kiểm tra null an toàn vì quantity là Integer (Wrapper class)
         return this.quantity != null && this.quantity > 0;
     }
 

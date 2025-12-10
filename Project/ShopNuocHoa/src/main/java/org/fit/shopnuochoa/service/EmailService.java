@@ -29,7 +29,7 @@ public class EmailService {
     private JavaMailSender mailSender;
 
     /**
-     * ✅ FIX 1: validate email format chuẩn hơn để báo lỗi rõ ràng
+     * 1: validate email format chuẩn hơn để báo lỗi rõ ràng
      */
     public boolean isValidEmailFormat(String email) {
         try {
@@ -42,7 +42,7 @@ public class EmailService {
     }
 
     /**
-     * ✅ FIX 2: Gửi OTP với xử lý lỗi đầy đủ và return boolean
+     * 2: Gửi OTP với xử lý lỗi đầy đủ và return boolean
      */
     public boolean sendOtpEmail(String toEmail, String otpCode) {
         if (!isValidEmailFormat(toEmail)) {
@@ -59,18 +59,18 @@ public class EmailService {
                     "\nMã này hết hạn sau 5 phút. Vui lòng không chia sẻ!");
 
             mailSender.send(message);
-            System.out.println("📩 Đã gửi OTP thành công tới: " + toEmail);
+            System.out.println("Đã gửi OTP thành công tới: " + toEmail);
             return true;
 
         } catch (MailException e) {
-            System.err.println("❌ Gửi OTP thất bại tới " + toEmail + " → " + e.getMessage());
+            System.err.println("Gửi OTP thất bại tới " + toEmail + " → " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
     /**
-     * ✅ FIX 3: Sinh OTP ngẫu nhiên 6 số
+     * 3: Sinh OTP ngẫu nhiên 6 số
      */
     public String generateOtp() {
         int otp = 100000 + new Random().nextInt(900000);
@@ -78,7 +78,7 @@ public class EmailService {
     }
 
     /**
-     * ✅ FIX 4: Gửi hóa đơn kèm PDF, xử lý null tránh crash order.getCustomer()
+     * 4: Gửi hóa đơn kèm PDF, xử lý null tránh crash order.getCustomer()
      */
     public boolean sendInvoiceEmailWithPdf(Orders order) {
         try {
@@ -101,24 +101,24 @@ public class EmailService {
             helper.setSubject("Hóa đơn mua hàng #" + order.getId());
             helper.setText("Cảm ơn bạn đã mua hàng. Hóa đơn chi tiết đính kèm bên dưới.", false);
 
-            // 👉 Tạo PDF
+            // Tạo PDF
             byte[] pdfBytes = buildPdfInvoice(order);
             helper.addAttachment("HoaDon_" + order.getId() + ".pdf",
                     new jakarta.mail.util.ByteArrayDataSource(pdfBytes, "application/pdf"));
 
             mailSender.send(message);
-            System.out.println("✅ Gửi email hóa đơn thành công! → " + toEmail);
+            System.out.println("Gửi email hóa đơn thành công! → " + toEmail);
             return true;
 
         } catch (Exception e) {
-            System.err.println("❌ Gửi email hóa đơn thất bại → " + e.getMessage());
+            System.err.println("Gửi email hóa đơn thất bại → " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
     /**
-     * ✅ FIX 5: Tách phần tạo PDF riêng → trả về byte[] tránh lỗi font & null
+     * 5: Tách phần tạo PDF riêng → trả về byte[] tránh lỗi font & null
      */
     private byte[] buildPdfInvoice(Orders order) throws DocumentException {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -127,9 +127,8 @@ public class EmailService {
     }
 
     /**
-     * ✅ FIX 6: Vẽ PDF an toàn, tránh null, format tiền đúng chuẩn VN
+     * FIX 6: Vẽ PDF an toàn, tránh null, format tiền đúng chuẩn VN
      */
-
     private void generatePdfInvoice(Orders order, ByteArrayOutputStream outputStream) throws DocumentException {
         Document document = new Document(PageSize.A4, 40, 40, 40, 40);
         PdfWriter.getInstance(document, outputStream);

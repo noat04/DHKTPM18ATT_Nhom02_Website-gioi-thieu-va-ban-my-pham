@@ -24,7 +24,7 @@ public class Comment {
     @Column(columnDefinition = "TEXT")
     private String text;
 
-    // ⭐ Số sao đánh giá (1 đến 5)
+    // Số sao đánh giá (1 đến 5)
     @Min(1)
     @Max(5)
     @Column(nullable = true)
@@ -33,7 +33,6 @@ public class Comment {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
-    // === KẾT THÚC THÊM MỚI ===
 
     // Quan hệ N-1: nhiều Comment thuộc về 1 Product
     @ManyToOne(fetch = FetchType.LAZY)

@@ -1,6 +1,6 @@
 package org.fit.shopnuochoa.service;
 
-import org.fit.shopnuochoa.model.Customer; // <-- Thêm import
+import org.fit.shopnuochoa.model.Customer;
 import org.fit.shopnuochoa.model.Product;
 import org.fit.shopnuochoa.model.Users;
 import org.fit.shopnuochoa.model.Wishlist;
@@ -17,17 +17,17 @@ public class WishlistService {
     private final WishlistRepository wishlistRepository;
     private final ProductService productService;
     private final UserService userService;
-    private final CustomerService customerService; // <-- Thêm CustomerService
+    private final CustomerService customerService;
 
     @Autowired
     public WishlistService(WishlistRepository wishlistRepository,
                            ProductService productService,
                            UserService userService,
-                           CustomerService customerService) { // <-- Cập nhật constructor
+                           CustomerService customerService) {
         this.wishlistRepository = wishlistRepository;
         this.productService = productService;
         this.userService = userService;
-        this.customerService = customerService; // <-- Gán service
+        this.customerService = customerService;
     }
 
     // [SỬA ĐỔI] Nhận customerId
@@ -53,16 +53,14 @@ public class WishlistService {
                 throw new RuntimeException("Không tìm thấy Customer hoặc Product");
             }
 
-            w.setCustomer(customer); // <-- Gán Customer
+            w.setCustomer(customer);
             w.setProduct(product);
             wishlistRepository.save(w);
         }
     }
 
-    // [SỬA ĐỔI] Đổi tên và logic để trả về Customer ID
     public Integer getCustomerIdByUsername(String username) {
         Users user = userService.getUserByUsername(username);
-        // Lấy Customer ID từ User (logic tương tự CommentController)
         if (user != null && user.getCustomer() != null) {
             return user.getCustomer().getId();
         }

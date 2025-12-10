@@ -50,7 +50,6 @@ public class MomoController {
 
 
     /**
-     * [SỬA ĐỔI]
      * Endpoint này (REDIRECT_URL) được MoMo gọi về
      * Nó sẽ xử lý và chuyển hướng người dùng
      */
@@ -63,9 +62,8 @@ public class MomoController {
         return momoService.handlePaymentReturn(allParams, session, redirectAttributes);
     }
 
-    // (Hàm checkPaymentStatus của bạn giữ nguyên)
     @GetMapping("/order-status/{orderId}")
-    @ResponseBody // <-- Thêm @ResponseBody
+    @ResponseBody
     public String checkPaymentStatus(@PathVariable String orderId) {
         return momoService.checkPaymentStatus(orderId);
     }

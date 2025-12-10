@@ -33,7 +33,6 @@ import java.util.*;
 @Service
 public class ZalopayService {
 
-    // [THÊM MỚI] Tiêm giá trị từ application.properties
     @Value("${app.public.url}")
     private String NGROK_PUBLIC_URL;
 
@@ -43,14 +42,13 @@ public class ZalopayService {
     private final CheckOutService checkOutService;
     private final EmailService emailService;
 
-    @Autowired // Đảm bảo bạn đã inject
+    @Autowired
     public ZalopayService(CheckOutService checkOutService,EmailService emailService) {
         this.checkOutService = checkOutService;
         this.emailService = emailService;
     }
 
     /**
-     * [THÊM MỚI]
      * Hàm này tự động chạy sau khi @Value được tiêm vào,
      * để gán các URL động.
      */
@@ -83,7 +81,7 @@ public class ZalopayService {
         embedData.put("redirecturl", this.REDIRECT_URL);
         String embedDataStr = new JSONObject(embedData).toString();
 
-        // 3. [SỬA LỖI] Tạo 'item' (chi tiết đơn hàng)
+        // 3. Tạo 'item' (chi tiết đơn hàng)
         // (ZaloPay yêu cầu 'item' phải là một chuỗi JSON)
         List<Map<String, Object>> items = new ArrayList<>();
         Map<String, Object> item = new HashMap<>();

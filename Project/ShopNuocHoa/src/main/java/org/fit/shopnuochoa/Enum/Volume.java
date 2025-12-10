@@ -6,7 +6,7 @@ public enum Volume {
     ML_10(10),
     ML_30(30),
     ML_50(50),
-    ML_75(75),     // Một size phổ biến
+    ML_75(75),
     ML_100(100),
     ML_150(150),
     ML_200(200);
@@ -24,7 +24,7 @@ public enum Volume {
         return valueInMl;
     }
 
-    // 4. (Tùy chọn) Ghi đè phương thức toString() để hiển thị tên đẹp hơn
+    // 4. Ghi đè phương thức toString() để hiển thị tên đẹp hơn
     @Override
     public String toString() {
         return this.valueInMl + "ml";

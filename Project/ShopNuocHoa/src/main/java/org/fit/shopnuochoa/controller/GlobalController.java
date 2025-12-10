@@ -30,7 +30,7 @@ public class GlobalController {
 
     /**
      * Hàm này sẽ tự động thêm "currentUser" vào Model của TẤT CẢ các trang
-     * Giúp bạn có thể gọi ${currentUser.avatarPath} ở header, footer, hay bất kỳ đâu.
+     * Giúp gọi ${currentUser.avatarPath} ở header, footer, hay bất kỳ đâu.
      */
     @ModelAttribute("currentUser")
     public Users getCurrentUser() {

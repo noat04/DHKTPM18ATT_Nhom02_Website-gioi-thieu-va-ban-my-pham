@@ -4,15 +4,15 @@ import lombok.RequiredArgsConstructor;
 import org.fit.shopnuochoa.model.Users;
 import org.fit.shopnuochoa.service.CloudinaryService;
 import org.fit.shopnuochoa.service.UserService;
-import org.springframework.stereotype.Controller; // <-- SỬA: Dùng Controller thường
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
 
-@Controller // <-- 1. SỬA: Đổi từ @RestController thành @Controller
-@RequestMapping("/api") // <-- 2. SỬA: Đổi từ "/upload" thành "/api" để khớp với HTML
+@Controller
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class CloudinaryController {
 

@@ -11,7 +11,7 @@ import java.io.Serializable;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode // Cần thiết cho khóa phức hợp
+@EqualsAndHashCode
 public class OrderLineId implements Serializable {
 
     private Integer orderId;

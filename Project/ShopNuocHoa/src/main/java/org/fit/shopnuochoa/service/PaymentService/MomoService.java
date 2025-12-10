@@ -37,10 +37,7 @@ public class MomoService {
     private static final String PARTNER_CODE = "MOMO";
     private static final String ACCESS_KEY = "F8BBA842ECF85";
     private static final String SECRET_KEY = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
-//    private static final String REDIRECT_URL = "https://7ad30ad582c0.ngrok-free.app/api/momo/return";
-//    // (Đây là URL mà server MoMo sẽ bí mật gọi để xác nhận)
-//    //    private static final String IPN_URL = "http://localhost:8080/api/momo/ipn-notify";
-//    private static final String IPN_URL = " https://7ad30ad582c0.ngrok-free.app/api/momo/ipn-notify";
+
 //     private static final String REQUEST_TYPE = "captureWallet";
     private static final String REQUEST_TYPE = "payWithMethod";
 
@@ -48,11 +45,10 @@ public class MomoService {
     private String IPN_URL;
 
 
-    // === [THÊM MỚI] Inject CheckOutService ===
     private final CheckOutService checkOutService;
     private final EmailService emailService;
 
-    @Autowired // Đảm bảo bạn đã inject
+    @Autowired
     public MomoService(CheckOutService checkOutService,EmailService emailService) {
         this.checkOutService = checkOutService;
         this.emailService=emailService;
@@ -139,22 +135,6 @@ public class MomoService {
         }
     }
 
-    // HMAC SHA256 signing method
-//    private static String signHmacSHA256(String data, String key) throws Exception {
-//        Mac hmacSHA256 = Mac.getInstance("HmacSHA256");
-//        SecretKeySpec secretKey = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-//        hmacSHA256.init(secretKey);
-//        byte[] hash = hmacSHA256.doFinal(data.getBytes(StandardCharsets.UTF_8));
-//        StringBuilder hexString = new StringBuilder();
-//        for (byte b : hash) {
-//            String hex = Integer.toHexString(0xff & b);
-//            if (hex.length() == 1)
-//                hexString.append('0');
-//            hexString.append(hex);
-//        }
-//        return hexString.toString();
-//    }
-
     // Hàm HMAC SHA256
     private String signHmacSHA256(String data, String key) throws Exception {
         Mac mac = Mac.getInstance("HmacSHA256");
@@ -172,89 +152,6 @@ public class MomoService {
         return result.toString();
     }
 
-//    @Transactional // Rất quan trọng
-//    public String handlePaymentReturn(Map<String, String> allParams, HttpSession session, RedirectAttributes redirectAttributes) {
-//
-//        // 1. Lấy chữ ký từ MoMo
-//        String momoSignature = allParams.get("signature");
-//
-//        // [SỬA LỖI] XÂY DỰNG LẠI CHUỖI KÝ (RAW SIGNATURE) THỦ CÔNG
-//        // Chữ ký trả về (response) yêu cầu 'accessKey' và các trường khác
-//        // được sắp xếp theo thứ tự A-Z.
-//
-//        // 2. Lấy tất cả các tham số mà MoMo trả về
-//        String amount = allParams.get("amount");
-//        String extraData = allParams.get("extraData");
-//        String message = allParams.get("message");
-//        String orderId = allParams.get("orderId");
-//        String orderInfo = allParams.get("orderInfo");
-//        String orderType = allParams.get("orderType");
-//        String partnerCode = allParams.get("partnerCode");
-//        String payType = allParams.get("payType");
-//        String requestId = allParams.get("requestId");
-//        String responseTime = allParams.get("responseTime");
-//        String resultCode = allParams.get("resultCode");
-//        String transId = allParams.get("transId");
-//
-//        // 3. Xây dựng chuỗi theo đúng thứ tự A-Z (THEO DOCS CỦA MOMO)
-//        // (accessKey=...&amount=...&extraData=...&message=...&orderId=...&orderInfo=...&orderType=...
-//        // &partnerCode=...&payType=...&requestId=...&responseTime=...&resultCode=...&transId=...)
-//        StringBuilder rawSignature = new StringBuilder();
-//        rawSignature.append("accessKey=").append(ACCESS_KEY); // <-- PHẢI THÊM ACCESS_KEY
-//        rawSignature.append("&amount=").append(amount);
-//        rawSignature.append("&extraData=").append(extraData);
-//        rawSignature.append("&message=").append(message);
-//        rawSignature.append("&orderId=").append(orderId);
-//        rawSignature.append("&orderInfo=").append(orderInfo);
-//        rawSignature.append("&orderType=").append(orderType);
-//        rawSignature.append("&partnerCode=").append(partnerCode);
-//        rawSignature.append("&payType=").append(payType);
-//        rawSignature.append("&requestId=").append(requestId);
-//        rawSignature.append("&responseTime=").append(responseTime);
-//        rawSignature.append("&resultCode=").append(resultCode);
-//        rawSignature.append("&transId=").append(transId);
-//
-//        try {
-//            // 4. Tính toán chữ ký của chúng ta
-//            String calculatedSignature = signHmacSHA256(rawSignature.toString(), SECRET_KEY);
-//
-//            // 5. === KIỂM TRA BẢO MẬT ===
-//            if (momoSignature == null || !momoSignature.equals(calculatedSignature)) {
-//                redirectAttributes.addFlashAttribute("errorMessage", "Thanh toán thất bại: Chữ ký không hợp lệ.");
-//                return "redirect:/api/cart";
-//            }
-//
-//            // ----- HASH HỢP LỆ (Dữ liệu từ MoMo) -----
-//            // (Phần logic còn lại của bạn đã chính xác)
-//            CartBean cart = (CartBean) session.getAttribute("cart");
-//            Integer customerId = (Integer) session.getAttribute("checkoutCustomerId");
-//
-//            if ("0".equals(resultCode)) {
-//                // Thanh toán THÀNH CÔNG
-//                if (cart == null || customerId == null) {
-//                    redirectAttributes.addFlashAttribute("errorMessage", "Phiên làm việc hết hạn. Vui lòng thử lại.");
-//                    return "redirect:/api/cart";
-//                }
-//
-//                Orders finalOrder = checkOutService.finalizeOrder(customerId, cart);
-//                session.removeAttribute("cart");
-//                session.removeAttribute("checkoutCustomerId");
-//
-//                redirectAttributes.addFlashAttribute("successMessage",
-//                        "Thanh toán MoMo thành công! Mã đơn hàng của bạn là #" + finalOrder.getId());
-//                return "redirect:/api/checkout/success";
-//
-//            } else {
-//                // Thanh toán THẤT BẠI
-//                redirectAttributes.addFlashAttribute("errorMessage", "Thanh toán MoMo thất bại. Lỗi: " + message);
-//                return "redirect:/api/cart";
-//            }
-//
-//        } catch (Exception e) {
-//            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi xử lý thanh toán: " + e.getMessage());
-//            return "redirect:/api/cart";
-//        }
-//    }
 
     @Transactional
     public String handlePaymentReturn(Map<String, String> allParams, HttpSession session, RedirectAttributes redirectAttributes) {

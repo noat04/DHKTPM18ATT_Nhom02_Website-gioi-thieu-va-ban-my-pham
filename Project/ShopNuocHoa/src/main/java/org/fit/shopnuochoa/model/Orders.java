@@ -72,7 +72,6 @@
 
         /**
          * 1. Tính Tổng tiền hàng (Chưa ship, chưa giảm giá)
-         * (Đổi tên từ getTotal cũ cho rõ nghĩa hơn, nhưng giữ getTotal để tương thích code cũ nếu cần)
          */
         @Transient
         public BigDecimal getSubTotal() {
@@ -86,8 +85,6 @@
             return subTotal;
         }
 
-        // Giữ lại tên getTotal() để tương thích với code cũ đang gọi order.getTotal()
-        // Nhưng logic bên trong gọi getSubTotal()
         @Transient
         public BigDecimal getTotal() {
             return getSubTotal();
@@ -118,7 +115,7 @@
             boolean isExpress = (shippingMethod == ShippingMethod.EXPRESS);
 
             String addr = (shippingAddress != null ? shippingAddress.toLowerCase() : "");
-            boolean isInnerCity = addr.contains("quận") || addr.contains("tp");
+            boolean isInnerCity = addr.contains("quận") || addr.contains("thành phố");
 
             if (isInnerCity) {
                 return isExpress ? orderDate.plusDays(1) : orderDate.plusDays(3);

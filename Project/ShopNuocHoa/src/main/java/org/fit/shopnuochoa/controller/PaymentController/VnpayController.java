@@ -1,20 +1,20 @@
 package org.fit.shopnuochoa.controller.PaymentController;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession; // <-- Import
+import jakarta.servlet.http.HttpSession;
 import org.fit.shopnuochoa.service.PaymentService.VnpayService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes; // <-- Import
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
 
 import lombok.AllArgsConstructor;
 
 import java.io.UnsupportedEncodingException;
-import java.util.Map; // <-- Import
+import java.util.Map;
 
 @Controller
-@RequestMapping("/api/vnpayment") // <-- [SỬA LỖI 1] Sửa đường dẫn (thêm 'ment')
+@RequestMapping("/api/vnpayment")
 @AllArgsConstructor
 public class VnpayController {
 
@@ -36,14 +36,14 @@ public class VnpayController {
             return new RedirectView("/api/cart?error=session_expired");
         }
 
-        // ... (Code tạo VnpayRequest của bạn giữ nguyên)
+
         org.fit.shopnuochoa.dto.VnpayRequest paymentRequest = new org.fit.shopnuochoa.dto.VnpayRequest();
         paymentRequest.setAmount(amount);
 
         try {
             session.setAttribute("checkoutNote", note);
             String paymentUrl = vnpayService.createPayment(paymentRequest, request);
-//            String paymentUrl = vnpayService.createPayment(paymentRequest);
+
             return new RedirectView(paymentUrl);
 
         } catch (UnsupportedEncodingException e) {
@@ -53,7 +53,6 @@ public class VnpayController {
     }
 
     /**
-     * [SỬA LỖI BẢO MẬT]
      * Nhận TẤT CẢ tham số vào Map và gửi cho Service để xác thực
      */
     @GetMapping("/return")

@@ -18,11 +18,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
 
 @Controller
-@RequestMapping("/api/cart") // Đổi thành /cart để ngắn gọn hơn
+@RequestMapping("/api/cart")
 public class CartController {
     private final ProductService productService;
-    private final CouponService couponService; // Inject CheckOutService
-    private final UserService userService;         // Cần để lấy CustomerId
+    private final CouponService couponService;
+    private final UserService userService;
     private final CustomerService customerService;
 
     public CartController(ProductService productService,
@@ -52,7 +52,7 @@ public class CartController {
         CartBean cart = getCart(session);
         model.addAttribute("cart", cart);
 
-        // [THÊM MỚI] Logic lấy Coupon khả dụng
+        // lấy Coupon khả dụng
         if (authentication != null && authentication.isAuthenticated()) {
             try {
                 String username = authentication.getName();
@@ -61,24 +61,19 @@ public class CartController {
                 if (user != null && user.getCustomer() != null) {
                     Integer customerId = user.getCustomer().getId();
 
-                    // Gọi hàm lọc coupon thông minh
+                    //hàm lọc coupon thông minh
                     List<Coupon> applicableCoupons = couponService.findApplicableCoupons(cart, customerId);
 
                     model.addAttribute("coupons", applicableCoupons);
                 }
             } catch (Exception e) {
-                // Log lỗi nếu cần, nhưng đừng để chết trang Cart
                 System.err.println("Lỗi lấy coupon: " + e.getMessage());
             }
-        } else {
-            // Nếu chưa đăng nhập, có thể lấy coupon chung (không cần check lịch sử mua hàng)
-            // Hoặc bỏ qua
         }
 
         return "screen/customer/cart";
     }
 
-    /// Bên trong file CartController.java
 
     /**
      * Xử lý các hành động thêm, sửa, xóa sản phẩm trong giỏ hàng
@@ -115,8 +110,6 @@ public class CartController {
                 case "update":
                     if (productId == null || quantity == null) break;
 
-                    // Không cần kiểm tra tồn kho ở đây nữa,
-                    // vì cart.updateQuantity() (trong CartBean) sẽ tự làm
                     cart.updateQuantity(productId, quantity);
 
                     redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật số lượng.");
@@ -132,7 +125,6 @@ public class CartController {
                     break;
             }
         } catch (RuntimeException e) {
-            // === PHẦN SỬA LỖI QUAN TRỌNG ===
             // Bắt lỗi (ví dụ: "Không đủ hàng!") và gửi cho người dùng
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
 

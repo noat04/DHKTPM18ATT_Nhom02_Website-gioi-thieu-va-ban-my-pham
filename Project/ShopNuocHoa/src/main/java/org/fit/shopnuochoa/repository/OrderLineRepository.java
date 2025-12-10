@@ -10,7 +10,6 @@ import java.util.List;
 @Repository
 public interface OrderLineRepository extends JpaRepository<OrderLine, OrderLineId> {
     /**
-     * [THÊM MỚI]
      * Tự động tìm tất cả các OrderLine theo trường 'order.id'
      */
     List<OrderLine> findByOrderId(Integer orderId);

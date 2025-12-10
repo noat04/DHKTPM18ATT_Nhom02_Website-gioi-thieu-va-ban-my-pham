@@ -28,7 +28,7 @@ public class CouponController {
     private CategoryService categoryService;
 
     @Autowired
-    private CloudinaryService cloudinaryService; // [1] Inject CloudinaryService
+    private CloudinaryService cloudinaryService;
 
     /**
      * 1. HIỂN THỊ DANH SÁCH COUPON
@@ -78,7 +78,7 @@ public class CouponController {
 
     /**
      * 4. XỬ LÝ LƯU (THÊM/SỬA)
-     * [CẬP NHẬT] Thêm tham số @RequestParam("imageFile") MultipartFile imageFile
+     * Thêm tham số @RequestParam("imageFile") MultipartFile imageFile
      */
 
     // --- Xử lý OrderCoupon ---
@@ -89,7 +89,7 @@ public class CouponController {
                                   RedirectAttributes ra,
                                   Model model) {
 
-        // [3] Check lỗi Validate
+        //Check lỗi Validate
         if (result.hasErrors()) {
             model.addAttribute("type", "ORDER_TOTAL");
             model.addAttribute("categories", categoryService.getAll()); // Load lại danh mục để form không bị lỗi

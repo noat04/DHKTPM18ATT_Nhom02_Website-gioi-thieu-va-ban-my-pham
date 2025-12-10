@@ -21,7 +21,7 @@ public class CommentService {
     public CommentService(CommentRepository commentRepository, ProductService productService, CustomerService customerService) {
         this.commentRepository = commentRepository;
         this.productService = productService;
-        this.customerService = customerService; // <-- Gán service
+        this.customerService = customerService;
     }
 
     public Page<Comment> getAll(Pageable pageable) {return commentRepository.findAll(pageable);}
@@ -40,14 +40,14 @@ public class CommentService {
         }
 
         // 2. Tìm Customer
-        Customer customer = customerService.getById(customerId); // (Giả sử bạn có hàm này)
+        Customer customer = customerService.getById(customerId);
         if (customer == null) {
             throw new RuntimeException("Không tìm thấy khách hàng với ID: " + customerId);
         }
 
         // 3. Gán cả hai vào comment
         comment.setProduct(product);
-        comment.setCustomer(customer); // <-- Gán khách hàng
+        comment.setCustomer(customer);
 
         // 4. Lưu comment
         Comment savedComment = commentRepository.save(comment);
@@ -65,7 +65,7 @@ public class CommentService {
         });
     }
 
-    // Cập nhật (cho Admin - Bạn có thể giữ lại nếu admin cần)
+    // Cập nhật (cho Admin)
     public Optional<Comment> updateComment(int id, Comment updatedComment) {
         return commentRepository.findById(id).map(comment -> {
             comment.setText(updatedComment.getText());
@@ -74,7 +74,6 @@ public class CommentService {
     }
 
     /**
-     * [THÊM MỚI]
      * Cho phép người dùng tự cập nhật bình luận của chính họ.
      */
     @Transactional
@@ -93,13 +92,13 @@ public class CommentService {
         return commentRepository.save(comment);
     }
 
-    @Transactional // Thêm Transactional
+    @Transactional
     public Optional<Comment> deleteComment(int id) {
         Optional<Comment> optComment = commentRepository.findById(id);
         if (optComment.isPresent()) {
             Comment comment = optComment.get();
-            Integer productId = comment.getProduct().getId(); // Lấy productId TRƯỚC khi xóa
-            commentRepository.delete(comment); // 1. Xóa comment
+            Integer productId = comment.getProduct().getId();
+            commentRepository.delete(comment);
             // 2. KÍCH HOẠT CẬP NHẬT RATING
             productService.updateRatingStats(productId);
         }

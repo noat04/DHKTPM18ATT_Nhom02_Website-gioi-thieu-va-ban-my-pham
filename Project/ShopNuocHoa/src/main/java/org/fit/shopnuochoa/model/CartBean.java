@@ -14,7 +14,6 @@ public class CartBean {
         return items;
     }
 
-    // (Hàm này đã đúng, giữ nguyên - đếm số 'loại' sản phẩm)
     public int getTotalItems() {
         int total = 0;
         for (CartItemBean item : items) {
@@ -24,8 +23,8 @@ public class CartBean {
     }
 
     /**
-     * NÂNG CẤP: Thêm 1 sản phẩm và KIỂM TRA TỒN KHO.
-     * @param p Product (phải chứa thông tin 'quantity' tồn kho)
+     * Thêm 1 sản phẩm và KIỂM TRA TỒN KHO.
+     * @param p Product (chứa thông tin 'quantity' tồn kho)
      */
     public void addProduct(Product p) {
         // 1. Kiểm tra xem sản phẩm có thực sự còn hàng không
@@ -51,17 +50,17 @@ public class CartBean {
         }
 
         // 4. Nếu không tìm thấy (sản phẩm mới), thêm vào giỏ với số lượng 1
-        // (Chúng ta đã kiểm tra p.getQuantity() > 0 ở bước 1)
+        // (đã kiểm tra p.getQuantity() > 0 ở bước 1)
         items.add(new CartItemBean(p, 1));
     }
 
-    // xóa sản phẩm (Hàm này đã đúng, giữ nguyên)
+    // xóa sản phẩm
     public void removeProduct(int productId) {
         items.removeIf(item -> item.getProduct().getId() == productId);
     }
 
     /**
-     * NÂNG CẤP: Cập nhật số lượng và KIỂM TRA TỒN KHO.
+     * Cập nhật số lượng và KIỂM TRA TỒN KHO.
      */
     public void updateQuantity(int productId, int quantity) {
         if (quantity <= 0) {
@@ -89,7 +88,7 @@ public class CartBean {
         }
     }
 
-    // tính tổng tiền (Hàm này đã đúng, giữ nguyên)
+    // tính tổng tiền
     public double getTotal() {
         double total = 0;
         for (CartItemBean item : items) {
@@ -98,7 +97,7 @@ public class CartBean {
         return total;
     }
 
-    // xóa hết giỏ hàng (Hàm này đã đúng, giữ nguyên)
+    // xóa hết giỏ hàng
     public void clear() {
         items.clear();
     }

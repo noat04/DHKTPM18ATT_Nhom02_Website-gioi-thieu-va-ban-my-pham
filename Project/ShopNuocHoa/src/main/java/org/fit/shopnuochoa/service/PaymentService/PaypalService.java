@@ -84,40 +84,6 @@ public class PaypalService {
         return null;
     }
 
-//    @Transactional
-//    public Orders executePaymentAndFinalizeOrder(String paymentId, String payerId, HttpSession session)
-//            throws PayPalRESTException {
-//
-//        // 1. Thực hiện trừ tiền trên PayPal
-//        Payment payment = new Payment();
-//        payment.setId(paymentId);
-//        PaymentExecution paymentExecution = new PaymentExecution();
-//        paymentExecution.setPayerId(payerId);
-//        Payment executedPayment = payment.execute(apiContext, paymentExecution);
-//
-//        // 2. Kiểm tra nếu trạng thái là "approved" (đã thanh toán)
-//        if ("approved".equals(executedPayment.getState())) {
-//
-//            // Lấy thông tin từ Session để lưu vào Database
-//            CartBean cart = (CartBean) session.getAttribute("cart");
-//            Integer customerId = (Integer) session.getAttribute("checkoutCustomerId");
-//
-//            if (cart == null || customerId == null) {
-//                throw new RuntimeException("Phiên làm việc hết hạn hoặc giỏ hàng trống.");
-//            }
-//
-//            // 3. GỌI CHECKOUT SERVICE ĐỂ LƯU ĐƠN HÀNG
-//            Orders newOrder = checkOutService.finalizeOrder(customerId, cart);
-//
-//            // Xóa session giỏ hàng sau khi lưu thành công
-//            session.removeAttribute("cart");
-//            session.removeAttribute("checkoutCustomerId");
-//
-//            return newOrder;
-//        } else {
-//            throw new RuntimeException("Thanh toán PayPal chưa hoàn tất. Trạng thái: " + executedPayment.getState());
-//        }
-//    }
 @Transactional
 public Orders executePaymentAndFinalizeOrder(String paymentId, String payerId, HttpSession session)
         throws PayPalRESTException {
@@ -154,7 +120,7 @@ public Orders executePaymentAndFinalizeOrder(String paymentId, String payerId, H
                 couponCode
         );
 
-        // [TÙY CHỌN] Gửi email hóa đơn
+        // Gửi email hóa đơn
         try {
             emailService.sendInvoiceEmailWithPdf(newOrder);
         } catch (Exception ex) {

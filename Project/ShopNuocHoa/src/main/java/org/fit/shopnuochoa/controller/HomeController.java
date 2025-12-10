@@ -31,7 +31,6 @@ public class HomeController {
     public String HomePage(Model model) {
 
         // 1. Lấy Thương hiệu (Categories)
-        // (HTML của bạn sẽ tự động lặp qua tất cả)
         List<Category> categories = categoryService.getAll();
         model.addAttribute("featuredCategories", categories);
 
@@ -41,13 +40,10 @@ public class HomeController {
         model.addAttribute("newProducts", newProducts);
 
         // 3. Lấy Sản phẩm BÁN CHẠY (Sắp xếp theo ratingCount giảm dần)
-        // [SỬA LẠI] Dùng 'ratingCount' để đồng bộ với logic trong ProductController
+        // Dùng 'ratingCount' để đồng bộ với logic trong ProductController
         Pageable pageableBestSelling = PageRequest.of(0, 8, Sort.by("ratingCount").descending());
         List<Product> bestSellingProducts = productService.getAll(pageableBestSelling).getContent();
         model.addAttribute("bestSellingProducts", bestSellingProducts);
-
-        // [ĐÃ XÓA] Đã xóa logic lấy 'menProducts' và 'womenProducts'
-        // vì tệp home.html của bạn không sử dụng chúng.
 
         return "screen/customer/home";
     }

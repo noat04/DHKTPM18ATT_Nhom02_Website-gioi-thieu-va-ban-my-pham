@@ -63,14 +63,14 @@ public class CheckOutController {
         // Lưu customerId vào session
         session.setAttribute("checkoutCustomerId", customer.getId());
 
-        // [THÊM MỚI] Lưu mã giảm giá vào Session để dùng cho bước sau
+        // Lưu mã giảm giá vào Session để dùng cho bước sau
         if (couponCode != null && !couponCode.isEmpty()) {
             session.setAttribute("checkoutCouponCode", couponCode);
         } else {
             session.removeAttribute("checkoutCouponCode"); // Xóa nếu không nhập
         }
 
-        // 3. [QUAN TRỌNG] Redirect sang trang hiển thị (GET)
+        // 3. Redirect sang trang hiển thị (GET)
         // Thay vì trả về view trực tiếp, ta chuyển hướng sang hàm @GetMapping("/confirm")
         return "redirect:/api/checkout/confirm";
     }
@@ -97,12 +97,12 @@ public class CheckOutController {
             return "redirect:/api/cart";
         }
 
-        // [THÊM MỚI] Tính toán lại số tiền giảm giá để hiển thị
+        // Tính toán lại số tiền giảm giá để hiển thị
         String couponCode = (String) session.getAttribute("checkoutCouponCode");
         BigDecimal discountAmount = BigDecimal.ZERO;
 
         if (couponCode != null) {
-            // Gọi Service để tính tiền giảm (Hàm này tôi sẽ viết ở Bước 2)
+            // Gọi Service để tính tiền giảm
             discountAmount = checkoutService.calculateDiscountAmount(cart, couponCode, user.getCustomer().getId());
         }
 
@@ -113,6 +113,7 @@ public class CheckOutController {
         BigDecimal cartTotal = BigDecimal.valueOf(cart.getTotal());
         BigDecimal finalTotal = cartTotal.add(shippingFee).subtract(discountAmount).max(BigDecimal.ZERO);
         System.out.println(finalTotal);
+
         // Đẩy dữ liệu ra View
         model.addAttribute("discountAmount", discountAmount);
         model.addAttribute("shippingFee", shippingFee);
@@ -133,7 +134,7 @@ public class CheckOutController {
             @RequestParam(value = "shippingAddress", required = false) String shippingAddress,
             @RequestParam(value = "paymentMethod", defaultValue = "COD") PaymentMethod paymentMethod,
             @RequestParam(value = "shippingMethod", defaultValue = "STANDARD") ShippingMethod shippingMethod,
-            @RequestParam(value = "note", required = false) String note, // <-- Nhận note
+            @RequestParam(value = "note", required = false) String note,
             HttpSession session, RedirectAttributes redirectAttributes) {
 
         CartBean cart = (CartBean) session.getAttribute("cart");
@@ -145,7 +146,7 @@ public class CheckOutController {
         }
 
         try {
-            // ⚠ FIX THỨ TỰ THAM SỐ ĐÚNG
+            //Xử lý và tạo hóa đơn
             Orders finalOrder = checkoutService.finalizeOrderCOD(
                     customerId,
                     cart,

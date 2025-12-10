@@ -18,12 +18,10 @@ public class Wishlist {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    // [SỬA ĐỔI] Thay thế Users bằng Customer
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false) // Đổi tên cột
-    private Customer customer; // Đổi tên trường
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
 
-    // Sản phẩm yêu thích (Giữ nguyên)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;

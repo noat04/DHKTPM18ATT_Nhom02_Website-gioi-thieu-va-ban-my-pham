@@ -42,7 +42,7 @@ public class CheckOutService {
 
     /**
      * Dùng để kiểm tra giỏ hàng trước khi cho phép người dùng đến trang xác nhận.
-     * Đã cập nhật để kiểm tra số lượng tồn kho (quantity) thay vì inStock.
+     *  kiểm tra số lượng tồn kho (quantity)
      */
     public List<String> validateCart(CartBean cart) {
         List<String> errors = new ArrayList<>();
@@ -56,7 +56,7 @@ public class CheckOutService {
             if (productInDb == null) {
                 errors.add("Sản phẩm \"" + item.getProduct().getName() + "\" không tồn tại.");
             }
-            // SỬA LẠI: Kiểm tra xem số lượng trong kho có ĐỦ không
+            // Kiểm tra xem số lượng trong kho có ĐỦ không
             else if (productInDb.getQuantity() < item.getQuantity()) {
                 errors.add("Không đủ hàng cho \"" + item.getProduct().getName() + "\". " +
                         "Bạn muốn mua " + item.getQuantity() +
@@ -84,7 +84,6 @@ public class CheckOutService {
         newOrder.setStatus(OrderStatus.SHIPPING);
         newOrder.setDate(LocalDateTime.now());
 
-        // [LOGIC MỚI] Xử lý Địa chỉ giao hàng
         // Mặc định lấy địa chỉ từ Customer
         String shippingAddress = customer.getFullAddress();
 
@@ -98,13 +97,12 @@ public class CheckOutService {
 
         Orders savedOrder = orderService.createOrder(newOrder);
 
-        // Bây giờ, tạo và lưu các đối tượng OrderLine
+        //tạo và lưu các đối tượng OrderLine
         for (CartItemBean item : cart.getItems()) {
             // Lấy sản phẩm và KHÓA nó lại cho transaction
-            // (Cách tốt hơn là dùng findByIdForUpdate, nhưng getById cũng tạm ổn)
             Product product = productService.getById(item.getProduct().getId());
 
-            // SỬA LẠI: Kiểm tra số lượng tồn lần cuối
+            //Kiểm tra số lượng tồn lần cuối
             if (product == null || product.getQuantity() < item.getQuantity()) {
                 // Nếu lỗi, @Transactional sẽ tự động rollback (hủy) đơn hàng
                 throw new RuntimeException("Rất tiếc, sản phẩm \"" + item.getProduct().getName() +
@@ -122,99 +120,13 @@ public class CheckOutService {
 
             orderLineRepository.save(newOrderLine);
 
-            // === PHẦN QUAN TRỌNG NHẤT ĐÃ THÊM ===
+
             // Cập nhật (giảm) số lượng tồn kho
-            // mà chúng ta đã thảo luận ở lần trước)
             productService.reduceStock(product.getId(), item.getQuantity());
         }
 
         return savedOrder;
     }
-
-//    @Transactional
-//    public Orders finalizeOrderCOD(Integer customerId,
-//                                   CartBean cart,
-//                                   PaymentMethod paymentMethod,
-//                                   ShippingMethod shippingMethod,
-//                                   String addressFromForm,
-//                                   String noteFromForm) {
-//
-//        // 1. Lấy customer
-//        Customer customer = customerService.getById(customerId);
-//        if (customer == null) {
-//            throw new RuntimeException("Không tìm thấy khách hàng.");
-//        }
-//
-//        // 2. Xác định địa chỉ cuối
-//        String finalAddress = (addressFromForm != null && !addressFromForm.trim().isEmpty())
-//                ? addressFromForm.trim()
-//                : customer.getAddress();
-//
-//        if (finalAddress == null || finalAddress.isEmpty()) {
-//            throw new RuntimeException("Vui lòng nhập địa chỉ giao hàng!");
-//        }
-//
-//        // 3. Tính phí ship
-//        BigDecimal shippingFee = calculateBaseShippingFee(finalAddress, shippingMethod);
-//
-//        // 4. Tạo order và ✅ khởi tạo orderLines tránh null
-//        Orders newOrder = new Orders();
-//        newOrder.setCustomer(customer);
-//        newOrder.setDate(LocalDateTime.now());
-//        newOrder.setStatus(OrderStatus.PENDING);
-//        newOrder.setPhoneNumber(customer.getPhoneNumber());
-//        newOrder.setShippingAddress(finalAddress);
-//        newOrder.setPaymentMethod(paymentMethod != null ? paymentMethod : PaymentMethod.COD);
-//        newOrder.setShippingMethod(shippingMethod != null ? shippingMethod : ShippingMethod.STANDARD);
-//        newOrder.setShippingFee(shippingFee);
-//        newOrder.setDeliveryDate(newOrder.getEstimatedDeliveryDate());
-//        newOrder.setNote(noteFromForm != null ? noteFromForm.trim() : "");
-//
-//        newOrder.setOrderLines(new HashSet<>()); // 👈 FIX QUAN TRỌNG
-//
-//        // 5. Lưu order
-//        Orders savedOrder = ordersRepository.save(newOrder);
-//
-//        // 6. Tạo OrderLine và add vào Set
-//        for (CartItemBean item : cart.getItems()) {
-//            Product product = productService.getById(item.getProduct().getId());
-//
-//            if (product == null || product.getQuantity() < item.getQuantity()) {
-//                throw new RuntimeException("Không đủ hàng: " + (product != null ? product.getQuantity() : 0));
-//            }
-//
-//            OrderLineId orderLineId = new OrderLineId(savedOrder.getId(), product.getId());
-//            OrderLine newLine = new OrderLine();
-//            newLine.setId(orderLineId);
-//            newLine.setOrder(savedOrder);
-//            newLine.setProduct(product);
-//            newLine.setAmount(item.getQuantity());
-//            newLine.setPurchasePrice(BigDecimal.valueOf(product.getPrice()));
-//
-//            OrderLine savedLine = orderLineRepository.save(newLine);
-//
-//            // ✅ Add vào quan hệ orderLines
-//            savedOrder.getOrderLines().add(savedLine);
-//
-//            // 7. Giảm stock
-//            productService.reduceStock(product.getId(), item.getQuantity());
-//        }
-//
-//        // 8. Update order để chắc chắn DB sync quan hệ
-//        savedOrder.setStatus(OrderStatus.SHIPPING);
-//        ordersRepository.save(savedOrder);
-//
-//        // ------------------------------
-//        // ✅ 9. Fetch lại order có JOIN FETCH để tránh lazy null
-//        Orders fullOrder = ordersRepository.findFullOrderWithLines(savedOrder.getId());
-//
-//        if (fullOrder.getOrderLines() == null) {
-//            // Trường hợp hi hữu fallback
-//            fullOrder.setOrderLines(new HashSet<>());
-//        }
-//
-//        return fullOrder;
-//    }
 
 
     @Transactional
@@ -224,7 +136,7 @@ public class CheckOutService {
                                    ShippingMethod shippingMethod,
                                    String addressFromForm,
                                    String noteFromForm,
-                                   String couponCode) { // <--- [1] THÊM THAM SỐ
+                                   String couponCode) {
 
         // 1. Lấy customer
         Customer customer = customerService.getById(customerId);
@@ -244,7 +156,6 @@ public class CheckOutService {
         // 3. Tính phí ship
         BigDecimal shippingFee = calculateBaseShippingFee(finalAddress, shippingMethod);
 
-        // --- [LOGIC COUPON MỚI] ---
         BigDecimal discountAmount = BigDecimal.ZERO;
 
         if (couponCode != null && !couponCode.trim().isEmpty()) {
@@ -253,7 +164,6 @@ public class CheckOutService {
 
             if (coupon != null) {
                 // Tính toán tiền giảm (Hàm calculateDiscount đã có logic check hạn, số lượng, điều kiện)
-                // Lưu ý: Nếu coupon không hợp lệ, hàm này sẽ trả về 0 hoặc ném lỗi tùy cách bạn viết
                 discountAmount = calculateDiscount(cart, coupon, customerId);
 
                 // Nếu áp dụng thành công (tiền giảm > 0), trừ số lượng coupon
@@ -263,7 +173,6 @@ public class CheckOutService {
                 }
             }
         }
-        // --------------------------
 
         // 4. Tạo order
         Orders newOrder = new Orders();
@@ -303,7 +212,6 @@ public class CheckOutService {
             newLine.setAmount(item.getQuantity());
 
             // Lưu giá tại thời điểm mua
-            // (Nếu bạn có logic giá Sale sản phẩm, hãy dùng product.getRealPrice() ở đây)
             newLine.setPurchasePrice(BigDecimal.valueOf(product.getPrice()));
 
             OrderLine savedLine = orderLineRepository.save(newLine);
@@ -340,6 +248,7 @@ public class CheckOutService {
             return isExpress ? BigDecimal.valueOf(50000) : BigDecimal.valueOf(25000);
         }
     }
+
     // ============================================================
     // LOGIC TÍNH TOÁN GIẢM GIÁ (COUPON)
     // ============================================================
@@ -351,12 +260,10 @@ public class CheckOutService {
             return BigDecimal.ZERO;
         }
 
-        // Tìm coupon (Giả sử CouponService có hàm này)
-        // Hoặc dùng couponRepository.findByCode(couponCode)
+        // Tìm coupon
         Coupon coupon = null;
         try {
             // coupon = couponRepository.findByCode(couponCode);
-            // Tạm thời loop tìm trong list getAll nếu chưa có hàm findByCode
             List<Coupon> all = couponService.getAll();
             for(Coupon c : all) {
                 if(c.getCode().equalsIgnoreCase(couponCode)) {
@@ -466,9 +373,6 @@ public class CheckOutService {
     // ============================================================
 
     public List<Coupon> getApplicableCoupons(CartBean cart, Integer customerId) {
-        // Nên dùng hàm tìm kiếm có điều kiện trong Repo để tối ưu, thay vì getAll()
-        // Ví dụ: couponRepository.findAllByActiveTrueAndQuantityGreaterThan(0);
-//        Function<Integer, Long> orderHistoryProvider = orderService.countByCustomerId(customerId)
         List<Coupon> allCoupons = couponService.getAll();
         List<Coupon> validCoupons = new ArrayList<>();
 
