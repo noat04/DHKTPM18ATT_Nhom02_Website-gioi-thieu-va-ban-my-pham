@@ -8,6 +8,15 @@
 
     <!-- Gọi fragment sidebar -->
     <th:block th:replace="~{fragment/sidebar :: sidebar-styles}"></th:block>
+    <style>
+        .alert-auto-dismiss {
+            animation: fadeOut 5s forwards;
+        }
+        @keyframes fadeOut {
+            0%, 80% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }
+    </style>
 </head>
 
 <body>
@@ -22,11 +31,11 @@
                 <h2 class="text-center mb-4">Danh sách sản phẩm</h2>
 
                 <!-- Flash Messages -->
-                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show alert-auto-dismiss" role="alert">
                     <i class="bi bi-check-circle-fill"></i> <span th:text="${successMessage}"></span>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
-                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show alert-auto-dismiss" role="alert">
                     <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${errorMessage}"></span>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
@@ -90,6 +99,11 @@
                     <a th:href="@{/api/products/export}" class="btn btn-success">
                         <i class="bi bi-file-earmark-excel-fill"></i> Xuất Excel
                     </a>
+
+                    <!-- Trash Link -->
+                    <a th:href="@{/api/products/trash}" class="btn btn-outline-danger">
+                        <i class="bi bi-trash"></i> Thùng rác
+                    </a>
                 </div>
 
                 <!-- Bảng danh sách sản phẩm -->
@@ -121,7 +135,7 @@
                                         <i class="bi bi-pencil"></i> Sửa
                                     </a>
                                     <a th:href="@{/api/products/delete/{id}(id=${product.id})}" class="btn btn-sm btn-danger"
-                                       onclick="return confirm('Bạn chắc chắn muốn xóa sản phẩm này?')">
+                                       onclick="return confirm('Chuyển sản phẩm này vào thùng rác?')">
                                         <i class="bi bi-trash"></i> Xóa
                                     </a>
                                 </td>
@@ -182,6 +196,16 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Auto-dismiss alerts after 5 seconds
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert-auto-dismiss');
+        alerts.forEach(function(alert) {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        });
+    }, 5000);
+</script>
 </body>
 
 </html>

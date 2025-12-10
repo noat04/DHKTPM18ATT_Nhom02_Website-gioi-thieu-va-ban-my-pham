@@ -32,9 +32,25 @@ public class ProductConsultantService {
     private final ProductStatisticsService statisticsService;
 
     /**
-     * Main consultation method - Hybrid approach
+     * Consultation result wrapper
      */
-    public String consultProduct(String userQuery) {
+    public static class ConsultationResult {
+        private final String response;
+        private final List<Product> products;
+
+        public ConsultationResult(String response, List<Product> products) {
+            this.response = response;
+            this.products = products;
+        }
+
+        public String getResponse() { return response; }
+        public List<Product> getProducts() { return products; }
+    }
+
+    /**
+     * Main consultation method with products - Returns both response and product list
+     */
+    public ConsultationResult consultProductWithDetails(String userQuery) {
         try {
             log.info("🔍 Starting Hybrid Consultation for query: {}", userQuery);
 
@@ -42,65 +58,43 @@ public class ProductConsultantService {
             Map<String, Object> intents = vectorService.extractQueryIntents(userQuery);
             log.info("📊 Extracted intents: {}", intents);
 
+            // ========== GREETING HANDLING ==========
+            if ((Boolean) intents.getOrDefault("isGreeting", false)) {
+                log.info("👋 Greeting detected");
+                String greetingResponse = "Chào bạn! Tôi là trợ lý AI tư vấn nước hoa của ShopNuocHoa. Bạn có cần tôi giúp đỡ gì không?";
+                return new ConsultationResult(greetingResponse, List.of());
+            }
+
             // ========== PHASE 2: STRUCTURED FILTERING ==========
-            List<Product> filteredProducts;
-            String productContext;
+            // Build criteria from all intents without prioritization
+            ProductFilterEngine.FilterCriteria criteria = filterEngine.buildCriteriaFromIntents(intents);
+            log.info("📋 Filter criteria: minPrice={}, maxPrice={}, brand={}, gender={}, sortBy={}",
+                criteria.getMinPrice(), criteria.getMaxPrice(), criteria.getCategoryName(),
+                criteria.getGender(), criteria.getSortBy());
 
-            // Xử lý đặc biệt cho query bán chạy
-            if ((Boolean) intents.getOrDefault("isBestSelling", false)) {
-                log.info("🏆 Processing best-selling query");
-                List<ProductStatisticsService.ProductStats> bestSellers =
-                    statisticsService.getBestSellingProducts(5);
-                filteredProducts = bestSellers.stream()
-                    .map(ProductStatisticsService.ProductStats::getProduct)
-                    .collect(java.util.stream.Collectors.toList());
-                // Sử dụng context đặc biệt cho bán chạy
-                productContext = vectorService.generateBestSellingContext(bestSellers);
-            }
-            // Xử lý query hot trend
-            else if ((Boolean) intents.getOrDefault("isHotTrend", false)) {
-                log.info("🔥 Processing hot trend query");
-                filteredProducts = statisticsService.getHotTrendProducts(5);
-                productContext = vectorService.generateProductContext(filteredProducts);
-            }
-            // Xử lý query sản phẩm mới
-            else if ((Boolean) intents.getOrDefault("isNewProducts", false)) {
-                log.info("✨ Processing new products query");
-                filteredProducts = statisticsService.getNewestProducts(5);
-                productContext = vectorService.generateProductContext(filteredProducts);
-            }
-            // Xử lý query đánh giá cao
-            else if ((Boolean) intents.getOrDefault("isTopRated", false)) {
-                log.info("⭐ Processing top-rated query");
-                filteredProducts = statisticsService.getTopRatedProducts(5);
-                productContext = vectorService.generateProductContext(filteredProducts);
-            }
-            // Xử lý query giá rẻ
-            else if ((Boolean) intents.getOrDefault("isCheapQuery", false)) {
-                log.info("💰 Processing cheap products query");
-                filteredProducts = statisticsService.getCheapestProducts(5);
-                productContext = vectorService.generateProductContext(filteredProducts);
-            }
-            // Xử lý query giá đắt
-            else if ((Boolean) intents.getOrDefault("isExpensiveQuery", false)) {
-                log.info("💎 Processing expensive products query");
-                filteredProducts = statisticsService.getMostExpensiveProducts(5);
-                productContext = vectorService.generateProductContext(filteredProducts);
-            }
-            // Xử lý thông thường với filter engine
-            else {
-                ProductFilterEngine.FilterCriteria criteria =
-                    filterEngine.buildCriteriaFromIntents(intents);
-                filteredProducts = filterEngine.filterProducts(criteria);
-                productContext = vectorService.generateProductContext(filteredProducts);
+            List<Product> filteredProducts = filterEngine.filterProducts(criteria);
+
+            // Generate context based on special queries for better LLM response
+            String productContext = vectorService.generateProductContext(filteredProducts);
+            String statisticsContext = "";
+
+            // Only add statistics context for best-selling queries to show actual sales numbers
+            if ((Boolean) intents.getOrDefault("isBestSelling", false) && !filteredProducts.isEmpty()) {
+                log.info("🏆 Including best-selling statistics for reference");
+                statisticsContext = statisticsService.generateEnhancedStatistics();
             }
 
-            log.info("🔎 Filtered {} products", filteredProducts.size());
+            log.info("🔎 Filtered {} products with criteria: {}", filteredProducts.size(), intents);
+            if (filteredProducts.isEmpty()) {
+                log.warn("⚠️ No products found for query: {}", userQuery);
+            } else {
+                log.info("📦 First 3 products: {}", filteredProducts.stream()
+                    .limit(3)
+                    .map(Product::getName)
+                    .collect(java.util.stream.Collectors.joining(", ")));
+            }
 
-            // ========== PHASE 3: RAG - CONTEXT GENERATION ==========
-            String statisticsContext = statisticsService.generateEnhancedStatistics();
-
-            log.info("📚 Generated RAG context with {} products", filteredProducts.size());
+            log.info("📚 Generated context with {} products", filteredProducts.size());
 
             // ========== PHASE 4: LLM GENERATION ==========
             String enhancedResponse = generateLLMResponse(
@@ -111,11 +105,46 @@ public class ProductConsultantService {
             );
 
             log.info("✅ Consultation completed successfully");
-            return enhancedResponse;
+
+            // Determine how many products to return based on query intent and available products
+            int maxProductsToReturn = 3; // Default
+
+            // For superlative queries (nhất), return only 1 product
+            String queryLower = userQuery.toLowerCase();
+            if (queryLower.matches(".*(đắt nhất|rẻ nhất|mắc nhất|cao nhất|thấp nhất|tốt nhất|bán chạy nhất|phổ biến nhất|nổi tiếng nhất).*")) {
+                maxProductsToReturn = 1;
+                log.info("🎯 Superlative query detected - returning only 1 product");
+            }
+
+            // Return products based on what's available
+            List<Product> productsToReturn;
+            if (filteredProducts.isEmpty()) {
+                productsToReturn = List.of(); // No products found
+            } else {
+                // Return min(available, maxToReturn)
+                int actualLimit = Math.min(filteredProducts.size(), maxProductsToReturn);
+                productsToReturn = filteredProducts.stream()
+                    .limit(actualLimit)
+                    .collect(java.util.stream.Collectors.toList());
+            }
+
+            // Log the exact products being returned
+            if (!productsToReturn.isEmpty()) {
+                log.info("🎯 Returning {} product(s) to client:", productsToReturn.size());
+                productsToReturn.forEach(p ->
+                    log.info("  → {} (ID: {}, Price: {}, Brand: {})",
+                        p.getName(), p.getId(), p.getPrice(),
+                        p.getCategory() != null ? p.getCategory().getName() : "N/A")
+                );
+            } else {
+                log.info("🎯 No products to return");
+            }
+
+            return new ConsultationResult(enhancedResponse, productsToReturn);
 
         } catch (Exception e) {
             log.error("❌ Error in hybrid consultation: ", e);
-            return "Xin lỗi, đã có lỗi xảy ra khi tư vấn. Vui lòng thử lại sau.";
+            return new ConsultationResult("Xin lỗi, đã có lỗi xảy ra khi tư vấn. Vui lòng thử lại sau.", List.of());
         }
     }
 
@@ -133,36 +162,56 @@ public class ProductConsultantService {
             Bạn là chuyên gia tư vấn nước hoa chuyên nghiệp tại cửa hàng ShopNuocHoa.
             
             ⚠️ QUY TẮC BẮT BUỘC - KHÔNG ĐƯỢC VI PHẠM:
+            
+            🚨 QUY TẮC QUAN TRỌNG NHẤT:
+            - Phần [DỮ LIỆU SẢN PHẨM THỰC TẾ] bên dưới là KẾT QUẢ LỌC theo yêu cầu khách hàng
+            - CHỈ giới thiệu các sản phẩm có trong phần [DỮ LIỆU SẢN PHẨM THỰC TẾ]
+            - TUYỆT ĐỐI KHÔNG lấy sản phẩm từ phần [TOP SẢN PHẨM] nếu nó không có trong [DỮ LIỆU SẢN PHẨM THỰC TẾ]
+            - Phần [TOP SẢN PHẨM] CHỈ để tham khảo số liệu, KHÔNG phải danh sách sản phẩm cần giới thiệu
+            
             1. ❌ TUYỆT ĐỐI KHÔNG bịa đặt, suy đoán, hoặc thêm thông tin không có trong dữ liệu
-            2. ✅ CHỈ sử dụng CHÍNH XÁC thông tin từ [DỮ LIỆU SẢN PHẨM THỰC TẾ] bên dưới
+            2. ✅ CHỈ giới thiệu sản phẩm từ mục [DỮ LIỆU SẢN PHẨM THỰC TẾ]
             3. ✅ Nếu không có thông tin về một trường nào đó, hãy BỎ QUA, ĐỪNG đoán
             4. ✅ Số liệu "Đã bán" CHỈ lấy từ trường "Đã bán" trong dữ liệu
             5. ✅ Giá tiền, rating, tồn kho phải CHÍNH XÁC 100%
-            6. ✅ Nếu không tìm thấy sản phẩm phù hợp, trả lời thẳng thắn
+            6. ✅ KHI thấy "CẢNH BÁO: Không tìm thấy sản phẩm phù hợp trong kho":
+               - Đây có nghĩa là HỆ THỐNG đã lọc và KHÔNG CÓ sản phẩm nào phù hợp
+               - Trả lời: "Chào bạn, rất tiếc hiện tại không có sản phẩm [mô tả yêu cầu] trong danh mục của chúng tôi."
+            7. ✅ KHI CÓ danh sách trong [DỮ LIỆU SẢN PHẨM THỰC TẾ]:
+               - Giới thiệu từ 2-3 sản phẩm đầu tiên trong danh sách ĐÓ
+               - KHÔNG lấy sản phẩm từ phần thống kê hoặc bất kỳ nguồn nào khác
             
-            CÁCH TRẢ LỜI:
-            - Ngắn gọn (2-3 câu)
-            - Tự nhiên, thân thiện
-            - Đề cập: Tên sản phẩm, Giá, Thương hiệu
+            CÁCH TRẢ LỜI KHI TÌM THẤY SẢN PHẨM:
+            - Nếu câu hỏi về "NHẤT" (đắt nhất, rẻ nhất, bán chạy nhất...): CHỈ giới thiệu 1 sản phẩm duy nhất
+            - Nếu câu hỏi tổng quát: Giới thiệu 2-3 sản phẩm
+            - Ngắn gọn, liệt kê rõ ràng
+            - Mỗi sản phẩm: Tên, Giá, Thương hiệu
             - Nếu có "Đã bán": Nói rõ "Đã bán X sản phẩm"
             - Nếu KHÔNG có "Đã bán" hoặc = 0: ĐỪNG nói về số lượng bán
+            - Format với "NHẤT": "Sản phẩm [tiêu chí] nhất là [Tên] ([Giá])"
+            - Format tổng quát: "Tôi gợi ý: 1) [SP1], 2) [SP2], 3) [SP3]"
+            
+            CÁCH TRẢ LỜI KHI KHÔNG TÌM THẤY:
+            - Thông báo không tìm thấy sản phẩm cụ thể
+            - KHÔNG đề xuất sản phẩm khác trừ khi dữ liệu có sản phẩm tương tự
             
             VÍ DỤ TRẢ LỜI ĐÚNG:
-            ✅ "Dior Sauvage (2,500,000 VNĐ) đã bán được 25 sản phẩm, là lựa chọn phổ biến."
-            ✅ "Chanel Bleu (3,200,000 VNĐ) có đánh giá 4.5/5 sao, rất được ưa chuộng."
-            ✅ "CK One (450,000 VNĐ) là lựa chọn giá tốt, còn 80 sản phẩm."
+            ✅ "Chào bạn, tôi gợi ý 3 sản phẩm: 1) Dior Sauvage (2,500,000 VNĐ), 2) Chanel Bleu (3,200,000 VNĐ), 3) CK One (450,000 VNĐ)."
+            ✅ "Với yêu cầu của bạn, có 2 sản phẩm phù hợp: 1) Gucci Bloom (2,950,000 VNĐ), 2) Chanel N5 (3,500,000 VNĐ)."
+            ✅ "Chào bạn, rất tiếc hiện tại không có sản phẩm trong khoảng giá từ 2-3 triệu trong danh mục của chúng tôi."
+            ✅ "Chào bạn, sản phẩm đắt nhất của Dior là J'adore Eau de Parfum (3,800,000 VNĐ)."
             
             VÍ DỤ TRẢ LỜI SAI - TUYỆT ĐỐI TRÁNH:
             ❌ "...đã bán được 150 sản phẩm" (khi dữ liệu chỉ có 25)
             ❌ "...được nhiều khách hàng tin dùng" (khi không có dữ liệu bán hàng)
             ❌ "...rating 4.8/5" (khi dữ liệu chỉ có 4.2/5)
+            ❌ Bịa ra sản phẩm không có trong dữ liệu
             
             LƯU Ý ĐẶC BIỆT:
             - "Sản phẩm bán chạy": CHỈ xếp hạng theo số "Đã bán" trong dữ liệu
             - "Đánh giá cao": CHỈ xếp hạng theo số "Đánh giá" trong dữ liệu
             - "Giá rẻ/đắt": CHỈ so sánh "Giá" trong dữ liệu
-            
-            {statistics}
+            - Nếu danh sách sản phẩm RỖNG hoặc không có sản phẩm phù hợp: BÁO KHÔNG TÌM THẤY
             
             {products}
             """;
@@ -172,14 +221,32 @@ public class ProductConsultantService {
             
             Intent phát hiện: {intents}
             
-            Hãy tư vấn ngắn gọn, chuyên nghiệp.
+            ⚠️ LƯU Ý: Chỉ giới thiệu sản phẩm từ phần [DỮ LIỆU SẢN PHẨM THỰC TẾ - KẾT QUẢ LỌC] ở trên.
+            Hãy tư vấn ngắn gọn, chuyên nghiệp, liệt kê 2-3 sản phẩm theo format đã chỉ định.
             """;
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("query", userQuery);
-        variables.put("products", productContext);
-        variables.put("statistics", statisticsContext);
         variables.put("intents", intents.toString());
+
+        // Structure the context to emphasize filtered products
+        String structuredContext = String.format("""
+            ═══════════════════════════════════════════════════════
+            📦 [DỮ LIỆU SẢN PHẨM THỰC TẾ - KẾT QUẢ LỌC]
+            ⚠️ QUAN TRỌNG: CHỈ GIỚI THIỆU CÁC SẢN PHẨM DƯỚI ĐÂY
+            ═══════════════════════════════════════════════════════
+            
+            %s
+            
+            ═══════════════════════════════════════════════════════
+            📊 [THỐNG KÊ TỔNG QUÁT - CHỈ THAM KHẢO]
+            ⚠️ CHÚ Ý: Đây là thống kê chung, KHÔNG phải danh sách giới thiệu
+            ═══════════════════════════════════════════════════════
+            
+            %s
+            """, productContext, statisticsContext);
+
+        variables.put("products", structuredContext);
 
         // Create prompt
         PromptTemplate promptTemplate = new PromptTemplate(
@@ -195,4 +262,3 @@ public class ProductConsultantService {
             .content();
     }
 }
-

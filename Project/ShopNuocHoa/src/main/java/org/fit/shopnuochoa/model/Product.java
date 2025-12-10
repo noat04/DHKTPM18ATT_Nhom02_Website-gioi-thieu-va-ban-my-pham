@@ -105,6 +105,9 @@ public class Product {
     @ToString.Exclude
     private Set<OrderLine> orderLines;
 
+    @Column(name = "deleted")
+    private Boolean deleted = false;
+
     @Transient
     public boolean isInStock() {
         // Kiểm tra null an toàn vì quantity là Integer (Wrapper class)

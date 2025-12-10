@@ -35,8 +35,19 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     // Tìm các sản phẩm theo categoryId và Id không phải là productId được cung cấp
     List<Product> findByCategoryIdAndIdNot(Integer categoryId, Integer productId);
 
+    // Soft delete queries
+    @Query("SELECT p FROM Product p WHERE p.deleted = false")
+    Page<Product> findAllActive(Pageable pageable);
+
+    @Query("SELECT p FROM Product p WHERE p.deleted = true")
+    Page<Product> findAllDeleted(Pageable pageable);
+
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.deleted = true")
+    long countDeleted();
+
 
     @Query("SELECT p FROM Product p WHERE "
+            + "p.deleted = false AND "
             + "(:keyword IS NULL OR :keyword = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) "
             + "AND (:categoryId IS NULL OR p.category.id = :categoryId) "
             + "AND (:price IS NULL OR p.price >= :price) "

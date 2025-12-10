@@ -206,18 +206,52 @@ public class ProductController {
     }
 
     /**
-     * Delete Product
+     * Soft Delete Product
      */
     @GetMapping("/delete/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public String deleteProduct(@PathVariable("id") Integer id, RedirectAttributes ra) {
         try {
             productService.deleteProduct(id);
-            ra.addFlashAttribute("successMessage", "Xóa sản phẩm thành công!");
+            ra.addFlashAttribute("successMessage", "Đã chuyển sản phẩm vào thùng rác!");
         } catch (Exception e) {
             ra.addFlashAttribute("errorMessage", "Không thể xóa sản phẩm: " + e.getMessage());
         }
         return "redirect:/api/products/list";
+    }
+
+    /**
+     * Show Trash (Deleted Products)
+     */
+    @GetMapping("/trash")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String showTrash(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Model model) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        Page<Product> deletedProducts = productService.getAllDeleted(pageable);
+
+        model.addAttribute("productPage", deletedProducts);
+        model.addAttribute("totalDeleted", productService.countDeleted());
+
+        return "screen/admin/admin-product-trash";
+    }
+
+    /**
+     * Restore Product from Trash
+     */
+    @GetMapping("/restore/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String restoreProduct(@PathVariable("id") Integer id, RedirectAttributes ra) {
+        try {
+            productService.restoreProduct(id);
+            ra.addFlashAttribute("successMessage", "Khôi phục sản phẩm thành công!");
+        } catch (Exception e) {
+            ra.addFlashAttribute("errorMessage", "Không thể khôi phục sản phẩm: " + e.getMessage());
+        }
+        return "redirect:/api/products/trash";
     }
 
     @GetMapping("/detail/{id}")

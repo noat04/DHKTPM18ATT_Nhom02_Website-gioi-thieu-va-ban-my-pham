@@ -26,8 +26,67 @@ public class ProductFilterEngine {
      */
     public List<Product> filterProducts(FilterCriteria criteria) {
         List<Product> products = productRepository.findAll();
+        int initialCount = products.size();
+
+        System.out.println("╔════════════════════════════════════════════════════════════════");
+        System.out.println("║ 🔍 PRODUCT FILTERING DEBUG");
+        System.out.println("╠════════════════════════════════════════════════════════════════");
+        System.out.println("║ 📊 Initial products from DB: " + initialCount);
+        System.out.println("╠════════════════════════════════════════════════════════════════");
+        System.out.println("║ 📋 Filter Criteria:");
+        System.out.println("║   • productName: " + criteria.getProductName());
+        System.out.println("║   • categoryName (brand): " + criteria.getCategoryName());
+        System.out.println("║   • gender: " + criteria.getGender());
+        System.out.println("║   • volume: " + criteria.getVolume());
+        System.out.println("║   • minPrice: " + criteria.getMinPrice());
+        System.out.println("║   • maxPrice: " + criteria.getMaxPrice());
+        System.out.println("║   • minRating: " + criteria.getMinRating());
+        System.out.println("║   • inStockOnly: " + criteria.getInStockOnly());
+        System.out.println("║   • hotTrendOnly: " + criteria.getHotTrendOnly());
+        System.out.println("║   • sortBy: " + criteria.getSortBy());
+        System.out.println("║   • limit: " + criteria.getLimit());
+        System.out.println("╚════════════════════════════════════════════════════════════════");
 
         // Apply filters
+        // Filter by product name (specific search with fuzzy matching)
+        if (criteria.getProductName() != null && !criteria.getProductName().isEmpty()) {
+            String searchTerm = criteria.getProductName().toLowerCase();
+            products = products.stream()
+                .filter(p -> {
+                    String productName = p.getName().toLowerCase();
+                    // Exact match or contains
+                    if (productName.contains(searchTerm)) {
+                        return true;
+                    }
+                    // Fuzzy matching - check if words match
+                    String[] searchWords = searchTerm.split("\\s+");
+                    String[] productWords = productName.split("\\s+");
+
+                    // Count matching words
+                    int matchCount = 0;
+                    for (String searchWord : searchWords) {
+                        for (String productWord : productWords) {
+                            // Check if words are similar (contains or levenshtein distance)
+                            if (productWord.contains(searchWord) || searchWord.contains(productWord)) {
+                                matchCount++;
+                                break;
+                            }
+                            // Simple typo tolerance
+                            if (Math.abs(productWord.length() - searchWord.length()) <= 2 &&
+                                calculateSimilarity(productWord, searchWord) > 0.6) {
+                                matchCount++;
+                                break;
+                            }
+                        }
+                    }
+
+                    // If more than 50% of search words match, consider it a match
+                    return matchCount >= (searchWords.length * 0.5);
+                })
+                .collect(Collectors.toList());
+        }
+
+        // Filter by keyword (general search - name or category)
         if (criteria.getKeyword() != null && !criteria.getKeyword().isEmpty()) {
             String keyword = criteria.getKeyword().toLowerCase();
             products = products.stream()
@@ -37,33 +96,47 @@ public class ProductFilterEngine {
         }
 
         if (criteria.getCategoryName() != null) {
+            int beforeFilter = products.size();
             products = products.stream()
                 .filter(p -> p.getCategory().getName().equalsIgnoreCase(criteria.getCategoryName()))
                 .collect(Collectors.toList());
+            System.out.println("║ ✂️ After brand filter: " + products.size() + " (removed: " + (beforeFilter - products.size()) + ")");
+            if (products.isEmpty()) {
+                System.out.println("║ ❌ NO PRODUCTS LEFT after brand filter!");
+                System.out.println("║    Looking for brand: [" + criteria.getCategoryName() + "]");
+            }
         }
 
         if (criteria.getGender() != null) {
+            int beforeFilter = products.size();
             products = products.stream()
                 .filter(p -> p.getGender() == criteria.getGender())
                 .collect(Collectors.toList());
+            System.out.println("║ ✂️ After gender filter: " + products.size() + " (removed: " + (beforeFilter - products.size()) + ")");
         }
 
         if (criteria.getVolume() != null) {
+            int beforeFilter = products.size();
             products = products.stream()
                 .filter(p -> p.getVolume() == criteria.getVolume())
                 .collect(Collectors.toList());
+            System.out.println("║ ✂️ After volume filter: " + products.size() + " (removed: " + (beforeFilter - products.size()) + ")");
         }
 
         if (criteria.getMinPrice() != null) {
+            int beforeFilter = products.size();
             products = products.stream()
                 .filter(p -> p.getPrice() >= criteria.getMinPrice())
                 .collect(Collectors.toList());
+            System.out.println("║ ✂️ After minPrice filter (>=" + criteria.getMinPrice() + "): " + products.size() + " (removed: " + (beforeFilter - products.size()) + ")");
         }
 
         if (criteria.getMaxPrice() != null) {
+            int beforeFilter = products.size();
             products = products.stream()
                 .filter(p -> p.getPrice() <= criteria.getMaxPrice())
                 .collect(Collectors.toList());
+            System.out.println("║ ✂️ After maxPrice filter (<=" + criteria.getMaxPrice() + "): " + products.size() + " (removed: " + (beforeFilter - products.size()) + ")");
         }
 
         if (criteria.getMinRating() != null) {
@@ -87,13 +160,28 @@ public class ProductFilterEngine {
 
         // Apply sorting
         products = applySorting(products, criteria.getSortBy());
+        System.out.println("║ 🔄 After sorting by [" + criteria.getSortBy() + "]: " + products.size() + " products");
 
         // Apply limit
         if (criteria.getLimit() != null && criteria.getLimit() > 0) {
             products = products.stream()
                 .limit(criteria.getLimit())
                 .collect(Collectors.toList());
+            System.out.println("║ ✂️ After limit (" + criteria.getLimit() + "): " + products.size() + " products");
         }
+
+        System.out.println("╠════════════════════════════════════════════════════════════════");
+        System.out.println("║ 🎯 FINAL RESULT: " + products.size() + " products");
+        if (!products.isEmpty()) {
+            System.out.println("║ 📦 Products returned:");
+            products.stream().limit(5).forEach(p ->
+                System.out.println("║    • " + p.getName() + " (Price: " + p.getPrice() + ", Brand: " +
+                    (p.getCategory() != null ? p.getCategory().getName() : "N/A") + ")")
+            );
+        } else {
+            System.out.println("║ ⚠️ NO PRODUCTS MATCH THE CRITERIA!");
+        }
+        System.out.println("╚════════════════════════════════════════════════════════════════");
 
         return products;
     }
@@ -135,6 +223,11 @@ public class ProductFilterEngine {
     public FilterCriteria buildCriteriaFromIntents(Map<String, Object> intents) {
         FilterCriteria criteria = new FilterCriteria();
 
+        // Set product name (specific search by name)
+        if (intents.containsKey("productName")) {
+            criteria.setProductName((String) intents.get("productName"));
+        }
+
         // Set gender
         if (intents.containsKey("gender")) {
             try {
@@ -172,58 +265,98 @@ public class ProductFilterEngine {
         // Default: top 10 results
         criteria.setLimit(10);
 
-        // ========== SORTING BASED ON INTENT ==========
-        // 1. Bán chạy nhất (sẽ xử lý riêng trong service)
-        if ((Boolean) intents.getOrDefault("isBestSelling", false)) {
-            criteria.setSortBy("best_selling");
+        // ========== SORTING BASED ON INTENT (WITH PRIORITY) ==========
+        // Lower priority queries first, higher priority last (will override)
+        String sortBy = "rating"; // Default sort
+
+        // Low priority - Recommendation (general)
+        if ((Boolean) intents.getOrDefault("isRecommendation", false)) {
+            sortBy = "popular";
+        }
+
+        // Medium priority - Price query (general)
+        if ((Boolean) intents.getOrDefault("isPriceQuery", false)) {
+            sortBy = "price_asc";
+        }
+
+        // High priority - Specific queries
+        if ((Boolean) intents.getOrDefault("isHotTrend", false)) {
+            criteria.setHotTrendOnly(true);
+            sortBy = "popular";
+        }
+
+        if ((Boolean) intents.getOrDefault("isNewProducts", false)) {
+            sortBy = "newest";
             criteria.setLimit(5);
         }
-        // 2. Đánh giá cao
-        else if ((Boolean) intents.getOrDefault("isTopRated", false)) {
-            criteria.setSortBy("rating");
+
+        if ((Boolean) intents.getOrDefault("isTopRated", false)) {
+            sortBy = "rating";
             criteria.setMinRating(4.0);
             criteria.setLimit(5);
         }
-        // 3. Sản phẩm mới
-        else if ((Boolean) intents.getOrDefault("isNewProducts", false)) {
-            criteria.setSortBy("newest");
+
+        if ((Boolean) intents.getOrDefault("isBestSelling", false)) {
+            sortBy = "popular"; // Use popular as proxy for best-selling
             criteria.setLimit(5);
-        }
-        // 4. Hot trend
-        else if ((Boolean) intents.getOrDefault("isHotTrend", false)) {
-            criteria.setHotTrendOnly(true);
-            criteria.setSortBy("popular");
-        }
-        // 5. Giá rẻ
-        else if ((Boolean) intents.getOrDefault("isCheapQuery", false)) {
-            criteria.setSortBy("price_asc");
-            criteria.setLimit(5);
-        }
-        // 6. Giá đắt/cao cấp
-        else if ((Boolean) intents.getOrDefault("isExpensiveQuery", false)) {
-            criteria.setSortBy("price_desc");
-            criteria.setLimit(5);
-        }
-        // 7. Tìm kiếm theo giá
-        else if ((Boolean) intents.getOrDefault("isPriceQuery", false)) {
-            criteria.setSortBy("price_asc");
-        }
-        // 8. Gợi ý/Tư vấn
-        else if ((Boolean) intents.getOrDefault("isRecommendation", false)) {
-            criteria.setSortBy("popular");
-        }
-        // Default: rating
-        else {
-            criteria.setSortBy("rating");
         }
 
+        // Highest priority - Price-specific queries
+        if ((Boolean) intents.getOrDefault("isCheapQuery", false)) {
+            sortBy = "price_asc"; // Sort by price ascending (cheapest first)
+            criteria.setLimit(3); // Only show 3 cheapest products
+            System.out.println("💰 Cheap query detected → sortBy=price_asc, limit=3");
+        }
+
+        if ((Boolean) intents.getOrDefault("isExpensiveQuery", false)) {
+            sortBy = "price_desc";
+            criteria.setLimit(5);
+        }
+
+        criteria.setSortBy(sortBy);
+
         return criteria;
+    }
+
+    /**
+     * Calculate similarity between two strings using Levenshtein distance
+     * Returns value between 0.0 (no match) and 1.0 (exact match)
+     */
+    private double calculateSimilarity(String s1, String s2) {
+        if (s1 == null || s2 == null) return 0.0;
+        if (s1.equals(s2)) return 1.0;
+
+        int[][] dp = new int[s1.length() + 1][s2.length() + 1];
+
+        for (int i = 0; i <= s1.length(); i++) {
+            dp[i][0] = i;
+        }
+        for (int j = 0; j <= s2.length(); j++) {
+            dp[0][j] = j;
+        }
+
+        for (int i = 1; i <= s1.length(); i++) {
+            for (int j = 1; j <= s2.length(); j++) {
+                int cost = (s1.charAt(i - 1) == s2.charAt(j - 1)) ? 0 : 1;
+                dp[i][j] = Math.min(Math.min(
+                    dp[i - 1][j] + 1,      // deletion
+                    dp[i][j - 1] + 1),     // insertion
+                    dp[i - 1][j - 1] + cost // substitution
+                );
+            }
+        }
+
+        int maxLen = Math.max(s1.length(), s2.length());
+        if (maxLen == 0) return 1.0;
+
+        return 1.0 - ((double) dp[s1.length()][s2.length()] / maxLen);
     }
 
     /**
      * Inner class for filter criteria
      */
     public static class FilterCriteria {
+        private String productName;  // Specific product name search
         private String keyword;
         private String categoryName;
         private Gender gender;
@@ -237,6 +370,9 @@ public class ProductFilterEngine {
         private Integer limit;
 
         // Getters and setters
+        public String getProductName() { return productName; }
+        public void setProductName(String productName) { this.productName = productName; }
+
         public String getKeyword() { return keyword; }
         public void setKeyword(String keyword) { this.keyword = keyword; }
 
