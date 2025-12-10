@@ -19,7 +19,7 @@ import java.util.*;
 @Component
 public class GeminiChatModel implements ChatModel {
 
-    @Value("AIzaSyB0becCvvDriWGBwFCfGLkJFGo7UdrKM44")
+    @Value("${gemini.api.key}")
     private String apiKey;
 
     @Value("${gemini.model}")
@@ -31,6 +31,12 @@ public class GeminiChatModel implements ChatModel {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
+    // ========== RETRY CONFIGURATION ==========
+    // Retry khi gặp lỗi 429 (Too Many Requests) hoặc 503 (Service Unavailable)
+    private static final int MAX_RETRY_ATTEMPTS = 3;           // Tối đa retry 3 lần
+    private static final long INITIAL_RETRY_DELAY_MS = 1000;   // Delay ban đầu: 1 giây
+    private static final double RETRY_DELAY_MULTIPLIER = 2.0;  // Nhân đôi mỗi lần retry
+
     public GeminiChatModel() {
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
@@ -38,6 +44,110 @@ public class GeminiChatModel implements ChatModel {
 
     @Override
     public ChatResponse call(Prompt prompt) {
+        // ========== IDENTIFY CALL TYPE ==========
+        // Xác định xem đây là intent extraction hay response generation
+        String promptText = prompt.getInstructions().get(0).getContent();
+        String callType = promptText.contains("trích xuất tiêu chí") || promptText.contains("INTENT")
+            ? "[INTENT EXTRACTION]"
+            : "[RESPONSE GENERATION]";
+
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        System.out.println("🎯 " + callType + " Starting API Call");
+        System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+        // ========== RETRY MECHANISM với EXPONENTIAL BACKOFF ==========
+        int attempts = 0;
+        long retryDelay = INITIAL_RETRY_DELAY_MS;
+        Exception lastException = null;
+
+        while (attempts < MAX_RETRY_ATTEMPTS) {
+            try {
+                attempts++;
+                System.out.println("🔄 " + callType + " Attempt " + attempts + "/" + MAX_RETRY_ATTEMPTS);
+
+                return executeApiCall(prompt);
+
+            } catch (Exception e) {
+                lastException = e;
+                String errorMsg = e.getMessage();
+
+                // Log chi tiết lỗi
+                System.err.println("⚠️ " + callType + " API Error: " + errorMsg);
+
+                // Kiểm tra xem có phải lỗi cần retry không
+                boolean shouldRetry = errorMsg.contains("429") ||     // Too Many Requests
+                                     errorMsg.contains("503") ||     // Service Unavailable
+                                     errorMsg.contains("RESOURCE_EXHAUSTED") ||
+                                     errorMsg.contains("overloaded");
+
+                if (!shouldRetry || attempts >= MAX_RETRY_ATTEMPTS) {
+                    if (!shouldRetry) {
+                        System.err.println("❌ " + callType + " Non-retryable error - stopping");
+                    } else {
+                        System.err.println("❌ " + callType + " Max retry attempts reached (" + attempts + "/" + MAX_RETRY_ATTEMPTS + ")");
+                        if (errorMsg.contains("429")) {
+                            System.err.println("💡 TIP: API quota exhausted. Wait 1 minute or create new API key at: https://aistudio.google.com/apikey");
+                        } else {
+                            System.err.println("💡 TIP: Gemini server is overloaded. Wait 1-2 minutes and try again.");
+                        }
+                    }
+                    throw e;
+                }
+
+                // ========== PARSE RETRY DELAY TỪ API RESPONSE ==========
+                // Google API trả về retry delay trong error message
+                long suggestedDelay = retryDelay;
+                try {
+                    // Tìm "Please retry in XX.XXs" trong error message
+                    if (errorMsg.contains("Please retry in")) {
+                        String delayStr = errorMsg.substring(errorMsg.indexOf("Please retry in") + 16);
+                        delayStr = delayStr.substring(0, delayStr.indexOf("s"));
+                        double delaySec = Double.parseDouble(delayStr);
+                        suggestedDelay = (long)(delaySec * 1000); // Convert to milliseconds
+                        System.out.println("📌 " + callType + " Google suggests retry in: " + delaySec + "s");
+                    }
+                } catch (Exception parseError) {
+                    // Nếu parse lỗi, dùng exponential backoff mặc định
+                }
+
+                // Xác định loại lỗi để log cho rõ
+                String errorType = "Unknown";
+                if (errorMsg.contains("429")) errorType = "429 Too Many Requests";
+                else if (errorMsg.contains("503")) errorType = "503 Service Unavailable";
+                else if (errorMsg.contains("RESOURCE_EXHAUSTED")) errorType = "Resource Exhausted";
+                else if (errorMsg.contains("overloaded")) errorType = "Server Overloaded";
+
+                // Log và chờ trước khi retry
+                System.out.println("⚠️ " + callType + " Error: " + errorType + " - Retrying in " + suggestedDelay + "ms... (Attempt " + attempts + "/" + MAX_RETRY_ATTEMPTS + ")");
+
+                try {
+                    Thread.sleep(suggestedDelay);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Retry interrupted", ie);
+                }
+
+                // Exponential backoff: Tăng thời gian chờ cho lần sau
+                retryDelay = (long)(retryDelay * RETRY_DELAY_MULTIPLIER);
+            }
+        }
+
+        // Nếu hết số lần retry, throw exception cuối cùng
+        System.err.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        System.err.println("❌ " + callType + " FAILED after " + MAX_RETRY_ATTEMPTS + " attempts");
+        System.err.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        throw new RuntimeException("Error calling Gemini API after " + MAX_RETRY_ATTEMPTS +
+                                 " attempts: " + (lastException != null ? lastException.getMessage() : "Unknown error"),
+                                 lastException);
+    }
+
+    /**
+     * Thực hiện API call thực tế đến Gemini
+     *
+     * @param prompt Prompt từ Spring AI
+     * @return ChatResponse
+     */
+    private ChatResponse executeApiCall(Prompt prompt) {
         try {
             // Build request
             Map<String, Object> requestBody = new HashMap<>();
@@ -63,8 +173,8 @@ public class GeminiChatModel implements ChatModel {
             // Call Gemini API using baseUrl from config
             String url = baseUrl + model + ":generateContent?key=" + apiKey;
 
-            // Debugging API key
-            System.out.println("Using API Key: " + apiKey);
+            // Debugging API key (CHỈ để debug, NÊN XÓA trong production)
+            // System.out.println("Using API Key: " + apiKey);
 
             ResponseEntity<String> response = restTemplate.exchange(
                     url,
@@ -72,7 +182,7 @@ public class GeminiChatModel implements ChatModel {
                     request,
                     String.class
             );
-            System.out.println(apiKey);
+
             // Parse response
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 JsonNode root = objectMapper.readTree(response.getBody());
@@ -91,9 +201,10 @@ public class GeminiChatModel implements ChatModel {
                 }
             }
 
-            throw new RuntimeException("Failed to get response from Gemini");
+            throw new RuntimeException("Failed to get valid response from Gemini");
 
         } catch (Exception e) {
+            // Re-throw để retry mechanism xử lý
             throw new RuntimeException("Error calling Gemini API: " + e.getMessage(), e);
         }
     }
