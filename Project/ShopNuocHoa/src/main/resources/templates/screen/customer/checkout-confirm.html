@@ -108,7 +108,7 @@
 <div th:replace="~{screen/customer/header :: main-header}"></div>
 
 <main class="container my-5 flex-grow-1">
-
+<!--    điều hướng dạng Breadcrumb-->
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a th:href="@{/api/home}" class="text-decoration-none text-muted">Trang chủ</a></li>
@@ -116,11 +116,12 @@
             <li class="breadcrumb-item active fw-bold" aria-current="page">Xác nhận & Thanh toán</li>
         </ol>
     </nav>
-
+    <!--Thông báo lỗi-->
     <div th:if="${errorMessage}" class="alert alert-danger shadow-sm border-0 rounded-3 mb-4">
         <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}"></span>
     </div>
 
+<!--    Kiểm tra tồn tại    -->
     <div th:if="${customer != null and cart != null and !cart.items.isEmpty()}" class="row g-4">
 
         <div class="col-lg-8">
@@ -153,6 +154,7 @@
 
                         </div>
                     </div>
+
                     <!-- Cảnh báo nếu thiếu thông tin -->
                     <div th:if="${customer.getPhoneNumber() == null or #strings.isEmpty(customer.getPhoneNumber()) or customer.getFullAddress() == null or #strings.isEmpty(customer.getFullAddress())}"
                          class="alert alert-warning d-flex justify-content-between align-items-center mb-3">
@@ -177,16 +179,18 @@
                     <i class="bi bi-truck"></i> Phương thức vận chuyển
                 </div>
                 <div class="card-body-custom">
-                    <div class="payment-methods-grid"> <label class="payment-option">
-                        <input type="radio" name="shippingMethod" value="STANDARD" checked>
-                        <div class="payment-label">
-                            <div class="payment-icon text-secondary"><i class="bi bi-box-seam"></i></div>
-                            <div>
-                                <div class="fw-bold">Tiêu chuẩn</div>
-                                <div class="small text-muted">3-5 ngày (30.000₫)</div>
+                    <div class="payment-methods-grid">
+                        <label class="payment-option">
+                            <!--gán mặc định standard-->
+                            <input type="radio" name="shippingMethod" value="STANDARD" checked>
+                            <div class="payment-label">
+                                <div class="payment-icon text-secondary"><i class="bi bi-box-seam"></i></div>
+                                <div>
+                                    <div class="fw-bold">Tiêu chuẩn</div>
+                                    <div class="small text-muted">3-5 ngày (30.000₫)</div>
+                                </div>
                             </div>
-                        </div>
-                    </label>
+                        </label>
 
                         <label class="payment-option">
                             <input type="radio" name="shippingMethod" value="EXPRESS">
@@ -210,6 +214,8 @@
                     <p class="text-muted small mb-3">Vui lòng chọn 1 trong các phương thức dưới đây:</p>
 
                     <div class="payment-methods-grid">
+
+                        <!--Thanh toán cod-->
                         <label class="payment-option">
                             <input type="radio" name="paymentMethod" value="COD" checked>
                             <div class="payment-label">
@@ -221,6 +227,7 @@
                             </div>
                         </label>
 
+                        <!--Thanh toán vnpay-->
                         <label class="payment-option">
                             <input type="radio" name="paymentMethod" value="VNPAY">
                             <div class="payment-label">
@@ -231,6 +238,7 @@
                             </div>
                         </label>
 
+                        <!--Thanh toán momo-->
                         <label class="payment-option">
                             <input type="radio" name="paymentMethod" value="MOMO">
                             <div class="payment-label">
@@ -242,6 +250,7 @@
                             </div>
                         </label>
 
+                        <!--Thanh toán zalolay-->
                         <label class="payment-option">
                             <input type="radio" name="paymentMethod" value="ZALOPAY">
                             <div class="payment-label">
@@ -253,6 +262,7 @@
                             </div>
                         </label>
 
+                        <!--Thanh toán paypal-->
                         <label class="payment-option">
                             <input type="radio" name="paymentMethod" value="PAYPAL">
                             <div class="payment-label">
@@ -280,6 +290,7 @@
                 </div>
                 <div class="card-body-custom">
                     <div class="mb-3" style="max-height: 300px; overflow-y: auto;">
+                        <!--Thông tin sản phẩm trong giỏ hàng-->
                         <div th:each="item : ${cart.items}" class="product-mini-item">
                             <div>
                                 <div class="product-name" th:text="${item.product.name}">Nước hoa ABC</div>
@@ -292,14 +303,15 @@
                     </div>
 
                     <div class="d-flex justify-content-between mb-2 text-muted">
+                        <!--Tổng giá trị giỏ hàng-->
                         <span>Tạm tính:</span>
                         <span id="subTotalDisplay"
                               th:data-value="${cart.getTotal()}"
                               th:text="${#numbers.formatDecimal(cart.total, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
                     </div>
                     <div class="d-flex justify-content-between mb-2 text-muted">
+                        <!--Gía trị giảm giá-->
                         <span>Giảm giá:</span>
-<!--                        <span id="discountDisplay" class="text-success">0 ₫</span>-->
                         <span id="discountDisplay"
                               th:data-value="${discountAmount != null ? discountAmount : 0}"
                               th:text="${discountAmount != null ? '- ' + #numbers.formatDecimal(discountAmount, 0, 'COMMA', 0, 'POINT') + ' ₫' : '0 ₫'}"
@@ -311,6 +323,7 @@
                         <span id="shippingFeeDisplay">30.000 ₫</span>
                     </div>
 
+                    <!--Gía trị tổng -->
                     <div class="total-row">
                         <span class="fw-bold text-dark">Tổng thanh toán:</span>
                         <span id="finalTotalDisplay"
@@ -322,12 +335,6 @@
 
                     <hr>
 
-<!--                    <button type="button" id="btn-place-order" class="btn btn-primary w-100 py-3 fs-5 fw-bold shadow-sm"-->
-<!--                            th:data-total="${finalTotal}"-->
-<!--                            th:data-vnpay-url="@{/api/vnpayment/create-payment(amount=${finalTotal})}"-->
-<!--                            th:data-zalopay-url="@{/api/zalopay/create-payment(amount=${finalTotal})}">-->
-<!--                        ĐẶT HÀNG NGAY-->
-<!--                    </button>-->
                     <!-- Nút đặt hàng: nếu thiếu thông tin thì chuyển thành link/disabled -->
                     <div th:if="${customer.getPhoneNumber() != null and !#strings.isEmpty(customer.getPhoneNumber()) and customer.getFullAddress() != null and !#strings.isEmpty(customer.getFullAddress()) }">
                         <button type="button" id="btn-place-order" class="btn btn-primary w-100 py-3 fs-5 fw-bold shadow-sm"
@@ -337,28 +344,29 @@
                             ĐẶT HÀNG NGAY
                         </button>
                     </div>
-                    <p class="text-center small text-muted mt-2">
-                        <i class="bi bi-shield-lock"></i> Thông tin được bảo mật tuyệt đối
-                    </p>
                 </div>
             </div>
         </div>
     </div>
 
+    <!--Kiểm tra giỏ hàng có sản phẩm hay không-->
     <div th:if="${customer == null or cart == null or cart.items.isEmpty()}" class="text-center py-5">
         <img src="https://cdn-icons-png.flaticon.com/512/2038/2038854.png" alt="Empty Cart" style="width: 150px; opacity: 0.5">
         <h4 class="mt-4 text-muted">Không có thông tin đơn hàng</h4>
         <a th:href="@{/api/products/list}" class="btn btn-primary mt-3 px-4 rounded-pill">Mua sắm ngay</a>
     </div>
 
+
+    <!--Form ẩn gửi dữ liệu nếu chọn COD-->
     <form id="form-cod" th:action="@{/api/checkout/finalize}" method="post" style="display: none;">
         <input type="hidden" name="shippingAddress" id="hidden-address">
         <input type="hidden" name="paymentMethod" id="hidden-payment">
         <input type="hidden" name="shippingMethod" id="hidden-shipping">
         <input type="hidden" name="couponCode" id="hidden-coupon">
-        <input type="hidden" name="note" id="hidden-note"> <!-- Thêm dòng này -->
+        <input type="hidden" name="note" id="hidden-note">
     </form>
 
+    <!--Form ẩn gửi dữ liệu nếu chọn PAYPAL-->
     <form id="form-paypal" th:action="@{/api/paypal/pay}" method="post" style="display: none;">
         <input type="hidden" name="note" id="paypal-note">
     </form>
@@ -369,6 +377,7 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+        <!--khởi tạo & lấy phần tử-->
         const btnOrder = document.getElementById("btn-place-order");
         const addressInput = document.getElementById("addressInput");
         const noteInput = document.querySelector('textarea[name="note"]');
@@ -381,7 +390,7 @@
 
         let subTotal = parseFloat(subTotalEl?.getAttribute("data-value")) || 0;
         let discount = parseFloat(discountEl?.getAttribute("data-value")) || 0;
-        let shippingFee = 30000; // mặc định Tiêu chuẩn
+        // let shippingFee = 30000; // mặc định Tiêu chuẩn
 
         // Format tiền
         const formatCurrency = (amount) => new Intl.NumberFormat("vi-VN").format(amount) + " ₫";
@@ -408,7 +417,7 @@
         };
 
 
-        // Lắng nghe thay đổi phương thức vận chuyển
+        // Lắng nghe thay đổi phương thức vận chuyển(nếu chọn lại thì tính lại tổng tiền)
         shippingRadios.forEach(r => r.addEventListener("change", recalculateTotal));
 
         // Xử lý nút đặt hàng
@@ -418,11 +427,11 @@
             // Lưu vào sessionStorage tạm thời (client-side)
             sessionStorage.setItem("checkoutNote", note);
 
-            // Gửi lên server (form COD)
-            document.getElementById("hidden-note").value = note;
-
+            <!--Lấy payment (phương thức thanh toán) và shipping.-->
             const payment = document.querySelector('input[name="paymentMethod"]:checked')?.value;
             const shipping = document.querySelector('input[name="shippingMethod"]:checked')?.value;
+
+            <!--amount lấy từ attribute data-total trên nút (th:data-total="${finalTotal}").-->
             const amount = this.getAttribute("data-total");
             const originalText = this.innerHTML;
 
@@ -433,34 +442,40 @@
             }
 
             // Gán dữ liệu vào form COD
-
+            document.getElementById("hidden-note").value = note;
             document.getElementById("hidden-address").value = address;
             document.getElementById("hidden-payment").value = payment;
             document.getElementById("hidden-shipping").value = shipping;
             document.getElementById("hidden-coupon").value = document.querySelector('input[name="couponCode"]')?.value || "";
 
-            // Disable nút + spinner
+            // Disable nút + spinner tránh nhấn nhiều lần
             btnOrder.disabled = true;
             btnOrder.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...`;
 
             switch(payment) {
                 case "COD":
+                    <!--submit form #form-cod-->
                     document.getElementById("form-cod").submit();
                     break;
 
                 case "VNPAY":
+                    <!--lấy URL từ data-vnpay-url attribute của nút -> nối thêm &note=...-->
                     let vnpayUrl = btnOrder.getAttribute("data-vnpay-url");
                     vnpayUrl += `&note=${encodeURIComponent(note)}`;
+
+                    <!--redirect người dùng tới payment gateway.-->
                     window.location.href = vnpayUrl;
                     break;
 
                 case "ZALOPAY":
+                    <!--tương tự VNPAY (dùng data-zalopay-url).-->
                     let zalopayUrl = btnOrder.getAttribute("data-zalopay-url");
                     zalopayUrl += `&note=${encodeURIComponent(note)}`;
                     window.location.href = zalopayUrl;
                     break;
 
                 case "PAYPAL":
+                    <!--gán paypal-note rồi submit #form-paypal.-->
                     document.getElementById("paypal-note").value = noteInput.value;
                     document.getElementById("form-paypal").submit();
                     break;
@@ -475,10 +490,10 @@
                         coupon: document.querySelector('input[name="couponCode"]')?.value || ""
                     }));
                     // handleMomoPayment(amount, btnOrder, originalText);
-                    const finalAmount = parseFloat(amount) || 0; // ✅ convert số
+                    const finalAmount = parseFloat(amount) || 0; // convert số
 
+                    <!--AJAX POST tới (/api/momo) để server trả payUrl-->
                     handleMomoPayment(finalAmount, btnOrder, originalText, note);
-
                     break;
 
                 default:
@@ -488,19 +503,24 @@
             }
         });
 
-        // Xử lý API MoMo
+        // Xử lý API MoMo (Vì Spring Security yêu cầu để chấp nhận POST/DELETE/PATCH request )
         function handleMomoPayment(amount, btn, originalText, note) {
+            <!--dùng Spring Security, framework sẽ tự động thêm một trường ẩn (hidden input) vào form khi render-->
             const csrfToken = document.querySelector('input[name="_csrf"]')?.value;
+
             const headers = { "Content-Type": "application/json" };
+
+            <!--Nếu có CSRF token thì đưa vào header chuẩn do Spring yêu cầu-->
             if (csrfToken) headers["X-CSRF-TOKEN"] = csrfToken;
 
+            <!--Gửi POST JSON tới /api/momo (tạo giao dịch MoMo và trả về payUrl).-->
             fetch("/api/momo", {
                 method: "POST",
                 headers: headers,
                 body: JSON.stringify({
-                    amount: amount,                           // ✅ số thuần
-                    shippingAddress: addressInput.value.trim(), // ✅ trùng DTO
-                    note: note,                              // ✅ gửi note chuẩn
+                    amount: amount,
+                    shippingAddress: addressInput.value.trim(),
+                    note: note,
                     shippingMethod: document.querySelector('input[name="shippingMethod"]:checked')?.value || "STANDARD",
                     couponCode: document.querySelector('input[name="couponCode"]')?.value || ""
                 })

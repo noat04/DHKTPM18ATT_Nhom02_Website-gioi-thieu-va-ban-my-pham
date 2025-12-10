@@ -38,6 +38,7 @@ public abstract class Coupon {
     @Positive(message = "Giá trị giảm phải lớn hơn 0")
     private BigDecimal discountValue;
 
+    // Cờ hiệu nếu giảm giá theo tiền mặt thì là false, giảm % là true
     private boolean isPercentage;
 
     @Positive(message = "Số tiền giảm tối đa phải lớn hơn 0")

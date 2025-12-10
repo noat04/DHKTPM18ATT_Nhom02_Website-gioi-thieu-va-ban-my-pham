@@ -35,10 +35,10 @@ public class VnpayConfig {
         System.out.println("--- VNPay Config Initialized ---");
         System.out.println("VNPay Return URL: " + vnp_ReturnUrl);
     }
-    // #vnpay
+    // Biến tĩnh các thông số do VNPay cấp:
     public static String vnp_TmnCode = "JGV9MSIF";
     public static String secretKey = "E9QLQ1W7KCLQKQLE5522R5JNRR7WIV8I";
-    public static String vnp_ApiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
+//    public static String vnp_ApiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
 
     public static String md5(String message) {
         String digest = null;
@@ -97,6 +97,8 @@ public class VnpayConfig {
         return hmacSHA512(secretKey, sb.toString());
     }
 
+
+    //Sinh chữ ký số HMAC bằng thuật toán HmacSHA512
     public static String hmacSHA512(final String key, final String data) {
         try {
 
@@ -120,6 +122,9 @@ public class VnpayConfig {
         }
     }
 
+    //Lấy địa chỉ IP của client (người dùng) khi họ gửi request đến serve
+    //Nếu request đi qua proxy hoặc load balancer, IP thật sẽ nằm trong header X-FORWARDED-FOR
+    //Nếu không có proxy → dùng request.getRemoteAddr()
     public static String getIpAddress(HttpServletRequest request) {
         String ipAdress;
         try {

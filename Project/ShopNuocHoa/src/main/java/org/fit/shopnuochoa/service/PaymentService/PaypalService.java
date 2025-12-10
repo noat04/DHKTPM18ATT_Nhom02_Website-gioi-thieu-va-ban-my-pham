@@ -35,6 +35,7 @@ public class PaypalService {
     private String NGROK_PUBLIC_URL;
 
     // Tỷ giá hối đoái tạm tính (1 USD = 25,000 VND)
+    // PayPal không hỗ trợ VND, nên phải tự quy đổi.
     private static final double VND_TO_USD_RATE = 25000.0;
 
     public String createPayment(Double totalVND, String description) throws PayPalRESTException {
@@ -43,22 +44,27 @@ public class PaypalService {
         // PayPal không nhận VND, phải chia cho tỷ giá
         double totalUSD = totalVND / VND_TO_USD_RATE;
 
-        // Format chuẩn 2 số thập phân (Ví dụ: "10.50")
+        // Format chuẩn 2 số thập phân (Ví dụ: "10.50") .PayPal bắt buộc dùng 2 chữ số thập phân.
         String totalString = String.format(Locale.US, "%.2f", totalUSD);
 
+        //Tạo đối tượng Amount (tiền + currency)
         Amount amount = new Amount();
         amount.setCurrency("USD");
         amount.setTotal(totalString);
 
+        //Tạo Transaction (mô tả giao dịch)
         Transaction transaction = new Transaction();
         transaction.setDescription(description);
         transaction.setAmount(amount);
 
+        //Đưa transaction vào một danh sách . PayPal yêu cầu phải gửi dưới dạng List<Transaction>.
         List<Transaction> transactions = Arrays.asList(transaction);
 
+        //Tạo đối tượng Payer (phương thức thanh toán). Cho PayPal biết rằng:người dùng sẽ thanh toán bằng PayPal
         Payer payer = new Payer();
         payer.setPaymentMethod("paypal");
 
+        //Tạo đối tượng Payment (giao dịch tổng).intent = sale: thanh toán ngay
         Payment payment = new Payment();
         payment.setIntent("sale");
         payment.setPayer(payer);
@@ -85,14 +91,17 @@ public class PaypalService {
     }
 
 @Transactional
+//người dùng thanh toán PayPal xong, PayPal sẽ redirect về trang
 public Orders executePaymentAndFinalizeOrder(String paymentId, String payerId, HttpSession session)
         throws PayPalRESTException {
 
     // 1. Thực hiện trừ tiền trên PayPal
     Payment payment = new Payment();
-    payment.setId(paymentId);
+    payment.setId(paymentId); //PayPal gửi về khi người dùng bấm Pay Now trên website PayPal.
     PaymentExecution paymentExecution = new PaymentExecution();
     paymentExecution.setPayerId(payerId);
+
+    //PayPal trừ tiền thật trong tài khoản người mua.
     Payment executedPayment = payment.execute(apiContext, paymentExecution);
 
     // 2. Kiểm tra nếu trạng thái là "approved" (đã thanh toán)

@@ -52,6 +52,7 @@ public class ZalopayService {
      * Hàm này tự động chạy sau khi @Value được tiêm vào,
      * để gán các URL động.
      */
+
     @PostConstruct
     public void init() {
         this.REDIRECT_URL = NGROK_PUBLIC_URL.trim() + "/api/zalopay/return";
@@ -69,6 +70,7 @@ public class ZalopayService {
         return fmt.format(cal.getTimeInMillis());
     }
 
+    //tạo đơn ZaloPay
     public String createOrder(long amount, String appUser, String orderDescription, String appTransId) {
 
         // 1. Chuyển 'amount' (long) sang 'String'
@@ -81,8 +83,9 @@ public class ZalopayService {
         embedData.put("redirecturl", this.REDIRECT_URL);
         String embedDataStr = new JSONObject(embedData).toString();
 
-        // 3. Tạo 'item' (chi tiết đơn hàng)
+        // 3. Tạo 'item' (chi tiết đơn hàng) .Tạo cứng do môi trường test
         // (ZaloPay yêu cầu 'item' phải là một chuỗi JSON)
+        //[{ "itemid": "product123", "itemname": "product", "itemprice": 10000, "itemquantity": 1 }]
         List<Map<String, Object>> items = new ArrayList<>();
         Map<String, Object> item = new HashMap<>();
         item.put("itemid", "product123");
@@ -107,7 +110,8 @@ public class ZalopayService {
         order.put("embed_data", embedDataStr);
 //        order.put("callback_url", " https://2c05e243471f.ngrok-free.app/api/zalopay/callback");
         order.put("callback_url", this.CALLBACK_URL); // <-- Dùng biến động
-        // 5. Tạo chữ ký MAC (Giữ nguyên)
+
+        // 5. Tạo chữ ký MAC
         String data = order.get("app_id") + "|" + order.get("app_trans_id") + "|" + order.get("app_user") + "|"
                 + order.get("amount") + "|" + order.get("app_time") + "|" + order.get("embed_data") + "|"
                 + order.get("item");
@@ -117,10 +121,13 @@ public class ZalopayService {
         System.out.println("ZaloPay Request Data: " + data);
         System.out.println("Generated MAC: " + mac);
 
-        // 4. Gửi request POST (Giữ nguyên)
+        // 4. Gửi request POST
         try (CloseableHttpClient client = HttpClients.createDefault()) {
+            //Gửi đến endpoint chính thức
             HttpPost post = new HttpPost(ZalopayConfig.config.get("endpoint"));
 
+            //Đổ các tham số vào dạng form-urlencoded (ZaloPay yêu cầu dữ liệu gửi lên theo application/x-www-form-urlencoded)
+            //Mỗi cặp key-value được chuyển thành: key=value
             List<NameValuePair> params = new ArrayList<>();
             for (Map.Entry<String, Object> entry : order.entrySet()) {
                 params.add(new BasicNameValuePair(entry.getKey(), entry.getValue().toString()));
@@ -128,8 +135,12 @@ public class ZalopayService {
 
             post.setEntity(new UrlEncodedFormEntity(params));
 
+            //Gửi request và nhận response
             try (CloseableHttpResponse response = client.execute(post)) {
+                //Đọc dữ liệu JSON trả về từ ZaloPay
                 BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+
+                //Ghép JSON trả về thành 1 chuỗi
                 StringBuilder resultJsonStr = new StringBuilder();
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -154,6 +165,7 @@ public class ZalopayService {
     public String handlePaymentReturn(Map<String, String> allParams, HttpSession session, RedirectAttributes redirectAttributes) {
 
         // 1. Lấy trạng thái từ ZaloPay
+        //?appid=2554&apptransid=240921_123456&status=1&...
         String status = allParams.get("status");
         String appTransId = allParams.get("apptransid");
 

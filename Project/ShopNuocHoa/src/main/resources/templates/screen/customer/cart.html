@@ -165,15 +165,18 @@
         </ol>
     </nav>
 
+    <!--    Thông báo thành công-->
     <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm border-0" role="alert">
         <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${successMessage}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
+    <!--    Thông báo thất bại-->
     <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show shadow-sm border-0" role="alert">
         <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
+    <!--    Không có sản phẩm trong cartBean-->
     <div th:if="${cart == null || cart.items.isEmpty()}" class="cart-card empty-cart">
         <img src="https://deo.shopeemobile.com/shopee/shopee-pcmall-live-sg/cart/9bdd8040b334d31946f4.png" alt="Empty Cart" width="150" class="opacity-75 mb-3">
         <h5 class="text-muted fw-light">Giỏ hàng của bạn chưa có sản phẩm nào</h5>
@@ -182,6 +185,7 @@
         </a>
     </div>
 
+    <!--    Có sản phẩm trong cartBean-->
     <div th:unless="${cart == null || cart.items.isEmpty()}" class="row g-4">
 
         <div class="col-lg-8">
@@ -209,6 +213,7 @@
                         <span th:text="${#numbers.formatDecimal(item.product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
                     </div>
 
+                    <!-- Nút cập nhật số lượng-->
                     <div style="width: 130px;" class="d-flex justify-content-center">
                         <form th:action="@{/api/cart}" method="post" class="d-flex align-items-center gap-2">
                             <input type="hidden" name="action" value="update">
@@ -227,6 +232,7 @@
                         <span th:text="${#numbers.formatDecimal(item.getSubTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
                     </div>
 
+                    <!-- Nút xóa sản phẩm-->
                     <div style="width: 50px;" class="text-center">
                         <form th:action="@{/api/cart}" method="post">
                             <input type="hidden" name="action" value="remove">
@@ -248,20 +254,23 @@
             <div class="cart-summary">
                 <h5 class="mb-3 fw-bold text-uppercase" style="letter-spacing: 1px;">Thanh toán</h5>
 
-                <div class="mb-3">
-                    <label class="form-label small fw-bold text-muted">Nhập mã ưu đãi</label>
-                    <div class="input-group">
-                        <input type="text" id="couponInput" class="form-control" placeholder="VD: SALE10">
-                        <button class="btn btn-outline-primary" type="button" id="btnApplyCoupon">Áp dụng</button>
-                    </div>
-                    <div id="couponMessage" class="small mt-1"></div>
-                </div>
+                <!--                <div class="mb-3">-->
+                <!--                    <label class="form-label small fw-bold text-muted">Nhập mã ưu đãi</label>-->
+                <!--                    <div class="input-group">-->
+                <!--                        <input type="text" id="couponInput" class="form-control" placeholder="VD: SALE10">-->
+                <!--                        <button class="btn btn-outline-primary" type="button" id="btnApplyCoupon">Áp dụng</button>-->
+                <!--                    </div>-->
+                <!--                    <div id="couponMessage" class="small mt-1"></div>-->
+                <!--                </div>-->
 
                 <div class="voucher-list">
                     <div class="small fw-bold text-muted mb-2">Mã giảm giá dành cho bạn:</div>
 
+                    <!--Thỏa mãn điều kiện khuyến mãi-->
                     <th:block th:each="coupon : ${coupons}">
                         <label class="voucher-ticket">
+                            <!-- radio chỉ chọn được 1 mã-->
+                            <!--sử dụng data-attributes để lưu giá trị-->
                             <input type="radio" name="selectedVoucher"
                                    th:value="${coupon.discountValue}"
                                    th:data-code="${coupon.code}"
@@ -271,6 +280,7 @@
                             <div class="voucher-content">
                                 <div class="voucher-left">
                                     <div class="voucher-left">
+                                        <!--Kiểm tra kiểu đối tượng để gán icon-->
                                         <i class="bi bi-gift fs-4 text-danger" th:if="${coupon instanceof T(org.fit.shopnuochoa.model.WelcomeCoupon)}"></i>
 
                                         <i class="bi bi-tag fs-4 text-primary" th:if="${coupon instanceof T(org.fit.shopnuochoa.model.OrderCoupon)}"></i>
@@ -278,6 +288,7 @@
                                         <i class="bi bi-bag-heart fs-4 text-success" th:if="${coupon instanceof T(org.fit.shopnuochoa.model.CategoryCoupon)}"></i>
                                     </div>
                                 </div>
+                                <!--thông tin khuyến mãi-->
                                 <div class="voucher-right">
                                     <div class="fw-bold" th:text="${coupon.code}">CODE</div>
                                     <div class="small text-muted" th:text="${coupon.description}">Mô tả</div>
@@ -290,35 +301,36 @@
                         </label>
                     </th:block>
 
+                    <!--Không có khuyến mãi nào-->
                     <div th:if="${coupons == null || coupons.isEmpty()}" class="text-center text-muted small py-3">
                         Chưa có mã giảm giá nào phù hợp.
                     </div>
                 </div>
 
                 <hr class="text-muted opacity-25">
-
+                <!--Số tien tạm tính -->
                 <div class="summary-row">
                     <span>Tạm tính:</span>
                     <span id="subTotalDisplay" th:text="${#numbers.formatDecimal(cart.getTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'"
                           th:data-value="${cart.getTotal()}">0 ₫</span>
                 </div>
 
+                <!--Số tiền theo khuyến mãi-->
                 <div class="summary-row">
                     <span>Giảm giá:</span>
                     <span id="discountDisplay" class="text-success fw-bold">0 ₫</span>
                 </div>
-
                 <div class="summary-row">
                     <span>Vận chuyển:</span>
-                    <span class="text-success">Miễn phí</span>
+                    <span class="text-danger">Chưa chọn</span>
                 </div>
-
                 <div class="summary-total">
                     <span class="summary-total-label">Tổng cộng:</span>
                     <span id="finalTotalDisplay" class="summary-total-value"
                           th:text="${#numbers.formatDecimal(cart.getTotal(), 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</span>
                 </div>
 
+                <!--Gửi code khuyen mãi và sang trang xác nhận -->
                 <form th:action="@{/api/checkout/confirm}" method="post">
                     <input type="hidden" name="couponCode" id="hiddenCouponCode">
 
@@ -340,8 +352,8 @@
 <script>
     document.addEventListener("DOMContentLoaded", function() {
 
-        // Các element cần thao tác
-        const btnApply = document.getElementById('btnApplyCoupon');
+        // Lấy các element cần thao tác
+        // const btnApply = document.getElementById('btnApplyCoupon');
         const inputCoupon = document.getElementById('couponInput');
         const msgCoupon = document.getElementById('couponMessage');
 
@@ -374,8 +386,7 @@
             finalTotalEl.textContent = formatCurrency(newTotal);
         };
 
-        // 1. Xử lý khi click vào Voucher trong danh sách
-        // Xử lý khi chọn radio button
+        // Xử lý khi click vào Voucher trong danh sách
         voucherRadios.forEach(radio => {
             radio.addEventListener('change', function() {
                 const code = this.getAttribute('data-code');
@@ -383,56 +394,59 @@
                 const value = parseFloat(this.value);
                 const maxDiscount = parseFloat(this.getAttribute('data-max')) || 0;
 
-                inputCoupon.value = code;
+                inputCoupon.value = code; //Điền mã vào ô nhập liệu cho khách thấy
                 let discountAmount = 0;
 
                 if (isPercent) {
+                    // Trường hợp 1: Giảm theo phần trăm
                     discountAmount = originalTotal * (value / 100);
+                    // Kiểm tra giới hạn giảm tối đa
                     if (maxDiscount > 0 && discountAmount > maxDiscount) {
                         discountAmount = maxDiscount;
                     }
                 } else {
+                    // Trường hợp 2: Giảm tiền mặt trực tiếp
                     discountAmount = value;
                 }
 
-                hiddenCouponInput.value = code;
-                updateCartTotal(discountAmount);
+                //Cập nhật lại giao diện
+                hiddenCouponInput.value = code; //Điền mã vào ô ẩn để gửi về Server khi Submit
+                updateCartTotal(discountAmount); //Gọi hàm cập nhật lại Tổng tiền hiển thị
 
                 msgCoupon.className = "small mt-1 text-success fw-bold";
                 msgCoupon.innerHTML = `<i class="bi bi-check-circle"></i> Đã áp dụng mã: ${code}`;
             });
         });
 
-        // 2. Xử lý khi nhập tay mã và bấm "Áp dụng"
-        if(btnApply) {
-            btnApply.addEventListener('click', function() {
-                const code = inputCoupon.value.trim().toUpperCase();
-
-                // Reset radio selection nếu user tự nhập
-                voucherRadios.forEach(r => r.checked = false);
-
-                // --- LOGIC GIẢ LẬP (Sau này thay bằng AJAX gọi về Server) ---
-                if (code === 'SALE10') {
-                    // Giả sử mã SALE10 giảm 10%
-                    let discount = originalTotal * 0.1;
-                    updateCartTotal(discount);
-                    hiddenCouponInput.value = code;
-
-                    msgCoupon.className = "small mt-1 text-success fw-bold";
-                    msgCoupon.innerHTML = `<i class="bi bi-check-circle"></i> Mã SALE10 giảm 10%`;
-                } else if (code === '') {
-                    updateCartTotal(0);
-                    hiddenCouponInput.value = '';
-                    msgCoupon.innerText = "";
-                } else {
-                    // Mã sai -> Reset về 0
-                    updateCartTotal(0);
-                    hiddenCouponInput.value = '';
-                    msgCoupon.className = "small mt-1 text-danger fw-bold";
-                    msgCoupon.innerHTML = `<i class="bi bi-x-circle"></i> Mã giảm giá không hợp lệ!`;
-                }
-            });
-        }
+        // if(btnApply) {
+        //     btnApply.addEventListener('click', function() {
+        //         const code = inputCoupon.value.trim().toUpperCase();
+        //
+        //         // Reset radio selection nếu user tự nhập
+        //         voucherRadios.forEach(r => r.checked = false);
+        //
+        //         // --- LOGIC GIẢ LẬP (Sau này thay bằng AJAX gọi về Server) ---
+        //         if (code === 'SALE10') {
+        //             // Giả sử mã SALE10 giảm 10%
+        //             let discount = originalTotal * 0.1;
+        //             updateCartTotal(discount);
+        //             hiddenCouponInput.value = code;
+        //
+        //             msgCoupon.className = "small mt-1 text-success fw-bold";
+        //             msgCoupon.innerHTML = `<i class="bi bi-check-circle"></i> Mã SALE10 giảm 10%`;
+        //         } else if (code === '') {
+        //             updateCartTotal(0);
+        //             hiddenCouponInput.value = '';
+        //             msgCoupon.innerText = "";
+        //         } else {
+        //             // Mã sai -> Reset về 0
+        //             updateCartTotal(0);
+        //             hiddenCouponInput.value = '';
+        //             msgCoupon.className = "small mt-1 text-danger fw-bold";
+        //             msgCoupon.innerHTML = `<i class="bi bi-x-circle"></i> Mã giảm giá không hợp lệ!`;
+        //         }
+        //     });
+        // }
     });
 </script>
 

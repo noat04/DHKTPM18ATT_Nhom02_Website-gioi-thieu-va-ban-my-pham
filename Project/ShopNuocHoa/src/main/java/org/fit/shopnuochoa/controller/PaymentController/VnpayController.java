@@ -21,14 +21,14 @@ public class VnpayController {
     private final VnpayService vnpayService;
 
     /**
-     * [SỬA ĐỔI] Thêm HttpSession để lấy giỏ hàng
+     * API tạo thanh toán VNPay
      */
     @GetMapping("/create-payment")
     public RedirectView createPayment(
             @RequestParam("amount") String amount,
             @RequestParam(required = false) String note,
-            HttpSession session, // <-- Thêm session
-            HttpServletRequest request // <-- Thêm tham số này
+            HttpSession session,
+            HttpServletRequest request
     ) {
 
         // Kiểm tra xem giỏ hàng và customerId có trong session không
@@ -36,14 +36,15 @@ public class VnpayController {
             return new RedirectView("/api/cart?error=session_expired");
         }
 
-
+        //Tạo VnpayRequest
         org.fit.shopnuochoa.dto.VnpayRequest paymentRequest = new org.fit.shopnuochoa.dto.VnpayRequest();
         paymentRequest.setAmount(amount);
 
         try {
-            session.setAttribute("checkoutNote", note);
-            String paymentUrl = vnpayService.createPayment(paymentRequest, request);
+            session.setAttribute("checkoutNote", note); //lưu vào session
 
+            //Gọi service tạo URL thanh toán
+            String paymentUrl = vnpayService.createPayment(paymentRequest, request);
             return new RedirectView(paymentUrl);
 
         } catch (UnsupportedEncodingException e) {
@@ -56,7 +57,7 @@ public class VnpayController {
      * Nhận TẤT CẢ tham số vào Map và gửi cho Service để xác thực
      */
     @GetMapping("/return")
-    public String returnPayment(@RequestParam Map<String, String> allParams, // <-- Sửa: Nhận tất cả
+    public String returnPayment(@RequestParam Map<String, String> allParams,
                                 HttpSession session,
                                 RedirectAttributes redirectAttributes) {
 

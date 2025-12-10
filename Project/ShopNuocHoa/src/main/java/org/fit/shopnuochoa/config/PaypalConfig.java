@@ -20,7 +20,9 @@ public class PaypalConfig {
     @Value("${paypal.mode}")
     private String mode;
 
+
     @Bean
+    //Tạo 1 Map chứa cấu hình cho SDK của PayPal. (sandbox hoặc live.)
     public Map<String, String> paypalSdkConfig() {
         Map<String, String> sdkConfig = new HashMap<>();
         sdkConfig.put("mode", mode);
@@ -28,6 +30,7 @@ public class PaypalConfig {
     }
 
     @Bean
+    //Được truyền vào PayPal API mỗi khi gọi API tạo giao dịch.
     public APIContext apiContext() throws PayPalRESTException {
         APIContext apiContext = new APIContext(clientId, clientSecret, mode);
         apiContext.setConfigurationMap(paypalSdkConfig());

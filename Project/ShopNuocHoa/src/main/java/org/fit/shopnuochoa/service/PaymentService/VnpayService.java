@@ -37,12 +37,14 @@ public class VnpayService {
         this.checkOutService = checkOutService;
         this.emailService=emailService;
     }
-
+//Tạo URL thanh toán VNPay (dạng https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?...) chứa tất cả tham số cần thiết và chữ ký (vnp_SecureHash)
 public String createPayment(VnpayRequest paymentRequest, HttpServletRequest request) throws UnsupportedEncodingException {
+    //Khai báo thông tin cấu hình
     String vnp_Version = "2.1.0";
     String vnp_Command = "pay";
     String orderType = "other";
 
+    //Chuyển amount từ “số tiền người dùng nhập” → số tiền VNPay
     long amount = 0;
     try {
         double amountDouble = Double.parseDouble(paymentRequest.getAmount());
@@ -51,8 +53,11 @@ public String createPayment(VnpayRequest paymentRequest, HttpServletRequest requ
         throw new IllegalArgumentException("Số tiền không hợp lệ");
     }
 
+    //Ngân hàng test
     String bankCode = "NCB";
+    //Tạo mã giao dịch duy nhất
     String vnp_TxnRef = String.valueOf(System.currentTimeMillis());
+    //Lấy IP client
     String vnp_IpAddr = VnpayConfig.getIpAddress(request);
     String vnp_TmnCode = VnpayConfig.vnp_TmnCode;
 
@@ -60,6 +65,7 @@ public String createPayment(VnpayRequest paymentRequest, HttpServletRequest requ
     // Đảm bảo không bị null
     String vnp_ReturnUrl = NGROK_PUBLIC_URL + "/api/vnpayment/return";
 
+    //Build map tham số gửi sang VNPay
     Map<String, String> vnp_Params = new HashMap<>();
     vnp_Params.put("vnp_Version", vnp_Version);
     vnp_Params.put("vnp_Command", vnp_Command);
@@ -78,31 +84,47 @@ public String createPayment(VnpayRequest paymentRequest, HttpServletRequest requ
 
     vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
+    //thời gian tạo theo format yyyyMMddHHmmss.
     Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
     SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
     String vnp_CreateDate = formatter.format(cld.getTime());
     vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
 
+    //thời hạn giao dịch (ở đây +15 phút).
     cld.add(Calendar.MINUTE, 15);
     String vnp_ExpireDate = formatter.format(cld.getTime());
     vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);
 
+    //VNPay yêu cầu sắp xếp tên tham số theo thứ tự chữ cái trước khi tạo chuỗi để ký; nếu không đúng thứ tự, chữ ký sẽ khác → bị từ chối.
+    //Lấy tất cả tên tham số
     List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
+    //Sắp xếp key theo thứ tự chữ cái
     Collections.sort(fieldNames);
-    StringBuilder hashData = new StringBuilder();
-    StringBuilder query = new StringBuilder();
 
+    //Tạo 2 StringBuilder để build chuỗi ký + chuỗi query
+    StringBuilder hashData = new StringBuilder(); //sẽ được ký HMAC SHA512
+    StringBuilder query = new StringBuilder(); //dùng để tạo URL redirect
+
+
+//    Lấy value tương ứng của từng key
+//    Encode lại theo chuẩn URL
+//    Build chuỗi dùng để ký (hashData)
+//    Build chuỗi query dùng để redirect sang VNPay
+//    Thêm dấu “&” đúng chỗ giữa các cặp key=value
     for (String fieldName : fieldNames) {
+        //Lấy giá trị ứng với key (fieldName = "vnp_Amount" → fieldValue = "100000")
         String fieldValue = vnp_Params.get(fieldName);
         if ((fieldValue != null) && (fieldValue.length() > 0)) {
-            // Build hash data
+            // chuỗi để ký HMAC SHA512 (vnp_Amount=100000)
             hashData.append(fieldName);
             hashData.append('=');
             hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
-            // Build query
+            // chuỗi URL redirect (vnp_Amount=100000&vnp_IpAddr=127.0.0.1&...)
             query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString()));
             query.append('=');
             query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
+
+            //Thêm dấu “&” nếu chưa phải phần tử cuối
             if (fieldNames.indexOf(fieldName) < fieldNames.size() - 1) {
                 query.append('&');
                 hashData.append('&');
@@ -110,9 +132,12 @@ public String createPayment(VnpayRequest paymentRequest, HttpServletRequest requ
         }
     }
 
+    //Tạo chữ ký bảo mật (SecureHash)
     String vnp_SecureHash = VnpayConfig.hmacSHA512(VnpayConfig.secretKey, hashData.toString());
+    //Gắn secure hash vào query URL
     query.append("&vnp_SecureHash=").append(vnp_SecureHash);
 
+    //xuất ra để kiem tra
     String paymentUrl = VnpayConfig.vnp_PayUrl + "?" + query.toString();
     System.out.println("VNPAY URL: " + paymentUrl);
 
@@ -122,14 +147,13 @@ public String createPayment(VnpayRequest paymentRequest, HttpServletRequest requ
      * Xử lý logic trả về TẠI ĐÂY (thay vì trong Controller).
      * Bao gồm: Xác thực Chữ ký (Hash) và Hoàn tất đơn hàng.
      */
-
     @Transactional
     public String handlePaymentReturn(Map<String, String> allParams, HttpSession session, RedirectAttributes redirectAttributes) {
 
         // 1. Lấy SecureHash mà VNPay gửi về
         String vnp_SecureHash = allParams.get("vnp_SecureHash");
 
-        // 2. Xóa hash khỏi map để chuẩn bị tính toán lại
+        // 2. Xóa hash khỏi map để chuẩn bị tính toán lại (VNPay yêu cầu không được đưa vnp_SecureHash vào khi tạo hash)
         allParams.remove("vnp_SecureHash");
         allParams.remove("vnp_SecureHashType");
 
@@ -137,15 +161,20 @@ public String createPayment(VnpayRequest paymentRequest, HttpServletRequest requ
         List<String> fieldNames = new ArrayList<>(allParams.keySet());
         Collections.sort(fieldNames);
 
-        // 4. Tạo chuỗi hashData
+        // 4. tạo đúng chuỗi hashData gồm key=value nối bằng &, theo thứ tự A→Z, với giá trị đã URL-encoded theo charset hợp lệ.
+        //Tạo một StringBuilder rỗng để ghép lần lượt các cặp key=value theo thứ tự A→Z
         StringBuilder hashData = new StringBuilder();
+        //Duyệt tuần tự qua các tên tham số đã được sắp xếp (A → Z)
         for (String fieldName : fieldNames) {
+            //Lấy giá trị tương ứng cho fieldName từ allParams (map chứa các tham số VNPay gửi về).
             String fieldValue = allParams.get(fieldName);
+            // sử dụng URLEncoder.encode(..., charset) có thể ném UnsupportedEncodingException
             if (fieldValue != null && !fieldValue.isEmpty()) {
                 try {
+                    //Bắt đầu ghép key= — đúng định dạng key=value. Thêm ký tự phân tách & giữa các cặp key=value
                     hashData.append(fieldName).append('=')
                             .append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()))
-                            .append('&');
+                            .append('&'); // <- luôn có dấu & cuối
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                     redirectAttributes.addFlashAttribute("errorMessage", "Lỗi tạo chữ ký thanh toán.");
@@ -153,6 +182,8 @@ public String createPayment(VnpayRequest paymentRequest, HttpServletRequest requ
                 }
             }
         }
+
+        //Xóa ký tự & cuối cùng trong chuỗi hashData
         if (hashData.length() > 0) hashData.setLength(hashData.length() - 1);
 
         // 5. Tính toán chữ ký
@@ -171,6 +202,7 @@ public String createPayment(VnpayRequest paymentRequest, HttpServletRequest requ
         String note = (String) session.getAttribute("checkoutNote");
         ShippingMethod shippingMethod = (ShippingMethod) session.getAttribute("checkoutShipping");
         String couponCode = (String) session.getAttribute("checkoutCouponCode");
+
         if (cart == null || customerId == null) {
             redirectAttributes.addFlashAttribute("errorMessage", "Phiên làm việc hết hạn. Vui lòng thử lại.");
             return "redirect:/api/cart";
@@ -223,7 +255,7 @@ public String createPayment(VnpayRequest paymentRequest, HttpServletRequest requ
         }
     }
 
-
+    //Kiểm tra các responseCode trả về
     private String getVnpayErrorMessage(String responseCode) {
         switch (responseCode) {
             case "07": return "Trừ tiền thành công. Giao dịch bị nghi ngờ (liên quan tới lừa đảo, giao dịch bất thường).";
