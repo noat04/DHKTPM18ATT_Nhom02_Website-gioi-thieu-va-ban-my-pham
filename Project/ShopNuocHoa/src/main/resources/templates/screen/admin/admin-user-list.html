@@ -55,15 +55,15 @@
                                 <td th:text="${#temporals.format(user.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
                                 <td class="text-center">
                                     <a th:href="@{'/api/admin/users/' + ${user.id}}" class="btn btn-sm btn-info">Chi tiết</a>
-                                    <a th:href="@{'/api/admin/users/update/' + ${user.id}}" class="btn btn-sm btn-warning">
-                                        <i class="bi bi-pencil"></i> Cập nhật
-                                    </a>
-                                    <form th:action="@{'/api/admin/users/delete/' + ${user.id}}" method="post" style="display:inline">
-                                        <button type="submit" class="btn btn-sm btn-danger"
-                                                onclick="return confirm('Bạn chắc chắn muốn xóa tài khoản này?')">
-                                            Xóa
-                                        </button>
-                                    </form>
+<!--                                    <a th:href="@{'/api/admin/users/update/' + ${user.id}}" class="btn btn-sm btn-warning">-->
+<!--                                        <i class="bi bi-pencil"></i> Cập nhật-->
+<!--                                    </a>-->
+<!--                                    <form th:action="@{'/api/admin/users/delete/' + ${user.id}}" method="post" style="display:inline">-->
+<!--                                        <button type="submit" class="btn btn-sm btn-danger"-->
+<!--                                                onclick="return confirm('Bạn chắc chắn muốn xóa tài khoản này?')">-->
+<!--                                            Xóa-->
+<!--                                        </button>-->
+<!--                                    </form>-->
                                 </td>
                             </tr>
                             </tbody>

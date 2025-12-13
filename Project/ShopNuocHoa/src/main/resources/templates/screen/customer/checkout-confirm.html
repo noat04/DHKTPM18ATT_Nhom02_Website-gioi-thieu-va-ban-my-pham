@@ -378,21 +378,21 @@
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         <!--khởi tạo & lấy phần tử-->
-        const btnOrder = document.getElementById("btn-place-order");
-        const addressInput = document.getElementById("addressInput");
-        const noteInput = document.querySelector('textarea[name="note"]');
-        const subTotalEl = document.getElementById("subTotalDisplay");
-        const shippingFeeEl = document.getElementById("shippingFeeDisplay");
-        const finalTotalEl = document.getElementById("finalTotalDisplay");
-        const discountEl = document.getElementById("discountDisplay");
+        const btnOrder = document.getElementById("btn-place-order"); //Nút đặt hàng
+        const addressInput = document.getElementById("addressInput"); //địa chỉ
+        const noteInput = document.querySelector('textarea[name="note"]'); // ghi chú
+        const subTotalEl = document.getElementById("subTotalDisplay"); //Tổng giá trị giỏ hàng
+        const shippingFeeEl = document.getElementById("shippingFeeDisplay"); //Tổng gia ship
+        const finalTotalEl = document.getElementById("finalTotalDisplay"); // Tổng gia tri cuoi cung
+        const discountEl = document.getElementById("discountDisplay"); //Gía trị giảm giá
 
-        const shippingRadios = document.querySelectorAll('input[name="shippingMethod"]');
+        const shippingRadios = document.querySelectorAll('input[name="shippingMethod"]'); //Radio ptvc
 
         let subTotal = parseFloat(subTotalEl?.getAttribute("data-value")) || 0;
         let discount = parseFloat(discountEl?.getAttribute("data-value")) || 0;
         // let shippingFee = 30000; // mặc định Tiêu chuẩn
 
-        // Format tiền
+        // Hàm Format tiền
         const formatCurrency = (amount) => new Intl.NumberFormat("vi-VN").format(amount) + " ₫";
 
         // Tính lại tổng tiền
@@ -412,7 +412,7 @@
             let finalTotal = subTotal + shippingFee - discount;
             if (finalTotal < 0) finalTotal = 0;
 
-            shippingFeeEl.textContent = formatCurrency(shippingFee);
+            shippingFeeEl.textContent = formatCurrency(shippingFee); // gán lại giá trị
             finalTotalEl.textContent = formatCurrency(finalTotal);
         };
 
@@ -429,11 +429,12 @@
 
             <!--Lấy payment (phương thức thanh toán) và shipping.-->
             const payment = document.querySelector('input[name="paymentMethod"]:checked')?.value;
+
             const shipping = document.querySelector('input[name="shippingMethod"]:checked')?.value;
 
             <!--amount lấy từ attribute data-total trên nút (th:data-total="${finalTotal}").-->
             const amount = this.getAttribute("data-total");
-            const originalText = this.innerHTML;
+            const originalText = this.innerHTML; //trả về toàn bộ nội dung HTML bên trong phần tử
 
             if (!address) {
                 alert("⚠ Vui lòng nhập địa chỉ giao hàng!");
@@ -450,7 +451,7 @@
 
             // Disable nút + spinner tránh nhấn nhiều lần
             btnOrder.disabled = true;
-            btnOrder.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...`;
+            btnOrder.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Đang xử lý...`; //gan
 
             switch(payment) {
                 case "COD":

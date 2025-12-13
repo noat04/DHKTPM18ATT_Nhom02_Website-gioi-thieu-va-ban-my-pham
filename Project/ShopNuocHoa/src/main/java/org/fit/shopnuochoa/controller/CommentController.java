@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -156,6 +157,7 @@ public class CommentController {
      * Hiển thị danh sách bình luận cho ADMIN
      */
     @GetMapping("/admin")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public String showAdminCommentList(@RequestParam(defaultValue = "0") int page,
                                        @RequestParam(defaultValue = "10") int size,
                                        @RequestParam(value = "action", required = false) String action,

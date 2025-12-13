@@ -32,7 +32,7 @@ public class OrderScheduler {
         LocalDateTime now = LocalDateTime.now();
 
         for (Orders order : shippingOrders) {
-            // 2. [SỬA ĐỔI] Lấy ngày dự kiến giao hàng từ logic trong Entity
+            // 2. Lấy ngày dự kiến giao hàng từ logic trong Entity
             LocalDateTime estimatedDate = order.getEstimatedDeliveryDate();
 
             // 3. So sánh: Nếu thời gian hiện tại (now) đã vượt quá thời gian dự kiến

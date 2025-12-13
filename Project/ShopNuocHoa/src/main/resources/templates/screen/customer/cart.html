@@ -254,14 +254,14 @@
             <div class="cart-summary">
                 <h5 class="mb-3 fw-bold text-uppercase" style="letter-spacing: 1px;">Thanh toán</h5>
 
-                <!--                <div class="mb-3">-->
-                <!--                    <label class="form-label small fw-bold text-muted">Nhập mã ưu đãi</label>-->
-                <!--                    <div class="input-group">-->
-                <!--                        <input type="text" id="couponInput" class="form-control" placeholder="VD: SALE10">-->
-                <!--                        <button class="btn btn-outline-primary" type="button" id="btnApplyCoupon">Áp dụng</button>-->
-                <!--                    </div>-->
-                <!--                    <div id="couponMessage" class="small mt-1"></div>-->
-                <!--                </div>-->
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-muted">Nhập mã ưu đãi</label>
+                                    <div class="input-group">
+                                        <input type="text" id="couponInput" class="form-control" placeholder="VD: SALE10">
+                                        <button class="btn btn-outline-primary" type="button" id="btnApplyCoupon">Áp dụng</button>
+                                    </div>
+                                    <div id="couponMessage" class="small mt-1"></div>
+                                </div>
 
                 <div class="voucher-list">
                     <div class="small fw-bold text-muted mb-2">Mã giảm giá dành cho bạn:</div>
@@ -353,7 +353,7 @@
     document.addEventListener("DOMContentLoaded", function() {
 
         // Lấy các element cần thao tác
-        // const btnApply = document.getElementById('btnApplyCoupon');
+        const btnApply = document.getElementById('btnApplyCoupon');
         const inputCoupon = document.getElementById('couponInput');
         const msgCoupon = document.getElementById('couponMessage');
 
@@ -418,35 +418,35 @@
             });
         });
 
-        // if(btnApply) {
-        //     btnApply.addEventListener('click', function() {
-        //         const code = inputCoupon.value.trim().toUpperCase();
-        //
-        //         // Reset radio selection nếu user tự nhập
-        //         voucherRadios.forEach(r => r.checked = false);
-        //
-        //         // --- LOGIC GIẢ LẬP (Sau này thay bằng AJAX gọi về Server) ---
-        //         if (code === 'SALE10') {
-        //             // Giả sử mã SALE10 giảm 10%
-        //             let discount = originalTotal * 0.1;
-        //             updateCartTotal(discount);
-        //             hiddenCouponInput.value = code;
-        //
-        //             msgCoupon.className = "small mt-1 text-success fw-bold";
-        //             msgCoupon.innerHTML = `<i class="bi bi-check-circle"></i> Mã SALE10 giảm 10%`;
-        //         } else if (code === '') {
-        //             updateCartTotal(0);
-        //             hiddenCouponInput.value = '';
-        //             msgCoupon.innerText = "";
-        //         } else {
-        //             // Mã sai -> Reset về 0
-        //             updateCartTotal(0);
-        //             hiddenCouponInput.value = '';
-        //             msgCoupon.className = "small mt-1 text-danger fw-bold";
-        //             msgCoupon.innerHTML = `<i class="bi bi-x-circle"></i> Mã giảm giá không hợp lệ!`;
-        //         }
-        //     });
-        // }
+        if(btnApply) {
+            btnApply.addEventListener('click', function() {
+                const code = inputCoupon.value.trim().toUpperCase();
+
+                // Reset radio selection nếu user tự nhập
+                voucherRadios.forEach(r => r.checked = false);
+
+                // --- LOGIC GIẢ LẬP (Sau này thay bằng AJAX gọi về Server) ---
+                if (code === 'SALE10') {
+                    // Giả sử mã SALE10 giảm 10%
+                    let discount = originalTotal * 0.1;
+                    updateCartTotal(discount);
+                    hiddenCouponInput.value = code;
+
+                    msgCoupon.className = "small mt-1 text-success fw-bold";
+                    msgCoupon.innerHTML = `<i class="bi bi-check-circle"></i> Mã SALE10 giảm 10%`;
+                } else if (code === '') {
+                    updateCartTotal(0);
+                    hiddenCouponInput.value = '';
+                    msgCoupon.innerText = "";
+                } else {
+                    // Mã sai -> Reset về 0
+                    updateCartTotal(0);
+                    hiddenCouponInput.value = '';
+                    msgCoupon.className = "small mt-1 text-danger fw-bold";
+                    msgCoupon.innerHTML = `<i class="bi bi-x-circle"></i> Mã giảm giá không hợp lệ!`;
+                }
+            });
+        }
     });
 </script>
 

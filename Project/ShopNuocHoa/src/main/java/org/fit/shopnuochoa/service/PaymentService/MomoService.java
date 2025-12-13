@@ -91,7 +91,7 @@ public class MomoService {
             // khởi tạo requestId and orderId
             String requestId = PARTNER_CODE + new Date().getTime();
             String orderId = requestId;
-            String orderInfo = "SN Mobile";
+            String orderInfo = "SN Mobile"; // gán mặc định
             String extraData = "";
 
             // khởi tạo raw signature
@@ -119,7 +119,7 @@ public class MomoService {
             requestBody.put("signature", signature);
             requestBody.put("lang", "en");
 
-            //Gửi HTTP POST đến MoMo
+            //Gửi HTTP POST đến MoMo .  CloseableHttpClient class chính trong Apache HttpClient (thư viện dùng để gửi HTTP request trong Java).
             CloseableHttpClient httpClient = HttpClients.createDefault();
             //Tạo HTTP POST request
             HttpPost httpPost = new HttpPost("https://test-payment.momo.vn/v2/gateway/api/create");

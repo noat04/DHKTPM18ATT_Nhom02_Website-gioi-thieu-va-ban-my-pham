@@ -2,6 +2,7 @@ package org.fit.shopnuochoa.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.fit.shopnuochoa.service.OrderService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +19,7 @@ public class StatisticsController {
     private final OrderService orderService;
 
     @GetMapping("/statistics")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public String showStatistics(Model model) {
 
         // Tổng hợp số liệu

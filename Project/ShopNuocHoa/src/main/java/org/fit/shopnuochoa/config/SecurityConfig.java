@@ -46,14 +46,14 @@ public class SecurityConfig {
                         .ignoringRequestMatchers(
                                 "/api/consultant/**",
                                 "/api/products/import/**",
-                                "/api/momo",                  // ✅ cho phép POST MoMo không cần CSRF
+                                "/api/momo",                  // cho phép POST MoMo không cần CSRF
                                 "/api/momo/callback/**"       // (nếu bạn có callback)
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
                         // Thứ tự quan trọng: specific patterns trước, generic patterns sau
                         .requestMatchers("/api/products/import/**").permitAll() // Import endpoints
-                        .requestMatchers(HttpMethod.POST, "/api/momo").permitAll() // ✅ cho phép gọi thanh toán MoMo
+                        .requestMatchers(HttpMethod.POST, "/api/momo").permitAll() // cho phép gọi thanh toán MoMo
                         .requestMatchers(
                                 "/api/register",
                                 "/api/login",
@@ -63,7 +63,7 @@ public class SecurityConfig {
                                 "/api/forgot-password",
                                 "/api/reset-password",
                                 "/api/consultant/**",
-                                "/api/momo/**",   // ✅ cho phép redirect GET MoMo payUrl
+                                "/api/momo/**",   // cho phép redirect GET MoMo payUrl
                                 "/api/images/**",
                                 "/css/**",
                                 "/js/**",

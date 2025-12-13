@@ -52,21 +52,21 @@
                              th:errors="*{full_name}"></div>
                     </div>
 
-                    <!-- Role -->
-                    <div class="col-md-6">
-                        <label class="form-label">Vai trò</label>
-                        <select th:field="*{role}" class="form-select">
-                            <option th:each="r : ${roles}"
-                                    th:value="${r}"
-                                    th:text="${r}"></option>
-                        </select>
-                    </div>
+<!--                    &lt;!&ndash; Role &ndash;&gt;-->
+<!--                    <div class="col-md-6">-->
+<!--                        <label class="form-label">Vai trò</label>-->
+<!--                        <select th:field="*{role}" class="form-select">-->
+<!--                            <option th:each="r : ${roles}"-->
+<!--                                    th:value="${r}"-->
+<!--                                    th:text="${r}"></option>-->
+<!--                        </select>-->
+<!--                    </div>-->
 
                     <!-- Active -->
-                    <div class="col-md-12 form-check mt-3">
-                        <input class="form-check-input" type="checkbox" th:field="*{active}"/>
-                        <label class="form-check-label">Kích hoạt tài khoản</label>
-                    </div>
+<!--                    <div class="col-md-12 form-check mt-3">-->
+<!--                        <input class="form-check-input" type="checkbox" th:field="*{active}"/>-->
+<!--                        <label class="form-check-label">Kích hoạt tài khoản</label>-->
+<!--                    </div>-->
 
                     <!-- Submit -->
                     <div class="col-md-12">
